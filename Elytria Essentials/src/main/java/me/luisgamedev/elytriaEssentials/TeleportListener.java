@@ -123,7 +123,7 @@ public class TeleportListener implements Listener {
         if (!event.getView().title().equals(menuTitle)) {
             return;
         }
-        if (event.getClickedInventory() == null || event.getRawSlot() >= event.getView().topInventory().getSize()) {
+        if (event.getClickedInventory() == null || event.getRawSlot() >= event.getView().getTopInventory().getSize()) {
             return;
         }
         event.setCancelled(true);
