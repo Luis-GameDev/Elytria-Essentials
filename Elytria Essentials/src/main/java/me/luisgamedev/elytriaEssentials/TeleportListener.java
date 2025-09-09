@@ -1,7 +1,7 @@
 package me.luisgamedev.elytriaEssentials;
 
-import net.citizensnpcs.api.CitizensAPI;
 import net.citizensnpcs.api.npc.NPC;
+import net.citizensnpcs.api.event.NPCRightClickEvent;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -13,8 +13,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
-import org.bukkit.event.player.PlayerInteractEntityEvent;
-import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -59,16 +57,13 @@ public class TeleportListener implements Listener {
     }
 
     @EventHandler
-    public void onNpcInteract(PlayerInteractEntityEvent event) {
-        if (event.getHand() != EquipmentSlot.HAND) {
-            return;
-        }
-        NPC npc = CitizensAPI.getNPCRegistry().getNPC(event.getRightClicked());
-        if (npc == null || npc.getId() != npcId) {
+    public void onNpcClick(NPCRightClickEvent event) {
+        NPC npc = event.getNPC();
+        if (npc.getId() != npcId) {
             return;
         }
         event.setCancelled(true);
-        Player player = event.getPlayer();
+        Player player = event.getClicker();
         if (isOnCooldown(player)) {
             long remaining = getRemainingSeconds(player);
             player.sendMessage(Component.text("Teleport is on cooldown for " + remaining + " seconds."));
