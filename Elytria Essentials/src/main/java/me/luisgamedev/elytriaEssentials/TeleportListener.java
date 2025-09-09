@@ -1,5 +1,7 @@
 package me.luisgamedev.elytriaEssentials;
 
+import net.citizensnpcs.api.CitizensAPI;
+import net.citizensnpcs.api.npc.NPC;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -7,7 +9,6 @@ import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
-import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -17,10 +18,8 @@ import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.metadata.MetadataValue;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -28,14 +27,14 @@ public class TeleportListener implements Listener {
     private final ElytriaEssentials plugin;
     private final Map<String, Location> locations = new HashMap<>();
     private final Map<UUID, Long> cooldowns = new HashMap<>();
-    private final String npcId;
+    private final int npcId;
     private final Component menuTitle = Component.text("Teleport Locations");
     private final long cooldownMillis;
 
     public TeleportListener(ElytriaEssentials plugin) {
         this.plugin = plugin;
         FileConfiguration config = plugin.getConfig();
-        npcId = config.getString("npc-id", "teleporter");
+        npcId = config.getInt("npc-id", 9);
         cooldownMillis = config.getLong("teleport-cooldown", 60) * 1000L;
         loadLocation("desert", config);
         loadLocation("feyforest", config);
@@ -64,23 +63,17 @@ public class TeleportListener implements Listener {
         if (event.getHand() != EquipmentSlot.HAND) {
             return;
         }
-        Entity entity = event.getRightClicked();
-        if (!entity.hasMetadata("npc-id")) {
+        NPC npc = CitizensAPI.getNPC(event.getRightClicked());
+        if (npc == null || npc.getId() != npcId) {
             return;
         }
-        List<MetadataValue> data = entity.getMetadata("npc-id");
-        for (MetadataValue value : data) {
-            if (npcId.equals(value.asString())) {
-                event.setCancelled(true);
-                Player player = event.getPlayer();
-                if (isOnCooldown(player)) {
-                    long remaining = getRemainingSeconds(player);
-                    player.sendMessage(Component.text("Teleport is on cooldown for " + remaining + " seconds."));
-                } else {
-                    openMenu(player);
-                }
-                break;
-            }
+        event.setCancelled(true);
+        Player player = event.getPlayer();
+        if (isOnCooldown(player)) {
+            long remaining = getRemainingSeconds(player);
+            player.sendMessage(Component.text("Teleport is on cooldown for " + remaining + " seconds."));
+        } else {
+            openMenu(player);
         }
     }
 
