@@ -63,7 +63,7 @@ public class TeleportListener implements Listener {
         if (event.getHand() != EquipmentSlot.HAND) {
             return;
         }
-        NPC npc = CitizensAPI.getNPC(event.getRightClicked());
+        NPC npc = CitizensAPI.getNPCRegistry().getNPC(event.getRightClicked());
         if (npc == null || npc.getId() != npcId) {
             return;
         }
