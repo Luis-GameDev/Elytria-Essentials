@@ -1,8 +1,10 @@
-package me.luisgamedev.elytriaEssentials;
+package me.luisgamedev.elytriaEssentials.OutpostTeleport;
 
+import me.luisgamedev.elytriaEssentials.ElytriaEssentials;
 import net.citizensnpcs.api.npc.NPC;
 import net.citizensnpcs.api.event.NPCRightClickEvent;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -16,8 +18,10 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.ChatColor;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -59,6 +63,7 @@ public class TeleportListener implements Listener {
     @EventHandler
     public void onNpcClick(NPCRightClickEvent event) {
         NPC npc = event.getNPC();
+
         if (npc.getId() != npcId) {
             return;
         }
@@ -66,7 +71,7 @@ public class TeleportListener implements Listener {
         Player player = event.getClicker();
         if (isOnCooldown(player)) {
             long remaining = getRemainingSeconds(player);
-            player.sendMessage(Component.text("Teleport is on cooldown for " + remaining + " seconds."));
+            player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&cTeleport is on cooldown for &4" + remaining + " &cseconds."));
         } else {
             openMenu(player);
         }
@@ -87,10 +92,10 @@ public class TeleportListener implements Listener {
             }
         }
 
-        inv.setItem(22, createItem(Material.SAND, "Desert"));
-        inv.setItem(23, createItem(Material.MOSS_BLOCK, "Feyforest"));
-        inv.setItem(31, createItem(Material.OAK_SAPLING, "Oaklands"));
-        inv.setItem(32, createItem(Material.ICE, "Frostland"));
+        inv.setItem(19, createItem(Material.SAND, "Desert"));
+        inv.setItem(21, createItem(Material.DARK_OAK_LOG, "Feyforest"));
+        inv.setItem(23, createItem(Material.OAK_SAPLING, "Oaklands"));
+        inv.setItem(25, createItem(Material.ICE, "Frostland"));
 
         player.openInventory(inv);
     }
@@ -98,7 +103,12 @@ public class TeleportListener implements Listener {
     private ItemStack createItem(Material material, String name) {
         ItemStack item = new ItemStack(material);
         ItemMeta meta = item.getItemMeta();
-        meta.displayName(Component.text(name));
+
+        meta.displayName(Component.text(name, NamedTextColor.GOLD));
+
+        Component loreLine = Component.text("Teleports you to the " + name + " Outpost", NamedTextColor.LIGHT_PURPLE);
+        meta.lore(List.of(loreLine));
+
         item.setItemMeta(meta);
         return item;
     }
@@ -116,10 +126,10 @@ public class TeleportListener implements Listener {
         }
         event.setCancelled(true);
         switch (event.getRawSlot()) {
-            case 22 -> teleport(player, "desert");
-            case 23 -> teleport(player, "feyforest");
-            case 31 -> teleport(player, "oaklands");
-            case 32 -> teleport(player, "frostland");
+            case 19 -> teleport(player, "desert");
+            case 21 -> teleport(player, "feyforest");
+            case 23 -> teleport(player, "oaklands");
+            case 25 -> teleport(player, "frostland");
         }
     }
 
