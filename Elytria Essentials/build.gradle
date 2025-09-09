@@ -12,10 +12,15 @@ repositories {
         name = "papermc-repo"
         url = "https://repo.papermc.io/repository/maven-public/"
     }
+    maven {
+        name = "citizens-repo"
+        url = "https://repo.citizensnpcs.co/"
+    }
 }
 
 dependencies {
     compileOnly("io.papermc.paper:paper-api:1.21.4-R0.1-SNAPSHOT")
+    compileOnly("net.citizensnpcs:citizens-main:2.0.33-SNAPSHOT")
 }
 
 tasks {
