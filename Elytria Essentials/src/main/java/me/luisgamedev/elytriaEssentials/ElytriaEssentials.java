@@ -1,8 +1,10 @@
 package me.luisgamedev.elytriaEssentials;
 
-import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.PluginManager;
+import org.bukkit.plugin.java.JavaPlugin;
+
+import me.luisgamedev.elytriaEssentials.Blockers.BlockersListener;
 
 public final class ElytriaEssentials extends JavaPlugin {
 
@@ -11,6 +13,7 @@ public final class ElytriaEssentials extends JavaPlugin {
         saveDefaultConfig();
         PluginManager pm = Bukkit.getPluginManager();
         pm.registerEvents(new TeleportListener(this), this);
+        pm.registerEvents(new BlockersListener(), this);
     }
 
     @Override
