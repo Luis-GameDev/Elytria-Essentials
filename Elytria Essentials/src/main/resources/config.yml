@@ -1,0 +1,22 @@
+npc-id: teleporter
+locations:
+  desert:
+    world: world
+    x: 0
+    y: 64
+    z: 0
+  feyforest:
+    world: world
+    x: 100
+    y: 64
+    z: 0
+  oaklands:
+    world: world
+    x: 200
+    y: 64
+    z: 0
+  frostland:
+    world: world
+    x: -100
+    y: 64
+    z: 0
