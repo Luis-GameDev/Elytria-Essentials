@@ -22,17 +22,21 @@ import org.bukkit.metadata.MetadataValue;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 public class TeleportListener implements Listener {
     private final ElytriaEssentials plugin;
     private final Map<String, Location> locations = new HashMap<>();
+    private final Map<UUID, Long> cooldowns = new HashMap<>();
     private final String npcId;
     private final Component menuTitle = Component.text("Teleport Locations");
+    private final long cooldownMillis;
 
     public TeleportListener(ElytriaEssentials plugin) {
         this.plugin = plugin;
         FileConfiguration config = plugin.getConfig();
         npcId = config.getString("npc-id", "teleporter");
+        cooldownMillis = config.getLong("teleport-cooldown", 60) * 1000L;
         loadLocation("desert", config);
         loadLocation("feyforest", config);
         loadLocation("oaklands", config);
@@ -68,7 +72,13 @@ public class TeleportListener implements Listener {
         for (MetadataValue value : data) {
             if (npcId.equals(value.asString())) {
                 event.setCancelled(true);
-                openMenu(event.getPlayer());
+                Player player = event.getPlayer();
+                if (isOnCooldown(player)) {
+                    long remaining = getRemainingSeconds(player);
+                    player.sendMessage(Component.text("Teleport is on cooldown for " + remaining + " seconds."));
+                } else {
+                    openMenu(player);
+                }
                 break;
             }
         }
@@ -126,10 +136,35 @@ public class TeleportListener implements Listener {
     }
 
     private void teleport(Player player, String key) {
+        if (isOnCooldown(player)) {
+            long remaining = getRemainingSeconds(player);
+            player.sendMessage(Component.text("Teleport is on cooldown for " + remaining + " seconds."));
+            player.closeInventory();
+            return;
+        }
         Location loc = locations.get(key);
         if (loc != null) {
             player.closeInventory();
             player.teleport(loc);
+            cooldowns.put(player.getUniqueId(), System.currentTimeMillis());
         }
+    }
+
+    private boolean isOnCooldown(Player player) {
+        Long last = cooldowns.get(player.getUniqueId());
+        if (last == null) {
+            return false;
+        }
+        return System.currentTimeMillis() - last < cooldownMillis;
+    }
+
+    private long getRemainingSeconds(Player player) {
+        Long last = cooldowns.get(player.getUniqueId());
+        if (last == null) {
+            return 0;
+        }
+        long elapsed = System.currentTimeMillis() - last;
+        long remaining = cooldownMillis - elapsed;
+        return Math.max(0, remaining / 1000L);
     }
 }
