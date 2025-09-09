@@ -21,5 +21,10 @@
       <option name="name" value="papermc-repo" />
       <option name="url" value="https://repo.papermc.io/repository/maven-public/" />
     </remote-repository>
+    <remote-repository>
+      <option name="id" value="citizens-repo" />
+      <option name="name" value="citizens-repo" />
+      <option name="url" value="https://repo.citizensnpcs.co/" />
+    </remote-repository>
   </component>
 </project>

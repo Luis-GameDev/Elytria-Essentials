@@ -20,7 +20,7 @@ repositories {
 
 dependencies {
     compileOnly("io.papermc.paper:paper-api:1.21.4-R0.1-SNAPSHOT")
-    compileOnly("net.citizensnpcs:citizens-main:2.0.33-SNAPSHOT")
+    compileOnly files("libs/Citizens-2.0.33-b3399.jar")
 }
 
 tasks {
