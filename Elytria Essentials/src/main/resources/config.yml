@@ -1,23 +1,23 @@
-npc-id: teleporter
-teleport-cooldown: 60
+npc-id: 9
+teleport-cooldown: 1200
 locations:
   desert:
     world: world
-    x: 0
-    y: 64
-    z: 0
+    x: 2192
+    y: 187
+    z: 1596
   feyforest:
     world: world
-    x: 100
-    y: 64
-    z: 0
+    x: -3441
+    y: 191
+    z: 1415
   oaklands:
     world: world
-    x: 200
-    y: 64
-    z: 0
+    x: 1689
+    y: 137
+    z: -1978
   frostland:
     world: world
-    x: -100
-    y: 64
-    z: 0
+    x: -2021
+    y: 151
+    z: -2015
