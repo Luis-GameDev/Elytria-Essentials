@@ -16,7 +16,9 @@ import org.bukkit.event.inventory.InventoryPickupItemEvent;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.inventory.PrepareItemCraftEvent;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
+import org.bukkit.event.player.PlayerPortalEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
+import org.bukkit.event.world.PortalCreateEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.Recipe;
 import org.bukkit.entity.EntityType;
@@ -73,6 +75,21 @@ public class BlockersListener implements Listener {
                 event.getInventory().setResult(new ItemStack(Material.AIR));
             }
         }
+    }
+
+    @EventHandler
+    public void onPortalCreate(PortalCreateEvent event) {
+        event.setCancelled(true);
+    }
+
+    @EventHandler
+    public void onPlayerPortal(PlayerPortalEvent event) {
+        event.setCancelled(true);
+    }
+
+    @EventHandler
+    public void onEntityPortal(EntityPortalEvent event) {
+        event.setCancelled(true);
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
