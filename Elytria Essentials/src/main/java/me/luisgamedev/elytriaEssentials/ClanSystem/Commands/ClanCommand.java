@@ -1,5 +1,6 @@
 package me.luisgamedev.elytriaEssentials.ClanSystem.Commands;
 
+import me.luisgamedev.elytriaEssentials.ElytriaEssentials;
 import me.luisgamedev.elytriaEssentials.ClanSystem.ClanManager;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
@@ -15,33 +16,35 @@ import java.util.List;
 public class ClanCommand implements CommandExecutor, TabCompleter {
 
     private final ClanManager manager;
+    private final ElytriaEssentials plugin;
 
-    public ClanCommand(ClanManager manager) {
+    public ClanCommand(ElytriaEssentials plugin, ClanManager manager) {
+        this.plugin = plugin;
         this.manager = manager;
     }
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (!(sender instanceof Player player)) {
-            sender.sendMessage("Only players may use this command.");
+            sender.sendMessage(plugin.getLanguageConfig().getString("clan.only-players"));
             return true;
         }
         if (args.length == 0) {
-            player.sendMessage("/clan <create|invite|accept|disband|kick|leave|promote|sethome|home>");
+            player.sendMessage(plugin.getLanguageConfig().getString("clan.help"));
             return true;
         }
         String sub = args[0].toLowerCase();
         switch (sub) {
             case "create":
                 if (args.length < 3) {
-                    player.sendMessage("Usage: /clan create <name> <tag>");
+                    player.sendMessage(plugin.getLanguageConfig().getString("clan.usage.create"));
                     break;
                 }
                 manager.createClan(player, args[1], args[2]);
                 break;
             case "invite":
                 if (args.length < 2) {
-                    player.sendMessage("Usage: /clan invite <player>");
+                    player.sendMessage(plugin.getLanguageConfig().getString("clan.usage.invite"));
                     break;
                 }
                 Player targetInvite = Bukkit.getPlayer(args[1]);
@@ -57,7 +60,7 @@ public class ClanCommand implements CommandExecutor, TabCompleter {
                 break;
             case "kick":
                 if (args.length < 2) {
-                    player.sendMessage("Usage: /clan kick <player>");
+                    player.sendMessage(plugin.getLanguageConfig().getString("clan.usage.kick"));
                     break;
                 }
                 Player targetKick = Bukkit.getPlayer(args[1]);
@@ -70,7 +73,7 @@ public class ClanCommand implements CommandExecutor, TabCompleter {
                 break;
             case "promote":
                 if (args.length < 2) {
-                    player.sendMessage("Usage: /clan promote <player>");
+                    player.sendMessage(plugin.getLanguageConfig().getString("clan.usage.promote"));
                     break;
                 }
                 Player targetPromote = Bukkit.getPlayer(args[1]);
@@ -84,8 +87,11 @@ public class ClanCommand implements CommandExecutor, TabCompleter {
             case "home":
                 manager.teleportHome(player);
                 break;
+            case "members":
+                manager.listMembers(player);
+                break;
             default:
-                player.sendMessage("Unknown subcommand.");
+                player.sendMessage(plugin.getLanguageConfig().getString("clan.unknown-subcommand"));
         }
         return true;
     }
@@ -94,7 +100,7 @@ public class ClanCommand implements CommandExecutor, TabCompleter {
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         if (args.length == 1) {
             List<String> subs = new ArrayList<>();
-            Collections.addAll(subs, "create", "invite", "accept", "disband", "kick", "leave", "promote", "sethome", "home");
+            Collections.addAll(subs, "create", "invite", "accept", "disband", "kick", "leave", "promote", "sethome", "home", "members");
             return subs;
         }
         return Collections.emptyList();

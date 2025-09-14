@@ -142,7 +142,7 @@ public class ClanManager {
         Clan clan = getClan(inviter.getUniqueId());
         if (clan == null) return;
         invites.put(target.getUniqueId(), clan.getName().toLowerCase());
-        target.sendMessage("You have been invited to clan " + clan.getName() + ". Use /clan accept to join.");
+        target.sendMessage(plugin.getLanguageConfig().getString("clan.invited").replace("{name}", clan.getName()));
     }
 
     public void accept(Player player) {
@@ -254,6 +254,20 @@ public class ClanManager {
         if (home != null) {
             player.teleport(home);
         }
+    }
+
+    public void listMembers(Player player) {
+        Clan clan = getClan(player.getUniqueId());
+        if (clan == null) {
+            player.sendMessage(plugin.getLanguageConfig().getString("clan.no-clan"));
+            return;
+        }
+        List<String> names = new ArrayList<>();
+        for (UUID uuid : clan.getMembers()) {
+            names.add(Bukkit.getOfflinePlayer(uuid).getName());
+        }
+        String memberList = String.join(", ", names);
+        player.sendMessage(plugin.getLanguageConfig().getString("clan.members").replace("{clan}", clan.getName()).replace("{members}", memberList));
     }
 
     public void giveClanPermission(Player player, String clanName) {
