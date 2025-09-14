@@ -11,6 +11,7 @@ clan:
   invalid-name: "&cClan name can only contain letters and numbers."
   invalid-tag: "&cClan tag can only contain letters and numbers."
   already-exists: "&cA clan with that name already exists."
+  tag-already-exists: "&cA clan with that tag already exists."
   invited: "&eYou have been invited to clan {name}."
   invite-sent: "&aInvited {player} to your clan."
   no-clan: "&cYou are not in a clan."
