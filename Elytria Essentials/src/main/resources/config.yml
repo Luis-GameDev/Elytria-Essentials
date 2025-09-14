@@ -24,11 +24,10 @@ locations:
     z: -2015
 
 # Database
-host:
-user:
-password:
-port:
-name:
+host: ms2616.gamedata.io
+user: ni12126628_1
+password: Jx3iWmrt
+port: 21
 
 # Clan System
 max-clan-tag-length: 3
