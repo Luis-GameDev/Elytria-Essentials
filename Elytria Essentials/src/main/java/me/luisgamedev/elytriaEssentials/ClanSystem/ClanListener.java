@@ -61,7 +61,6 @@ public class ClanListener implements Listener {
         Clan attackerClan = manager.getClan(attacker.getUniqueId());
         if (attackerClan != null && attackerClan == manager.getClan(victim.getUniqueId())) {
             event.setCancelled(true);
-            attacker.sendMessage(plugin.getMessage("clan.pvp-disabled"));
         }
     }
 }

@@ -34,7 +34,6 @@ clan:
   home-success: "&aTeleported to clan home."
   home-not-set: "&cClan home not set."
   home-cooldown: "&cYou must wait {seconds}s before using clan home again."
-  pvp-disabled: "&cYou cannot attack members of your clan."
   info:
     header: "&eClan info for {clan}:"
     leader: "&eLeader: {leader}"
