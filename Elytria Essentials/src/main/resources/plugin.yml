@@ -3,3 +3,7 @@ version: '1.0'
 main: me.luisgamedev.elytriaEssentials.ElytriaEssentials
 api-version: '1.21'
 softdepend: [Citizens]
+commands:
+  clan:
+    description: Clan management command
+    usage: /clan
