@@ -4,6 +4,11 @@ import net.luckperms.api.LuckPerms;
 import net.luckperms.api.LuckPermsProvider;
 import net.luckperms.api.model.user.User;
 import net.luckperms.api.node.Node;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.event.ClickEvent;
+import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.TextDecoration;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
@@ -27,6 +32,8 @@ public class ClanManager {
     private final Map<String, Clan> clans = new HashMap<>();
     private final Map<UUID, String> playerClan = new HashMap<>();
     private final Map<UUID, String> invites = new HashMap<>();
+    private final Map<UUID, Long> homeCooldowns = new HashMap<>();
+    private final Map<UUID, Long> setHomeCooldowns = new HashMap<>();
 
     public ClanManager(me.luisgamedev.elytriaEssentials.ElytriaEssentials plugin) {
         this.plugin = plugin;
@@ -174,7 +181,13 @@ public class ClanManager {
         }
         invites.put(target.getUniqueId(), clan.getName().toLowerCase());
         inviter.sendMessage(plugin.getMessage("clan.invite-sent").replace("{player}", target.getName()));
-        target.sendMessage(plugin.getMessage("clan.invited").replace("{name}", clan.getName()));
+        String message = plugin.getMessage("clan.invited").replace("{name}", clan.getName());
+        Component base = LegacyComponentSerializer.legacySection().deserialize(message);
+        Component button = Component.text("[ACCEPT]")
+                .color(NamedTextColor.GREEN)
+                .decorate(TextDecoration.BOLD)
+                .clickEvent(ClickEvent.runCommand("/clan accept"));
+        target.sendMessage(base.append(Component.space()).append(button));
     }
 
     public void accept(Player player) {
@@ -296,6 +309,15 @@ public class ClanManager {
             player.sendMessage(plugin.getMessage("clan.not-leader"));
             return;
         }
+        long now = System.currentTimeMillis();
+        long cooldown = plugin.getConfig().getLong("clan-sethome-cooldown") * 1000L;
+        Long last = setHomeCooldowns.get(player.getUniqueId());
+        if (last != null && now - last < cooldown) {
+            long remaining = (cooldown - (now - last)) / 1000L;
+            player.sendMessage(plugin.getMessage("clan.sethome-cooldown").replace("{seconds}", String.valueOf(remaining)));
+            return;
+        }
+        setHomeCooldowns.put(player.getUniqueId(), now);
         Location loc = player.getLocation();
         clan.setHome(loc);
         try (Connection conn = database.getConnection()) {
@@ -318,6 +340,15 @@ public class ClanManager {
             player.sendMessage(plugin.getMessage("clan.no-clan"));
             return;
         }
+        long now = System.currentTimeMillis();
+        long cooldown = plugin.getConfig().getLong("clan-home-cooldown") * 1000L;
+        Long last = homeCooldowns.get(player.getUniqueId());
+        if (last != null && now - last < cooldown) {
+            long remaining = (cooldown - (now - last)) / 1000L;
+            player.sendMessage(plugin.getMessage("clan.home-cooldown").replace("{seconds}", String.valueOf(remaining)));
+            return;
+        }
+        homeCooldowns.put(player.getUniqueId(), now);
         Location home = clan.getHome();
         if (home != null) {
             player.teleport(home);
