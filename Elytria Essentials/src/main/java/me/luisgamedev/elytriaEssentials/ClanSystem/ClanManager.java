@@ -33,7 +33,7 @@ public class ClanManager {
     private final Map<UUID, String> playerClan = new HashMap<>();
     private final Map<UUID, String> invites = new HashMap<>();
     private final Map<UUID, Long> homeCooldowns = new HashMap<>();
-    private final Map<UUID, Long> setHomeCooldowns = new HashMap<>();
+    private final Map<String, Long> setHomeCooldowns = new HashMap<>();
 
     public ClanManager(me.luisgamedev.elytriaEssentials.ElytriaEssentials plugin) {
         this.plugin = plugin;
@@ -311,13 +311,13 @@ public class ClanManager {
         }
         long now = System.currentTimeMillis();
         long cooldown = plugin.getConfig().getLong("clan-sethome-cooldown") * 1000L;
-        Long last = setHomeCooldowns.get(player.getUniqueId());
+        Long last = setHomeCooldowns.get(clan.getName());
         if (last != null && now - last < cooldown) {
             long remaining = (cooldown - (now - last)) / 1000L;
             player.sendMessage(plugin.getMessage("clan.sethome-cooldown").replace("{seconds}", String.valueOf(remaining)));
             return;
         }
-        setHomeCooldowns.put(player.getUniqueId(), now);
+        setHomeCooldowns.put(clan.getName(), now);
         Location loc = player.getLocation();
         clan.setHome(loc);
         try (Connection conn = database.getConnection()) {
