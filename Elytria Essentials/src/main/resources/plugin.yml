@@ -1,5 +1,5 @@
 name: ElytriaEssentials
-version: '1.0'
+version: '1.3'
 main: me.luisgamedev.elytriaEssentials.ElytriaEssentials
 api-version: '1.21'
 softdepend: [Citizens]

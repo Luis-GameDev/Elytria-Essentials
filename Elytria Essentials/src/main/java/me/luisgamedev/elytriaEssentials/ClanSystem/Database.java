@@ -23,8 +23,9 @@ public class Database {
         String host = cfg.getString("host");
         String user = cfg.getString("user");
         String pass = cfg.getString("password");
+        String name = cfg.getString("name");
         int port = cfg.getInt("port");
-        String url = "jdbc:mysql://" + host + ":" + port + "/?useSSL=false";
+        String url = "jdbc:mysql://" + host + ":" + port + "/" + name + "?useSSL=false";
         return DriverManager.getConnection(url, user, pass);
     }
 }
