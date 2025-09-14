@@ -8,6 +8,8 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.entity.Projectile;
 
 import java.time.Duration;
 
@@ -39,6 +41,27 @@ public class ClanListener implements Listener {
         Clan clan = manager.getClan(player.getUniqueId());
         if (clan != null) {
             manager.giveClanPermission(player, clan.getName());
+        }
+    }
+
+    @EventHandler
+    public void onDamage(EntityDamageByEntityEvent event) {
+        if (!(event.getEntity() instanceof Player victim)) {
+            return;
+        }
+        Player attacker = null;
+        if (event.getDamager() instanceof Player p) {
+            attacker = p;
+        } else if (event.getDamager() instanceof Projectile proj && proj.getShooter() instanceof Player shooter) {
+            attacker = shooter;
+        }
+        if (attacker == null) {
+            return;
+        }
+        Clan attackerClan = manager.getClan(attacker.getUniqueId());
+        if (attackerClan != null && attackerClan == manager.getClan(victim.getUniqueId())) {
+            event.setCancelled(true);
+            attacker.sendMessage(plugin.getMessage("clan.pvp-disabled"));
         }
     }
 }

@@ -35,4 +35,6 @@ max-clan-tag-length: 3
 max-clan-name-length: 25
 max-members-per-clan: 30
 newbie-protection-hours: 24
+clan-home-cooldown: 300
+clan-sethome-cooldown: 300
 
