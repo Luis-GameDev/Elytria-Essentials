@@ -10,6 +10,7 @@ import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.ChatColor;
 
 import java.io.File;
 
@@ -48,5 +49,11 @@ public final class ElytriaEssentials extends JavaPlugin {
 
     public FileConfiguration getLanguageConfig() {
         return languageConfig;
+    }
+
+    public String getMessage(String path) {
+        String prefix = languageConfig.getString("prefix", "");
+        String message = languageConfig.getString(path, "");
+        return ChatColor.translateAlternateColorCodes('&', prefix + message);
     }
 }

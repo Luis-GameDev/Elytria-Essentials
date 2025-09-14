@@ -26,25 +26,25 @@ public class ClanCommand implements CommandExecutor, TabCompleter {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (!(sender instanceof Player player)) {
-            sender.sendMessage(plugin.getLanguageConfig().getString("clan.only-players"));
+            sender.sendMessage(plugin.getMessage("clan.only-players"));
             return true;
         }
         if (args.length == 0) {
-            player.sendMessage(plugin.getLanguageConfig().getString("clan.help"));
+            player.sendMessage(plugin.getMessage("clan.help"));
             return true;
         }
         String sub = args[0].toLowerCase();
         switch (sub) {
             case "create":
                 if (args.length < 3) {
-                    player.sendMessage(plugin.getLanguageConfig().getString("clan.usage.create"));
+                    player.sendMessage(plugin.getMessage("clan.usage.create"));
                     break;
                 }
                 manager.createClan(player, args[1], args[2]);
                 break;
             case "invite":
                 if (args.length < 2) {
-                    player.sendMessage(plugin.getLanguageConfig().getString("clan.usage.invite"));
+                    player.sendMessage(plugin.getMessage("clan.usage.invite"));
                     break;
                 }
                 Player targetInvite = Bukkit.getPlayer(args[1]);
@@ -60,7 +60,7 @@ public class ClanCommand implements CommandExecutor, TabCompleter {
                 break;
             case "kick":
                 if (args.length < 2) {
-                    player.sendMessage(plugin.getLanguageConfig().getString("clan.usage.kick"));
+                    player.sendMessage(plugin.getMessage("clan.usage.kick"));
                     break;
                 }
                 Player targetKick = Bukkit.getPlayer(args[1]);
@@ -73,7 +73,7 @@ public class ClanCommand implements CommandExecutor, TabCompleter {
                 break;
             case "promote":
                 if (args.length < 2) {
-                    player.sendMessage(plugin.getLanguageConfig().getString("clan.usage.promote"));
+                    player.sendMessage(plugin.getMessage("clan.usage.promote"));
                     break;
                 }
                 Player targetPromote = Bukkit.getPlayer(args[1]);
@@ -91,7 +91,7 @@ public class ClanCommand implements CommandExecutor, TabCompleter {
                 manager.listMembers(player);
                 break;
             default:
-                player.sendMessage(plugin.getLanguageConfig().getString("clan.unknown-subcommand"));
+                player.sendMessage(plugin.getMessage("clan.unknown-subcommand"));
         }
         return true;
     }
