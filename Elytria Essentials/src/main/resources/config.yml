@@ -22,3 +22,16 @@ locations:
     x: -2021
     y: 151
     z: -2015
+
+# Database
+host:
+user:
+password:
+port:
+name:
+
+# Clan System
+max-clan-tag-length: 3
+max-clan-name-length: 25
+max-members-per-clan: 30
+
