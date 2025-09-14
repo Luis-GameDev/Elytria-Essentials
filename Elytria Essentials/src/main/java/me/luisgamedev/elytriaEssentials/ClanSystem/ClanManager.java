@@ -7,12 +7,14 @@ import net.luckperms.api.node.Node;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
+import org.bukkit.ChatColor;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
+import java.text.SimpleDateFormat;
 
 /**
  * Manages clan data and persistence.
@@ -36,8 +38,11 @@ public class ClanManager {
     private void initTables() {
         try (Connection conn = database.getConnection()) {
             conn.createStatement().executeUpdate(
-                    "CREATE TABLE IF NOT EXISTS clans (name VARCHAR(25) PRIMARY KEY, tag VARCHAR(5), leader VARCHAR(36), home_world VARCHAR(64), home_x DOUBLE, home_y DOUBLE, home_z DOUBLE)"
+                    "CREATE TABLE IF NOT EXISTS clans (name VARCHAR(25) PRIMARY KEY, tag VARCHAR(5), leader VARCHAR(36), created_at BIGINT, home_world VARCHAR(64), home_x DOUBLE, home_y DOUBLE, home_z DOUBLE)"
             );
+            try {
+                conn.createStatement().executeUpdate("ALTER TABLE clans ADD COLUMN created_at BIGINT");
+            } catch (SQLException ignored) {}
             conn.createStatement().executeUpdate(
                     "CREATE TABLE IF NOT EXISTS clan_members (clan_name VARCHAR(25), uuid VARCHAR(36))"
             );
@@ -54,7 +59,8 @@ public class ClanManager {
                 String name = rs.getString("name");
                 String tag = rs.getString("tag");
                 UUID leader = UUID.fromString(rs.getString("leader"));
-                Clan clan = new Clan(name, tag, leader);
+                long createdAt = rs.getLong("created_at");
+                Clan clan = new Clan(name, tag, leader, createdAt);
                 String world = rs.getString("home_world");
                 if (world != null) {
                     Location loc = new Location(Bukkit.getWorld(world), rs.getDouble("home_x"), rs.getDouble("home_y"), rs.getDouble("home_z"));
@@ -88,6 +94,10 @@ public class ClanManager {
     }
 
     public boolean createClan(Player creator, String name, String tag) {
+        if (getClan(creator.getUniqueId()) != null) {
+            creator.sendMessage(plugin.getMessage("clan.already-in-clan"));
+            return false;
+        }
         if (!name.matches("[A-Za-z0-9]+")) {
             creator.sendMessage(plugin.getMessage("clan.invalid-name"));
             return false;
@@ -100,15 +110,17 @@ public class ClanManager {
             creator.sendMessage(plugin.getMessage("clan.already-exists"));
             return false;
         }
-        Clan clan = new Clan(name, tag, creator.getUniqueId());
+        long createdAt = System.currentTimeMillis();
+        Clan clan = new Clan(name, tag, creator.getUniqueId(), createdAt);
         clan.getMembers().add(creator.getUniqueId());
         clans.put(name.toLowerCase(), clan);
         playerClan.put(creator.getUniqueId(), name.toLowerCase());
         try (Connection conn = database.getConnection()) {
-            PreparedStatement st = conn.prepareStatement("INSERT INTO clans(name, tag, leader) VALUES (?,?,?)");
+            PreparedStatement st = conn.prepareStatement("INSERT INTO clans(name, tag, leader, created_at) VALUES (?,?,?,?)");
             st.setString(1, name);
             st.setString(2, tag);
             st.setString(3, creator.getUniqueId().toString());
+            st.setLong(4, createdAt);
             st.executeUpdate();
 
             PreparedStatement st2 = conn.prepareStatement("INSERT INTO clan_members(clan_name, uuid) VALUES (?,?)");
@@ -166,6 +178,10 @@ public class ClanManager {
     }
 
     public void accept(Player player) {
+        if (getClan(player.getUniqueId()) != null) {
+            player.sendMessage(plugin.getMessage("clan.already-in-clan"));
+            return;
+        }
         String clanName = invites.remove(player.getUniqueId());
         if (clanName == null) {
             player.sendMessage(plugin.getMessage("clan.no-invite"));
@@ -311,18 +327,36 @@ public class ClanManager {
         }
     }
 
-    public void listMembers(Player player) {
-        Clan clan = getClan(player.getUniqueId());
-        if (clan == null) {
-            player.sendMessage(plugin.getMessage("clan.no-clan"));
-            return;
+    public void showClanInfo(Player player, String clanName) {
+        Clan clan;
+        if (clanName == null) {
+            clan = getClan(player.getUniqueId());
+            if (clan == null) {
+                player.sendMessage(plugin.getMessage("clan.no-clan"));
+                return;
+            }
+        } else {
+            clan = getClanByName(clanName);
+            if (clan == null) {
+                player.sendMessage(plugin.getMessage("clan.no-exist").replace("{clan}", clanName));
+                return;
+            }
         }
+        String leaderName = Bukkit.getOfflinePlayer(clan.getLeader()).getName();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+        String created = sdf.format(new Date(clan.getCreatedAt()));
         List<String> names = new ArrayList<>();
         for (UUID uuid : clan.getMembers()) {
-            names.add(Bukkit.getOfflinePlayer(uuid).getName());
+            String name = Bukkit.getOfflinePlayer(uuid).getName();
+            boolean online = Bukkit.getPlayer(uuid) != null;
+            ChatColor color = online ? ChatColor.GREEN : ChatColor.RED;
+            names.add(color + name + ChatColor.RESET);
         }
-        String memberList = String.join(", ", names);
-        player.sendMessage(plugin.getMessage("clan.members").replace("{clan}", clan.getName()).replace("{members}", memberList));
+        String memberList = String.join(ChatColor.GRAY + ", " + ChatColor.RESET, names);
+        player.sendMessage(plugin.getMessage("clan.info.header").replace("{clan}", clan.getName()));
+        player.sendMessage(plugin.getMessage("clan.info.leader").replace("{leader}", leaderName));
+        player.sendMessage(plugin.getMessage("clan.info.created").replace("{date}", created));
+        player.sendMessage(plugin.getMessage("clan.info.members").replace("{members}", memberList));
     }
 
     public void giveClanPermission(Player player, String clanName) {

@@ -27,12 +27,14 @@ public class ClanListener implements Listener {
     @EventHandler
     public void onJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
-        LuckPerms lp = LuckPermsProvider.get();
-        User user = lp.getPlayerAdapter(Player.class).getUser(player);
-        long hours = plugin.getConfig().getLong("newbie-protection-hours");
-        Node node = Node.builder("faction.newbie").expiry(Duration.ofHours(hours)).build();
-        user.data().add(node);
-        lp.getUserManager().saveUser(user);
+        if (!player.hasPlayedBefore()) {
+            LuckPerms lp = LuckPermsProvider.get();
+            User user = lp.getPlayerAdapter(Player.class).getUser(player);
+            long hours = plugin.getConfig().getLong("newbie-protection-hours");
+            Node node = Node.builder("faction.newbie").expiry(Duration.ofHours(hours)).build();
+            user.data().add(node);
+            lp.getUserManager().saveUser(user);
+        }
 
         Clan clan = manager.getClan(player.getUniqueId());
         if (clan != null) {
