@@ -1,6 +1,6 @@
 # Outpost Teleport
 npc-id: 9
-teleport-cooldown: 1200
+teleport-cooldown: 1200 # 30 mins
 locations:
   desert:
     world: world
@@ -35,6 +35,6 @@ max-clan-tag-length: 3
 max-clan-name-length: 25
 max-members-per-clan: 30
 newbie-protection-hours: 24
-clan-home-cooldown: 300
-clan-sethome-cooldown: 300
+clan-home-cooldown: 1200 # 30 mins
+clan-sethome-cooldown: 172800 # 48 hrs
 
