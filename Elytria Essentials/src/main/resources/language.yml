@@ -1,0 +1,12 @@
+clan:
+  only-players: "Only players may use this command."
+  help: "/clan <create|invite|accept|disband|kick|leave|promote|sethome|home|members>"
+  usage:
+    create: "Usage: /clan create <name> <tag>"
+    invite: "Usage: /clan invite <player>"
+    kick: "Usage: /clan kick <player>"
+    promote: "Usage: /clan promote <player>"
+  unknown-subcommand: "Unknown subcommand."
+  invited: "You have been invited to clan {name}. Use /clan accept to join."
+  no-clan: "You are not in a clan."
+  members: "Members of {clan}: {members}"

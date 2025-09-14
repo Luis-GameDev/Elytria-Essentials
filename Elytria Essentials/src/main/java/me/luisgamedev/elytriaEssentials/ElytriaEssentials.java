@@ -8,22 +8,32 @@ import me.luisgamedev.elytriaEssentials.ClanSystem.Placeholders.RegisterPlacehol
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.configuration.file.YamlConfiguration;
+
+import java.io.File;
 
 import me.luisgamedev.elytriaEssentials.Blockers.BlockersListener;
 
 public final class ElytriaEssentials extends JavaPlugin {
 
     private ClanManager clanManager;
+    private FileConfiguration languageConfig;
 
     @Override
     public void onEnable() {
         saveDefaultConfig();
+        File langFile = new File(getDataFolder(), "language.yml");
+        if (!langFile.exists()) {
+            saveResource("language.yml", false);
+        }
+        languageConfig = YamlConfiguration.loadConfiguration(langFile);
         PluginManager pm = Bukkit.getPluginManager();
         pm.registerEvents(new TeleportListener(this), this);
         pm.registerEvents(new BlockersListener(), this);
         clanManager = new ClanManager(this);
         pm.registerEvents(new ClanListener(this, clanManager), this);
-        ClanCommand clanCommand = new ClanCommand(clanManager);
+        ClanCommand clanCommand = new ClanCommand(this, clanManager);
         getCommand("clan").setExecutor(clanCommand);
         getCommand("clan").setTabCompleter(clanCommand);
         if (Bukkit.getPluginManager().isPluginEnabled("PlaceholderAPI")) {
@@ -34,5 +44,9 @@ public final class ElytriaEssentials extends JavaPlugin {
     @Override
     public void onDisable() {
         // Plugin shutdown logic
+    }
+
+    public FileConfiguration getLanguageConfig() {
+        return languageConfig;
     }
 }
