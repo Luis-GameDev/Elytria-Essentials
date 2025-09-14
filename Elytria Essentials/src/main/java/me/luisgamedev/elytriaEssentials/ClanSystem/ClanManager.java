@@ -89,14 +89,15 @@ public class ClanManager {
 
     public boolean createClan(Player creator, String name, String tag) {
         if (!name.matches("[A-Za-z0-9]+")) {
-            creator.sendMessage(plugin.getLanguageConfig().getString("clan.invalid-name"));
+            creator.sendMessage(plugin.getMessage("clan.invalid-name"));
             return false;
         }
         if (!tag.matches("[A-Za-z0-9]+")) {
-            creator.sendMessage(plugin.getLanguageConfig().getString("clan.invalid-tag"));
+            creator.sendMessage(plugin.getMessage("clan.invalid-tag"));
             return false;
         }
         if (clans.containsKey(name.toLowerCase())) {
+            creator.sendMessage(plugin.getMessage("clan.already-exists"));
             return false;
         }
         Clan clan = new Clan(name, tag, creator.getUniqueId());
@@ -118,12 +119,18 @@ public class ClanManager {
             e.printStackTrace();
         }
         giveClanPermission(creator, name);
+        creator.sendMessage(plugin.getMessage("clan.create-success").replace("{name}", name).replace("{tag}", tag));
         return true;
     }
 
     public void disbandClan(Player player) {
         Clan clan = getClan(player.getUniqueId());
-        if (clan == null || !clan.getLeader().equals(player.getUniqueId())) {
+        if (clan == null) {
+            player.sendMessage(plugin.getMessage("clan.no-clan"));
+            return;
+        }
+        if (!clan.getLeader().equals(player.getUniqueId())) {
+            player.sendMessage(plugin.getMessage("clan.not-leader"));
             return;
         }
         clans.remove(clan.getName().toLowerCase());
@@ -144,26 +151,34 @@ public class ClanManager {
         } catch (SQLException e) {
             e.printStackTrace();
         }
+        player.sendMessage(plugin.getMessage("clan.disband-success").replace("{name}", clan.getName()));
     }
 
     public void invite(Player inviter, Player target) {
         Clan clan = getClan(inviter.getUniqueId());
-        if (clan == null) return;
+        if (clan == null) {
+            inviter.sendMessage(plugin.getMessage("clan.no-clan"));
+            return;
+        }
         invites.put(target.getUniqueId(), clan.getName().toLowerCase());
-        target.sendMessage(plugin.getLanguageConfig().getString("clan.invited").replace("{name}", clan.getName()));
+        inviter.sendMessage(plugin.getMessage("clan.invite-sent").replace("{player}", target.getName()));
+        target.sendMessage(plugin.getMessage("clan.invited").replace("{name}", clan.getName()));
     }
 
     public void accept(Player player) {
         String clanName = invites.remove(player.getUniqueId());
         if (clanName == null) {
+            player.sendMessage(plugin.getMessage("clan.no-invite"));
             return;
         }
         Clan clan = clans.get(clanName);
         if (clan == null) {
+            player.sendMessage(plugin.getMessage("clan.no-invite"));
             return;
         }
         int max = plugin.getConfig().getInt("max-members-per-clan");
         if (clan.getMembers().size() >= max) {
+            player.sendMessage(plugin.getMessage("clan.full"));
             return;
         }
         clan.getMembers().add(player.getUniqueId());
@@ -177,11 +192,17 @@ public class ClanManager {
             e.printStackTrace();
         }
         giveClanPermission(player, clan.getName());
+        player.sendMessage(plugin.getMessage("clan.accept-success").replace("{clan}", clan.getName()));
     }
 
     public void kick(Player leader, Player target) {
         Clan clan = getClan(leader.getUniqueId());
-        if (clan == null || !clan.getLeader().equals(leader.getUniqueId())) {
+        if (clan == null) {
+            leader.sendMessage(plugin.getMessage("clan.no-clan"));
+            return;
+        }
+        if (!clan.getLeader().equals(leader.getUniqueId())) {
+            leader.sendMessage(plugin.getMessage("clan.not-leader"));
             return;
         }
         clan.getMembers().remove(target.getUniqueId());
@@ -195,12 +216,18 @@ public class ClanManager {
             e.printStackTrace();
         }
         removeClanPermission(target, clan.getName());
+        leader.sendMessage(plugin.getMessage("clan.kick-success").replace("{player}", target.getName()));
+        target.sendMessage(plugin.getMessage("clan.kick-target").replace("{clan}", clan.getName()));
     }
 
     public void leave(Player player) {
         Clan clan = getClan(player.getUniqueId());
-        if (clan == null) return;
+        if (clan == null) {
+            player.sendMessage(plugin.getMessage("clan.no-clan"));
+            return;
+        }
         if (clan.getLeader().equals(player.getUniqueId())) {
+            player.sendMessage(plugin.getMessage("clan.leader-cannot-leave"));
             return;
         }
         clan.getMembers().remove(player.getUniqueId());
@@ -214,11 +241,17 @@ public class ClanManager {
             e.printStackTrace();
         }
         removeClanPermission(player, clan.getName());
+        player.sendMessage(plugin.getMessage("clan.leave-success").replace("{clan}", clan.getName()));
     }
 
     public void promote(Player leader, Player target) {
         Clan clan = getClan(leader.getUniqueId());
-        if (clan == null || !clan.getLeader().equals(leader.getUniqueId())) {
+        if (clan == null) {
+            leader.sendMessage(plugin.getMessage("clan.no-clan"));
+            return;
+        }
+        if (!clan.getLeader().equals(leader.getUniqueId())) {
+            leader.sendMessage(plugin.getMessage("clan.not-leader"));
             return;
         }
         if (!clan.getMembers().contains(target.getUniqueId())) {
@@ -233,11 +266,18 @@ public class ClanManager {
         } catch (SQLException e) {
             e.printStackTrace();
         }
+        leader.sendMessage(plugin.getMessage("clan.promote-success").replace("{player}", target.getName()));
+        target.sendMessage(plugin.getMessage("clan.promote-target").replace("{clan}", clan.getName()));
     }
 
     public void setHome(Player player) {
         Clan clan = getClan(player.getUniqueId());
-        if (clan == null || !clan.getLeader().equals(player.getUniqueId())) {
+        if (clan == null) {
+            player.sendMessage(plugin.getMessage("clan.no-clan"));
+            return;
+        }
+        if (!clan.getLeader().equals(player.getUniqueId())) {
+            player.sendMessage(plugin.getMessage("clan.not-leader"));
             return;
         }
         Location loc = player.getLocation();
@@ -253,21 +293,28 @@ public class ClanManager {
         } catch (SQLException e) {
             e.printStackTrace();
         }
+        player.sendMessage(plugin.getMessage("clan.sethome-success"));
     }
 
     public void teleportHome(Player player) {
         Clan clan = getClan(player.getUniqueId());
-        if (clan == null) return;
+        if (clan == null) {
+            player.sendMessage(plugin.getMessage("clan.no-clan"));
+            return;
+        }
         Location home = clan.getHome();
         if (home != null) {
             player.teleport(home);
+            player.sendMessage(plugin.getMessage("clan.home-success"));
+        } else {
+            player.sendMessage(plugin.getMessage("clan.home-not-set"));
         }
     }
 
     public void listMembers(Player player) {
         Clan clan = getClan(player.getUniqueId());
         if (clan == null) {
-            player.sendMessage(plugin.getLanguageConfig().getString("clan.no-clan"));
+            player.sendMessage(plugin.getMessage("clan.no-clan"));
             return;
         }
         List<String> names = new ArrayList<>();
@@ -275,7 +322,7 @@ public class ClanManager {
             names.add(Bukkit.getOfflinePlayer(uuid).getName());
         }
         String memberList = String.join(", ", names);
-        player.sendMessage(plugin.getLanguageConfig().getString("clan.members").replace("{clan}", clan.getName()).replace("{members}", memberList));
+        player.sendMessage(plugin.getMessage("clan.members").replace("{clan}", clan.getName()).replace("{members}", memberList));
     }
 
     public void giveClanPermission(Player player, String clanName) {
