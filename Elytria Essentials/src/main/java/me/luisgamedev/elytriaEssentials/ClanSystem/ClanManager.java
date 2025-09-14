@@ -45,10 +45,13 @@ public class ClanManager {
     private void initTables() {
         try (Connection conn = database.getConnection()) {
             conn.createStatement().executeUpdate(
-                    "CREATE TABLE IF NOT EXISTS clans (name VARCHAR(25) PRIMARY KEY, tag VARCHAR(5), leader VARCHAR(36), created_at BIGINT, home_world VARCHAR(64), home_x DOUBLE, home_y DOUBLE, home_z DOUBLE)"
+                    "CREATE TABLE IF NOT EXISTS clans (name VARCHAR(25) PRIMARY KEY, tag VARCHAR(5) UNIQUE, leader VARCHAR(36), created_at BIGINT, home_world VARCHAR(64), home_x DOUBLE, home_y DOUBLE, home_z DOUBLE)"
             );
             try {
                 conn.createStatement().executeUpdate("ALTER TABLE clans ADD COLUMN created_at BIGINT");
+            } catch (SQLException ignored) {}
+            try {
+                conn.createStatement().executeUpdate("ALTER TABLE clans ADD UNIQUE (tag)");
             } catch (SQLException ignored) {}
             conn.createStatement().executeUpdate(
                     "CREATE TABLE IF NOT EXISTS clan_members (clan_name VARCHAR(25), uuid VARCHAR(36))"
@@ -100,6 +103,15 @@ public class ClanManager {
         return clans.get(name.toLowerCase());
     }
 
+    public Clan getClanByTag(String tag) {
+        for (Clan clan : clans.values()) {
+            if (clan.getTag().equalsIgnoreCase(tag)) {
+                return clan;
+            }
+        }
+        return null;
+    }
+
     public boolean createClan(Player creator, String name, String tag) {
         if (getClan(creator.getUniqueId()) != null) {
             creator.sendMessage(plugin.getMessage("clan.already-in-clan"));
@@ -115,6 +127,10 @@ public class ClanManager {
         }
         if (clans.containsKey(name.toLowerCase())) {
             creator.sendMessage(plugin.getMessage("clan.already-exists"));
+            return false;
+        }
+        if (getClanByTag(tag) != null) {
+            creator.sendMessage(plugin.getMessage("clan.tag-already-exists"));
             return false;
         }
         long createdAt = System.currentTimeMillis();
