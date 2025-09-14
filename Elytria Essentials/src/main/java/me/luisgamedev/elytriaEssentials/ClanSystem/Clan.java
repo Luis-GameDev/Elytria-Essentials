@@ -16,11 +16,17 @@ public class Clan {
     private UUID leader;
     private final Set<UUID> members = new HashSet<>();
     private Location home;
+    private final long createdAt;
 
     public Clan(String name, String tag, UUID leader) {
+        this(name, tag, leader, System.currentTimeMillis());
+    }
+
+    public Clan(String name, String tag, UUID leader, long createdAt) {
         this.name = name;
         this.tag = tag;
         this.leader = leader;
+        this.createdAt = createdAt;
     }
 
     public String getName() {
@@ -49,6 +55,10 @@ public class Clan {
 
     public void setHome(Location home) {
         this.home = home;
+    }
+
+    public long getCreatedAt() {
+        return createdAt;
     }
 }
 

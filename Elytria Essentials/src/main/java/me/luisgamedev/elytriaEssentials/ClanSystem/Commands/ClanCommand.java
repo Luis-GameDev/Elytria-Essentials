@@ -87,8 +87,9 @@ public class ClanCommand implements CommandExecutor, TabCompleter {
             case "home":
                 manager.teleportHome(player);
                 break;
-            case "members":
-                manager.listMembers(player);
+            case "info":
+                String clanName = args.length >= 2 ? args[1] : null;
+                manager.showClanInfo(player, clanName);
                 break;
             default:
                 player.sendMessage(plugin.getMessage("clan.unknown-subcommand"));
@@ -100,7 +101,7 @@ public class ClanCommand implements CommandExecutor, TabCompleter {
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         if (args.length == 1) {
             List<String> subs = new ArrayList<>();
-            Collections.addAll(subs, "create", "invite", "accept", "disband", "kick", "leave", "promote", "sethome", "home", "members");
+            Collections.addAll(subs, "create", "invite", "accept", "disband", "kick", "leave", "promote", "sethome", "home", "info");
             return subs;
         }
         return Collections.emptyList();

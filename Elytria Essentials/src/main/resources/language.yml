@@ -1,7 +1,7 @@
 prefix: "&7[&bElytria&7] "
 clan:
   only-players: "&cOnly players may use this command."
-  help: "&e/clan <create|invite|accept|disband|kick|leave|promote|sethome|home|members>"
+  help: "&e/clan <create|invite|accept|disband|kick|leave|promote|sethome|home|info>"
   usage:
     create: "&cUsage: /clan create <name> <tag>"
     invite: "&cUsage: /clan invite <player>"
@@ -17,6 +17,8 @@ clan:
   not-leader: "&cYou must be the clan leader to do this."
   no-invite: "&cYou have no pending clan invites."
   full: "&cClan is full."
+  already-in-clan: "&cYou are already in a clan."
+  no-exist: "&cClan {clan} does not exist."
   create-success: "&aCreated clan {name} with tag {tag}."
   disband-success: "&cClan {name} disbanded."
   accept-success: "&aYou joined clan {clan}."
@@ -29,4 +31,8 @@ clan:
   sethome-success: "&aClan home set."
   home-success: "&aTeleported to clan home."
   home-not-set: "&cClan home not set."
-  members: "&eMembers of {clan}: {members}"
+  info:
+    header: "&eClan info for {clan}:"
+    leader: "&eLeader: {leader}"
+    created: "&eCreated: {date}"
+    members: "&eMembers: {members}"
