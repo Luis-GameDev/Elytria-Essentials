@@ -88,6 +88,14 @@ public class ClanManager {
     }
 
     public boolean createClan(Player creator, String name, String tag) {
+        if (!name.matches("[A-Za-z0-9]+")) {
+            creator.sendMessage(plugin.getLanguageConfig().getString("clan.invalid-name"));
+            return false;
+        }
+        if (!tag.matches("[A-Za-z0-9]+")) {
+            creator.sendMessage(plugin.getLanguageConfig().getString("clan.invalid-tag"));
+            return false;
+        }
         if (clans.containsKey(name.toLowerCase())) {
             return false;
         }

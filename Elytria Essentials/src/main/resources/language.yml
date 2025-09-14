@@ -7,6 +7,8 @@ clan:
     kick: "Usage: /clan kick <player>"
     promote: "Usage: /clan promote <player>"
   unknown-subcommand: "Unknown subcommand."
+  invalid-name: "Clan name can only contain letters and numbers."
+  invalid-tag: "Clan tag can only contain letters and numbers."
   invited: "You have been invited to clan {name}. Use /clan accept to join."
   no-clan: "You are not in a clan."
   members: "Members of {clan}: {members}"
