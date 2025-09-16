@@ -170,10 +170,15 @@ public class BlockersListener implements Listener {
     }
 
     @EventHandler
-    public void onTntSpawn(EntitySpawnEvent event) {
-        if (event.getEntity() instanceof TNTPrimed) {
+    public void onEntitySpawn(EntitySpawnEvent event) {
+        if (event.getEntity() instanceof TNTPrimed || event.getEntityType() == EntityType.EXPERIENCE_ORB) {
             event.setCancelled(true);
         }
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onEntityDeath(EntityDeathEvent event) {
+        event.setDroppedExp(0);
     }
 
     @EventHandler
