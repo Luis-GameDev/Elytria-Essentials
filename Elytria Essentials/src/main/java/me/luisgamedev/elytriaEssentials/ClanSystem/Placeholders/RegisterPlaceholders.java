@@ -43,6 +43,9 @@ public class RegisterPlaceholders extends PlaceholderExpansion {
         if (params.equalsIgnoreCase("clanname")) {
             return clan != null ? clan.getName() : "";
         }
+        if (params.equalsIgnoreCase("faction")) {
+            return clan != null ? clan.getName() : player.getName();
+        }
         if (params.equalsIgnoreCase("clanmembersamount")) {
             return clan != null ? String.valueOf(clan.getMembers().size()) : "0";
         }
