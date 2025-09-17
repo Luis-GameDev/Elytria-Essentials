@@ -138,6 +138,25 @@ public class ClanCommand implements CommandExecutor, TabCompleter {
             if (sub.equals("disband")) {
                 return Collections.singletonList("confirm");
             }
+            if (sub.equals("invite") && sender instanceof Player player) {
+                Clan clan = manager.getClan(player.getUniqueId());
+                if (clan != null) {
+                    List<String> names = new ArrayList<>();
+                    for (Player online : Bukkit.getOnlinePlayers()) {
+                        if (online.getUniqueId().equals(player.getUniqueId())) {
+                            continue;
+                        }
+                        if (clan.getMembers().contains(online.getUniqueId())) {
+                            continue;
+                        }
+                        if (manager.getClan(online.getUniqueId()) != null) {
+                            continue;
+                        }
+                        names.add(online.getName());
+                    }
+                    return names;
+                }
+            }
             if (sub.equals("promote") && sender instanceof Player player) {
                 List<String> names = new ArrayList<>();
                 names.add("confirm");
