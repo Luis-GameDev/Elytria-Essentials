@@ -15,6 +15,7 @@ public class Clan {
     private final String tag;
     private UUID leader;
     private final Set<UUID> members = new HashSet<>();
+    private final Set<UUID> captains = new HashSet<>();
     private Location home;
     private final long createdAt;
 
@@ -47,6 +48,10 @@ public class Clan {
 
     public Set<UUID> getMembers() {
         return members;
+    }
+
+    public Set<UUID> getCaptains() {
+        return captains;
     }
 
     public Location getHome() {
