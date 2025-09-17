@@ -238,6 +238,7 @@ public class ClanManager {
         }
         giveClanPermission(player, clan.getName());
         player.sendMessage(plugin.getMessage("clan.accept-success").replace("{clan}", clan.getName()));
+        broadcastClanMessage(clan, plugin.getMessage("clan.member-joined").replace("{player}", player.getName()));
     }
 
     public void kick(Player leader, Player target) {
@@ -263,6 +264,7 @@ public class ClanManager {
         removeClanPermission(target, clan.getName());
         leader.sendMessage(plugin.getMessage("clan.kick-success").replace("{player}", target.getName()));
         target.sendMessage(plugin.getMessage("clan.kick-target").replace("{clan}", clan.getName()));
+        broadcastClanMessage(clan, plugin.getMessage("clan.member-kicked").replace("{player}", target.getName()));
     }
 
     public void leave(Player player) {
@@ -287,6 +289,7 @@ public class ClanManager {
         }
         removeClanPermission(player, clan.getName());
         player.sendMessage(plugin.getMessage("clan.leave-success").replace("{clan}", clan.getName()));
+        broadcastClanMessage(clan, plugin.getMessage("clan.member-left").replace("{player}", player.getName()));
     }
 
     public void promote(Player leader, Player target) {
@@ -439,6 +442,15 @@ public class ClanManager {
             sb.append("<1 minute");
         }
         return sb.toString();
+    }
+
+    private void broadcastClanMessage(Clan clan, String message) {
+        for (UUID uuid : clan.getMembers()) {
+            Player member = Bukkit.getPlayer(uuid);
+            if (member != null && member.isOnline()) {
+                member.sendMessage(message);
+            }
+        }
     }
 }
 
