@@ -53,13 +53,19 @@ public class ClanCommand implements CommandExecutor, TabCompleter {
                 Player targetInvite = Bukkit.getPlayer(args[1]);
                 if (targetInvite != null) {
                     manager.invite(player, targetInvite);
+                } else {
+                    player.sendMessage(plugin.getMessage("clan.player-not-found"));
                 }
                 break;
             case "accept":
                 manager.accept(player);
                 break;
             case "disband":
-                manager.disbandClan(player);
+                if (args.length >= 2 && args[1].equalsIgnoreCase("confirm")) {
+                    manager.confirmDisband(player);
+                } else {
+                    manager.requestDisband(player);
+                }
                 break;
             case "kick":
                 if (args.length < 2) {
@@ -69,12 +75,18 @@ public class ClanCommand implements CommandExecutor, TabCompleter {
                 Player targetKick = Bukkit.getPlayer(args[1]);
                 if (targetKick != null) {
                     manager.kick(player, targetKick);
+                } else {
+                    player.sendMessage(plugin.getMessage("clan.player-not-found"));
                 }
                 break;
             case "leave":
                 manager.leave(player);
                 break;
             case "promote":
+                if (args.length >= 2 && args[1].equalsIgnoreCase("confirm")) {
+                    manager.confirmPromote(player);
+                    break;
+                }
                 if (args.length < 2) {
                     player.sendMessage(plugin.getMessage("clan.usage.promote"));
                     break;
@@ -82,6 +94,20 @@ public class ClanCommand implements CommandExecutor, TabCompleter {
                 Player targetPromote = Bukkit.getPlayer(args[1]);
                 if (targetPromote != null) {
                     manager.promote(player, targetPromote);
+                } else {
+                    player.sendMessage(plugin.getMessage("clan.player-not-found"));
+                }
+                break;
+            case "demote":
+                if (args.length < 2) {
+                    player.sendMessage(plugin.getMessage("clan.usage.demote"));
+                    break;
+                }
+                Player targetDemote = Bukkit.getPlayer(args[1]);
+                if (targetDemote != null) {
+                    manager.demote(player, targetDemote);
+                } else {
+                    player.sendMessage(plugin.getMessage("clan.player-not-found"));
                 }
                 break;
             case "sethome":
@@ -104,16 +130,46 @@ public class ClanCommand implements CommandExecutor, TabCompleter {
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         if (args.length == 1) {
             List<String> subs = new ArrayList<>();
-            Collections.addAll(subs, "create", "invite", "accept", "disband", "kick", "leave", "promote", "sethome", "home", "info");
+            Collections.addAll(subs, "create", "invite", "accept", "disband", "kick", "leave", "promote", "demote", "sethome", "home", "info");
             return subs;
         }
         if (args.length == 2) {
             String sub = args[0].toLowerCase();
-            if ((sub.equals("kick") || sub.equals("promote")) && sender instanceof Player player) {
+            if (sub.equals("disband")) {
+                return Collections.singletonList("confirm");
+            }
+            if (sub.equals("promote") && sender instanceof Player player) {
+                List<String> names = new ArrayList<>();
+                names.add("confirm");
+                Clan clan = manager.getClan(player.getUniqueId());
+                if (clan != null) {
+                    for (UUID uuid : clan.getMembers()) {
+                        String name = Bukkit.getOfflinePlayer(uuid).getName();
+                        if (name != null) {
+                            names.add(name);
+                        }
+                    }
+                }
+                return names;
+            }
+            if ((sub.equals("kick")) && sender instanceof Player player) {
                 Clan clan = manager.getClan(player.getUniqueId());
                 if (clan != null) {
                     List<String> names = new ArrayList<>();
                     for (UUID uuid : clan.getMembers()) {
+                        String name = Bukkit.getOfflinePlayer(uuid).getName();
+                        if (name != null) {
+                            names.add(name);
+                        }
+                    }
+                    return names;
+                }
+            }
+            if (sub.equals("demote") && sender instanceof Player player) {
+                Clan clan = manager.getClan(player.getUniqueId());
+                if (clan != null) {
+                    List<String> names = new ArrayList<>();
+                    for (UUID uuid : clan.getCaptains()) {
                         String name = Bukkit.getOfflinePlayer(uuid).getName();
                         if (name != null) {
                             names.add(name);
