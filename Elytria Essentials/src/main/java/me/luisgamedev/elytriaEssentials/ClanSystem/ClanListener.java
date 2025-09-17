@@ -12,6 +12,9 @@ import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.entity.Projectile;
 
 import java.time.Duration;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 
 /**
  * Handles player join events for the clan system.
@@ -20,6 +23,9 @@ public class ClanListener implements Listener {
 
     private final ClanManager manager;
     private final me.luisgamedev.elytriaEssentials.ElytriaEssentials plugin;
+    private final Map<UUID, Long> lastFriendlyFireMessage = new HashMap<>();
+
+    private static final long FRIENDLY_FIRE_MESSAGE_COOLDOWN = 5000L;
 
     public ClanListener(me.luisgamedev.elytriaEssentials.ElytriaEssentials plugin, ClanManager manager) {
         this.plugin = plugin;
@@ -61,6 +67,13 @@ public class ClanListener implements Listener {
         Clan attackerClan = manager.getClan(attacker.getUniqueId());
         if (attackerClan != null && attackerClan == manager.getClan(victim.getUniqueId())) {
             event.setCancelled(true);
+            UUID attackerId = attacker.getUniqueId();
+            long now = System.currentTimeMillis();
+            Long lastSent = lastFriendlyFireMessage.get(attackerId);
+            if (lastSent == null || now - lastSent >= FRIENDLY_FIRE_MESSAGE_COOLDOWN) {
+                lastFriendlyFireMessage.put(attackerId, now);
+                attacker.sendMessage(plugin.getMessage("clan.cannot-attack-member"));
+            }
         }
     }
 }
