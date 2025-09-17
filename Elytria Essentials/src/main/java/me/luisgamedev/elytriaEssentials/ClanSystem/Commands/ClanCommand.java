@@ -12,6 +12,9 @@ import org.bukkit.entity.Player;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
+
+import me.luisgamedev.elytriaEssentials.ClanSystem.Clan;
 
 public class ClanCommand implements CommandExecutor, TabCompleter {
 
@@ -103,6 +106,22 @@ public class ClanCommand implements CommandExecutor, TabCompleter {
             List<String> subs = new ArrayList<>();
             Collections.addAll(subs, "create", "invite", "accept", "disband", "kick", "leave", "promote", "sethome", "home", "info");
             return subs;
+        }
+        if (args.length == 2) {
+            String sub = args[0].toLowerCase();
+            if ((sub.equals("kick") || sub.equals("promote")) && sender instanceof Player player) {
+                Clan clan = manager.getClan(player.getUniqueId());
+                if (clan != null) {
+                    List<String> names = new ArrayList<>();
+                    for (UUID uuid : clan.getMembers()) {
+                        String name = Bukkit.getOfflinePlayer(uuid).getName();
+                        if (name != null) {
+                            names.add(name);
+                        }
+                    }
+                    return names;
+                }
+            }
         }
         return Collections.emptyList();
     }

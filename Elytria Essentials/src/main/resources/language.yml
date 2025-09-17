@@ -30,10 +30,10 @@ clan:
   promote-success: "&aPromoted {player} to leader."
   promote-target: "&eYou are now the leader of clan {clan}."
   sethome-success: "&aClan home set."
-  sethome-cooldown: "&cYou must wait {seconds}s before setting the clan home again."
+  sethome-cooldown: "&cYou must wait {time} before setting the clan home again."
   home-success: "&aTeleported to clan home."
   home-not-set: "&cClan home not set."
-  home-cooldown: "&cYou must wait {seconds}s before using clan home again."
+  home-cooldown: "&cYou must wait {time} before using clan home again."
   info:
     header: "&eClan info for {clan}:"
     leader: "&eLeader: {leader}"

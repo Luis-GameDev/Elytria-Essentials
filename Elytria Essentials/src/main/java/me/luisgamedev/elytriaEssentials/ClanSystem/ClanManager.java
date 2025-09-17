@@ -330,7 +330,7 @@ public class ClanManager {
         Long last = setHomeCooldowns.get(clan.getName());
         if (last != null && now - last < cooldown) {
             long remaining = (cooldown - (now - last)) / 1000L;
-            player.sendMessage(plugin.getMessage("clan.sethome-cooldown").replace("{seconds}", String.valueOf(remaining)));
+            player.sendMessage(plugin.getMessage("clan.sethome-cooldown").replace("{time}", formatTime(remaining)));
             return;
         }
         setHomeCooldowns.put(clan.getName(), now);
@@ -361,7 +361,7 @@ public class ClanManager {
         Long last = homeCooldowns.get(player.getUniqueId());
         if (last != null && now - last < cooldown) {
             long remaining = (cooldown - (now - last)) / 1000L;
-            player.sendMessage(plugin.getMessage("clan.home-cooldown").replace("{seconds}", String.valueOf(remaining)));
+            player.sendMessage(plugin.getMessage("clan.home-cooldown").replace("{time}", formatTime(remaining)));
             return;
         }
         homeCooldowns.put(player.getUniqueId(), now);
@@ -420,6 +420,25 @@ public class ClanManager {
         String perm = "faction." + clanName.toLowerCase();
         user.data().remove(Node.builder(perm).build());
         lp.getUserManager().saveUser(user);
+    }
+
+    private String formatTime(long seconds) {
+        long hours = seconds / 3600;
+        long minutes = (seconds % 3600) / 60;
+        StringBuilder sb = new StringBuilder();
+        if (hours > 0) {
+            sb.append(hours).append(" hour");
+            if (hours != 1) sb.append('s');
+        }
+        if (minutes > 0) {
+            if (sb.length() > 0) sb.append(' ');
+            sb.append(minutes).append(" minute");
+            if (minutes != 1) sb.append('s');
+        }
+        if (sb.length() == 0) {
+            sb.append("<1 minute");
+        }
+        return sb.toString();
     }
 }
 
