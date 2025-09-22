@@ -5,6 +5,7 @@ import me.luisgamedev.elytriaEssentials.ClanSystem.ClanListener;
 import me.luisgamedev.elytriaEssentials.ClanSystem.ClanManager;
 import me.luisgamedev.elytriaEssentials.ClanSystem.Commands.ClanCommand;
 import me.luisgamedev.elytriaEssentials.ClanSystem.Placeholders.RegisterPlaceholders;
+import me.luisgamedev.elytriaEssentials.Music.CustomMusicManager;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -20,6 +21,7 @@ public final class ElytriaEssentials extends JavaPlugin {
 
     private ClanManager clanManager;
     private FileConfiguration languageConfig;
+    private CustomMusicManager musicManager;
 
     @Override
     public void onEnable() {
@@ -40,11 +42,23 @@ public final class ElytriaEssentials extends JavaPlugin {
         if (Bukkit.getPluginManager().isPluginEnabled("PlaceholderAPI")) {
             new RegisterPlaceholders(this, clanManager).register();
         }
+        if (Bukkit.getPluginManager().isPluginEnabled("WGRegionEvents")) {
+            CustomMusicManager manager = new CustomMusicManager(this);
+            if (manager.hasEntries()) {
+                pm.registerEvents(manager, this);
+                musicManager = manager;
+            }
+        } else {
+            getLogger().warning("WGRegionEvents plugin not found. Custom music will be disabled.");
+        }
     }
 
     @Override
     public void onDisable() {
-        // Plugin shutdown logic
+        if (musicManager != null) {
+            musicManager.shutdown();
+            musicManager = null;
+        }
     }
 
     public FileConfiguration getLanguageConfig() {
