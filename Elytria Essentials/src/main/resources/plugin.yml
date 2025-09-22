@@ -2,7 +2,8 @@ name: ElytriaEssentials
 version: '1.7'
 main: me.luisgamedev.elytriaEssentials.ElytriaEssentials
 api-version: '1.21'
-softdepend: [Citizens]
+depend: [WorldGuard]
+softdepend: [Citizens, WGRegionEvents]
 commands:
   clan:
     description: Clan management command

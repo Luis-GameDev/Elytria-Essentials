@@ -16,9 +16,9 @@ repositories {
         name = "citizens-repo"
         url = "https://repo.citizensnpcs.co/"
     }
-    maven {
-        url = "https://repo.extendedclip.com/content/repositories/placeholderapi/"
-    }
+    maven { url = "https://repo.extendedclip.com/content/repositories/placeholderapi/" }
+    maven { url = 'https://jitpack.io' }
+    maven { url = 'https://maven.enginehub.org/repo/' }
 }
 
 dependencies {
@@ -27,6 +27,9 @@ dependencies {
     compileOnly("net.luckperms:api:5.4")
     compileOnly("me.clip:placeholderapi:2.11.5")
     compileOnly("com.mysql:mysql-connector-j:8.3.0")
+    compileOnly 'com.sk89q.worldedit:worldedit-bukkit:7.2.18'
+    compileOnly 'com.sk89q.worldguard:worldguard-bukkit:7.0.9'
+    compileOnly 'com.github.NetzkroneHD:WGRegionEvents:v1.7.4'
 }
 
 tasks {

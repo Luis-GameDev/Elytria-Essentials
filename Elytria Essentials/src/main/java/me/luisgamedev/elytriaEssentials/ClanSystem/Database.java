@@ -7,9 +7,6 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 
-/**
- * Simple helper for creating new database connections.
- */
 public class Database {
 
     private final ElytriaEssentials plugin;
