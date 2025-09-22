@@ -45,7 +45,7 @@ spawnSound:
   volume: 0.7
   pitch1am: 0.7
   pitch1pm: 1.0
-  loopMs:
+  loopMs: 70000
   regions:
     - "spawn"
 
@@ -55,7 +55,7 @@ singularitySound:
   volume: 0.7
   pitch1am: 0.7
   pitch1pm: 1.0
-  loopMs:
+  loopMs: 120000
   regions:
     - "singularity"
 
