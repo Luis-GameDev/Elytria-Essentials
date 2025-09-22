@@ -40,8 +40,8 @@ clan-sethome-cooldown: 172800 # 48 hrs
 
 # Music System
 spawnSound:
-  MusicKey:
-  category:
+  MusicKey: minecraft:custom.spawn
+  category: music
   volume: 0.7
   pitch1am: 0.7
   pitch1pm: 1.0
@@ -50,8 +50,8 @@ spawnSound:
     - "spawn"
 
 singularitySound:
-  MusicKey:
-  category:
+  MusicKey: minecraft:custom.singularity
+  category: music
   volume: 0.7
   pitch1am: 0.7
   pitch1pm: 1.0
