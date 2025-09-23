@@ -166,7 +166,7 @@ public class CustomMusicManager implements Listener {
         ActivePlayback current = activePlayback.get(uuid);
         if (desired == null) {
             if (current != null) {
-                stopPlayback(player, current);
+                disableLooping(current);
             }
             return;
         }
@@ -181,29 +181,65 @@ public class CustomMusicManager implements Listener {
         ActivePlayback current = activePlayback.get(uuid);
         if (current != null) {
             if (current.entry.equals(entry)) {
+                stopVanillaMusic(player);
+                if (!current.isLoopingEnabled()) {
+                    resumeLoop(uuid, current);
+                }
                 return;
             }
             stopPlayback(player, current);
         }
-        long periodTicks = entry.getLoopTicks();
-        player.stopSound(entry.getSoundKey(), entry.getSoundCategory());
-        BukkitTask task = Bukkit.getScheduler().runTaskTimer(plugin, () -> playSound(player, entry), 0L, periodTicks);
-        activePlayback.put(uuid, new ActivePlayback(entry, task));
+        stopVanillaMusic(player);
+        ActivePlayback playback = new ActivePlayback(entry);
+        activePlayback.put(uuid, playback);
+        scheduleNextPlayback(uuid, playback, 0L);
     }
 
-    private void playSound(Player player, MusicEntry entry) {
-        if (!player.isOnline()) {
-            stop(player.getUniqueId());
-            return;
-        }
-        float pitch = entry.resolvePitch();
-        player.playSound(player.getLocation(), entry.getSoundKey(), entry.getSoundCategory(), entry.getVolume(), pitch);
+    private void scheduleNextPlayback(UUID uuid, ActivePlayback playback, long delayTicks) {
+        Runnable runnable = () -> {
+            Player currentPlayer = Bukkit.getPlayer(uuid);
+            if (currentPlayer == null || !currentPlayer.isOnline()) {
+                stop(uuid);
+                return;
+            }
+            ActivePlayback active = activePlayback.get(uuid);
+            if (active != playback) {
+                return;
+            }
+            float pitch = playback.entry.resolvePitch();
+            stopVanillaMusic(currentPlayer);
+            currentPlayer.stopSound(playback.entry.getSoundKey(), playback.entry.getSoundCategory());
+            currentPlayer.playSound(currentPlayer.getLocation(), playback.entry.getSoundKey(), playback.entry.getSoundCategory(), playback.entry.getVolume(), pitch);
+            long nextDelay = playback.entry.getLoopTicksForPitch(pitch);
+            scheduleNextPlayback(uuid, playback, nextDelay);
+        };
+        BukkitTask task = delayTicks <= 0L
+                ? Bukkit.getScheduler().runTask(plugin, runnable)
+                : Bukkit.getScheduler().runTaskLater(plugin, runnable, delayTicks);
+        playback.onScheduled(task, delayTicks);
+    }
+
+    private void stopVanillaMusic(Player player) {
+        player.stopSound(SoundCategory.MUSIC);
     }
 
     private void stopPlayback(Player player, ActivePlayback playback) {
-        playback.task.cancel();
+        playback.cancel();
+        playback.setLoopingEnabled(false);
         player.stopSound(playback.entry.getSoundKey(), playback.entry.getSoundCategory());
         activePlayback.remove(player.getUniqueId());
+    }
+
+    private void disableLooping(ActivePlayback playback) {
+        if (playback == null || !playback.isLoopingEnabled()) {
+            return;
+        }
+        playback.pauseLooping();
+    }
+
+    private void resumeLoop(UUID uuid, ActivePlayback playback) {
+        long delay = playback.resumeLoopingDelay();
+        scheduleNextPlayback(uuid, playback, delay);
     }
 
     @EventHandler
@@ -212,7 +248,8 @@ public class CustomMusicManager implements Listener {
         UUID uuid = player.getUniqueId();
         ActivePlayback playback = activePlayback.remove(uuid);
         if (playback != null) {
-            playback.task.cancel();
+            playback.cancel();
+            playback.setLoopingEnabled(false);
             player.stopSound(playback.entry.getSoundKey(), playback.entry.getSoundCategory());
         }
         playerRegionCounts.remove(uuid);
@@ -225,7 +262,7 @@ public class CustomMusicManager implements Listener {
             if (player != null) {
                 stopPlayback(player, entry.getValue());
             } else {
-                entry.getValue().task.cancel();
+                entry.getValue().cancel();
             }
         }
         activePlayback.clear();
@@ -235,17 +272,71 @@ public class CustomMusicManager implements Listener {
     private void stop(UUID uuid) {
         ActivePlayback playback = activePlayback.remove(uuid);
         if (playback != null) {
-            playback.task.cancel();
+            playback.cancel();
+            playback.setLoopingEnabled(false);
         }
     }
 
     private static class ActivePlayback {
         private final MusicEntry entry;
-        private final BukkitTask task;
+        private BukkitTask task;
+        private boolean loopingEnabled = true;
+        private long nextScheduledAtMs = -1L;
+        private long pendingDelayTicks = 1L;
 
-        private ActivePlayback(MusicEntry entry, BukkitTask task) {
+        private ActivePlayback(MusicEntry entry) {
             this.entry = entry;
+        }
+
+        private void onScheduled(BukkitTask task, long delayTicks) {
             this.task = task;
+            this.loopingEnabled = true;
+            this.pendingDelayTicks = Math.max(1L, delayTicks);
+            if (delayTicks > 0L) {
+                this.nextScheduledAtMs = System.currentTimeMillis() + (delayTicks * 50L);
+            } else {
+                this.nextScheduledAtMs = System.currentTimeMillis();
+            }
+        }
+
+        private void cancel() {
+            if (task != null) {
+                task.cancel();
+                task = null;
+            }
+            nextScheduledAtMs = -1L;
+        }
+
+        private void setLoopingEnabled(boolean loopingEnabled) {
+            this.loopingEnabled = loopingEnabled;
+        }
+
+        private boolean isLoopingEnabled() {
+            return loopingEnabled;
+        }
+
+        private void pauseLooping() {
+            if (!loopingEnabled) {
+                return;
+            }
+            long remaining = calculateRemainingTicks();
+            loopingEnabled = false;
+            pendingDelayTicks = remaining;
+            cancel();
+        }
+
+        private long resumeLoopingDelay() {
+            loopingEnabled = true;
+            return Math.max(1L, pendingDelayTicks);
+        }
+
+        private long calculateRemainingTicks() {
+            if (task != null && nextScheduledAtMs > 0L) {
+                long remainingMs = nextScheduledAtMs - System.currentTimeMillis();
+                long ticks = (long) Math.ceil(remainingMs / 50.0D);
+                return Math.max(1L, ticks);
+            }
+            return Math.max(1L, pendingDelayTicks);
         }
     }
 
@@ -256,7 +347,7 @@ public class CustomMusicManager implements Listener {
         private final float volume;
         private final float pitch1am;
         private final float pitch1pm;
-        private final long loopTicks;
+        private final double loopTicks;
         private final Set<String> regions;
 
         private MusicEntry(String id, String soundKey, SoundCategory soundCategory, float volume, float pitch1am, float pitch1pm, long loopMs, List<String> regions) {
@@ -266,7 +357,11 @@ public class CustomMusicManager implements Listener {
             this.volume = volume;
             this.pitch1am = pitch1am;
             this.pitch1pm = pitch1pm;
-            this.loopTicks = Math.max(1L, Math.round(loopMs / 50.0D));
+            double calculated = loopMs / 50.0D;
+            if (calculated < 1.0D) {
+                calculated = 1.0D;
+            }
+            this.loopTicks = calculated;
             Set<String> lowerRegions = new HashSet<>();
             for (String region : regions) {
                 if (region != null && !region.isBlank()) {
@@ -288,12 +383,15 @@ public class CustomMusicManager implements Listener {
             return volume;
         }
 
-        public long getLoopTicks() {
-            return loopTicks;
-        }
-
         public Set<String> getRegions() {
             return regions;
+        }
+
+        public long getLoopTicksForPitch(float pitch) {
+            float effectivePitch = pitch <= 0.0F ? 1.0F : pitch;
+            double adjusted = loopTicks / (double) effectivePitch;
+            long rounded = (long) Math.ceil(adjusted);
+            return Math.max(1L, rounded);
         }
 
         private float resolvePitch() {
