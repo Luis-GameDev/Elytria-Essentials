@@ -38,3 +38,26 @@ newbie-protection-hours: 24
 clan-home-cooldown: 1200 # 30 mins
 clan-sethome-cooldown: 172800 # 48 hrs
 
+# Music System
+spawnSound:
+  MusicKey: minecraft:custom.spawn
+  category: music
+  volume: 0.7
+  pitch1am: 0.7
+  pitch1pm: 1.0
+  loopMs: 70000
+  regions:
+    - "spawn"
+
+singularitySound:
+  MusicKey: minecraft:custom.singularity
+  category: music
+  volume: 0.7
+  pitch1am: 0.7
+  pitch1pm: 1.0
+  loopMs: 120000
+  regions:
+    - "singularity"
+
+
+
