@@ -4,6 +4,7 @@ import de.netzkronehd.wgregionevents.events.RegionEnteredEvent;
 import de.netzkronehd.wgregionevents.events.RegionLeftEvent;
 import me.luisgamedev.elytriaEssentials.ElytriaEssentials;
 import org.bukkit.Bukkit;
+import org.bukkit.SoundCategory;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
@@ -51,6 +52,7 @@ public class CustomMusicManager implements Listener {
             if (category.isEmpty()) {
                 category = "master";
             }
+            SoundCategory soundCategory = parseCategory(category, key);
             float volume = (float) section.getDouble("volume", 1.0D);
             float pitch1am = (float) section.getDouble("pitch1am", 1.0D);
             float pitch1pm = (float) section.getDouble("pitch1pm", 1.0D);
@@ -64,11 +66,23 @@ public class CustomMusicManager implements Listener {
                 plugin.getLogger().warning("Music entry '" + key + "' has no regions configured, skipping.");
                 continue;
             }
-            MusicEntry entry = new MusicEntry(key, soundKey, category, volume, pitch1am, pitch1pm, loopMs, regionList);
+            MusicEntry entry = new MusicEntry(key, soundKey, soundCategory, volume, pitch1am, pitch1pm, loopMs, regionList);
             entries.add(entry);
             for (String region : entry.getRegions()) {
                 regionToEntries.computeIfAbsent(region, k -> new ArrayList<>()).add(entry);
             }
+        }
+    }
+
+    private SoundCategory parseCategory(String categoryName, String entryId) {
+        if (categoryName == null || categoryName.isBlank()) {
+            return SoundCategory.MASTER;
+        }
+        try {
+            return SoundCategory.valueOf(categoryName.toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException ex) {
+            plugin.getLogger().warning("Music entry '" + entryId + "' has invalid category '" + categoryName + "', defaulting to MASTER.");
+            return SoundCategory.MASTER;
         }
     }
 
@@ -170,8 +184,8 @@ public class CustomMusicManager implements Listener {
             }
             stopPlayback(player, current);
         }
-        dispatchCommand("stopsound " + player.getName() + " *");
         long periodTicks = entry.getLoopTicks();
+        player.stopSound(entry.getSoundKey(), entry.getSoundCategory());
         BukkitTask task = Bukkit.getScheduler().runTaskTimer(plugin, () -> playSound(player, entry), 0L, periodTicks);
         activePlayback.put(uuid, new ActivePlayback(entry, task));
     }
@@ -182,22 +196,13 @@ public class CustomMusicManager implements Listener {
             return;
         }
         float pitch = entry.resolvePitch();
-        String command = String.format(Locale.ROOT, "playsound %s %s %s ~ ~ ~ %.3f %.3f", entry.getSoundKey(), entry.getCategory(), player.getName(), entry.getVolume(), pitch);
-        dispatchCommand(command);
+        player.playSound(player.getLocation(), entry.getSoundKey(), entry.getSoundCategory(), entry.getVolume(), pitch);
     }
 
     private void stopPlayback(Player player, ActivePlayback playback) {
         playback.task.cancel();
-        dispatchCommand(String.format(Locale.ROOT, "stopsound %s %s %s", player.getName(), playback.entry.getCategory(), playback.entry.getSoundKey()));
+        player.stopSound(playback.entry.getSoundKey(), playback.entry.getSoundCategory());
         activePlayback.remove(player.getUniqueId());
-    }
-
-    private void dispatchCommand(String command) {
-        if (Bukkit.isPrimaryThread()) {
-            Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command);
-        } else {
-            Bukkit.getScheduler().runTask(plugin, () -> Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command));
-        }
     }
 
     @EventHandler
@@ -207,7 +212,7 @@ public class CustomMusicManager implements Listener {
         ActivePlayback playback = activePlayback.remove(uuid);
         if (playback != null) {
             playback.task.cancel();
-            dispatchCommand(String.format(Locale.ROOT, "stopsound %s %s %s", player.getName(), playback.entry.getCategory(), playback.entry.getSoundKey()));
+            player.stopSound(playback.entry.getSoundKey(), playback.entry.getSoundCategory());
         }
         playerRegionCounts.remove(uuid);
     }
@@ -246,17 +251,17 @@ public class CustomMusicManager implements Listener {
     private static class MusicEntry {
         private final String id;
         private final String soundKey;
-        private final String category;
+        private final SoundCategory soundCategory;
         private final float volume;
         private final float pitch1am;
         private final float pitch1pm;
         private final long loopTicks;
         private final Set<String> regions;
 
-        private MusicEntry(String id, String soundKey, String category, float volume, float pitch1am, float pitch1pm, long loopMs, List<String> regions) {
+        private MusicEntry(String id, String soundKey, SoundCategory soundCategory, float volume, float pitch1am, float pitch1pm, long loopMs, List<String> regions) {
             this.id = id;
             this.soundKey = soundKey;
-            this.category = category.toLowerCase(Locale.ROOT);
+            this.soundCategory = soundCategory;
             this.volume = volume;
             this.pitch1am = pitch1am;
             this.pitch1pm = pitch1pm;
@@ -274,8 +279,8 @@ public class CustomMusicManager implements Listener {
             return soundKey;
         }
 
-        public String getCategory() {
-            return category;
+        public SoundCategory getSoundCategory() {
+            return soundCategory;
         }
 
         public float getVolume() {
