@@ -33,6 +33,10 @@ public class CustomMusicManager implements Listener {
     private final Map<UUID, Map<MusicEntry, Integer>> playerRegionCounts = new HashMap<>();
     private final Map<UUID, BukkitTask> vanillaMusicGuards = new HashMap<>();
     private final Map<UUID, BukkitTask> loopCleanupTasks = new HashMap<>();
+    private static final Set<String> VANILLA_MUSIC_KEYS = Set.of(
+            "minecraft:custom.ambient_1",
+            "minecraft:custom.ambient_2"
+    );
 
     public CustomMusicManager(ElytriaEssentials plugin) {
         this.plugin = plugin;
@@ -242,7 +246,7 @@ public class CustomMusicManager implements Listener {
                 stop(uuid);
                 return;
             }
-            player.stopSound(SoundCategory.MUSIC);
+            stopVanillaMusic(player);
         }, 0L, 40L);
         vanillaMusicGuards.put(uuid, task);
     }
@@ -282,7 +286,9 @@ public class CustomMusicManager implements Listener {
     }
 
     private void stopVanillaMusic(Player player) {
-        player.stopSound(SoundCategory.MUSIC);
+        for (String key : VANILLA_MUSIC_KEYS) {
+            player.stopSound(key, SoundCategory.MUSIC);
+        }
     }
 
     private void stopPlayback(Player player, ActivePlayback playback) {
