@@ -167,7 +167,7 @@ public class CustomMusicManager implements Listener {
         ActivePlayback current = activePlayback.get(uuid);
         if (desired == null) {
             if (current != null) {
-                stopPlayback(player, current);
+                disableLooping(current);
             }
             return;
         }
@@ -183,6 +183,9 @@ public class CustomMusicManager implements Listener {
         if (current != null) {
             if (current.entry.equals(entry)) {
                 stopVanillaMusic(player);
+                if (!current.isLoopingEnabled()) {
+                    resumeLoop(uuid, current);
+                }
                 return;
             }
             stopPlayback(player, current);
@@ -214,7 +217,7 @@ public class CustomMusicManager implements Listener {
         BukkitTask task = delayTicks <= 0L
                 ? Bukkit.getScheduler().runTask(plugin, runnable)
                 : Bukkit.getScheduler().runTaskLater(plugin, runnable, delayTicks);
-        playback.setTask(task);
+        playback.onScheduled(task, delayTicks);
     }
 
     private void stopVanillaMusic(Player player) {
@@ -223,8 +226,21 @@ public class CustomMusicManager implements Listener {
 
     private void stopPlayback(Player player, ActivePlayback playback) {
         playback.cancel();
+        playback.setLoopingEnabled(false);
         player.stopSound(playback.entry.getSoundKey(), playback.entry.getSoundCategory());
         activePlayback.remove(player.getUniqueId());
+    }
+
+    private void disableLooping(ActivePlayback playback) {
+        if (playback == null || !playback.isLoopingEnabled()) {
+            return;
+        }
+        playback.pauseLooping();
+    }
+
+    private void resumeLoop(UUID uuid, ActivePlayback playback) {
+        long delay = playback.resumeLoopingDelay();
+        scheduleNextPlayback(uuid, playback, delay);
     }
 
     @EventHandler
@@ -234,6 +250,7 @@ public class CustomMusicManager implements Listener {
         ActivePlayback playback = activePlayback.remove(uuid);
         if (playback != null) {
             playback.cancel();
+            playback.setLoopingEnabled(false);
             player.stopSound(playback.entry.getSoundKey(), playback.entry.getSoundCategory());
         }
         playerRegionCounts.remove(uuid);
@@ -257,19 +274,30 @@ public class CustomMusicManager implements Listener {
         ActivePlayback playback = activePlayback.remove(uuid);
         if (playback != null) {
             playback.cancel();
+            playback.setLoopingEnabled(false);
         }
     }
 
     private static class ActivePlayback {
         private final MusicEntry entry;
         private BukkitTask task;
+        private boolean loopingEnabled = true;
+        private long nextScheduledAtMs = -1L;
+        private long pendingDelayTicks = 1L;
 
         private ActivePlayback(MusicEntry entry) {
             this.entry = entry;
         }
 
-        private void setTask(BukkitTask task) {
+        private void onScheduled(BukkitTask task, long delayTicks) {
             this.task = task;
+            this.loopingEnabled = true;
+            this.pendingDelayTicks = Math.max(1L, delayTicks);
+            if (delayTicks > 0L) {
+                this.nextScheduledAtMs = System.currentTimeMillis() + (delayTicks * 50L);
+            } else {
+                this.nextScheduledAtMs = System.currentTimeMillis();
+            }
         }
 
         private void cancel() {
@@ -277,6 +305,39 @@ public class CustomMusicManager implements Listener {
                 task.cancel();
                 task = null;
             }
+            nextScheduledAtMs = -1L;
+        }
+
+        private void setLoopingEnabled(boolean loopingEnabled) {
+            this.loopingEnabled = loopingEnabled;
+        }
+
+        private boolean isLoopingEnabled() {
+            return loopingEnabled;
+        }
+
+        private void pauseLooping() {
+            if (!loopingEnabled) {
+                return;
+            }
+            long remaining = calculateRemainingTicks();
+            loopingEnabled = false;
+            pendingDelayTicks = remaining;
+            cancel();
+        }
+
+        private long resumeLoopingDelay() {
+            loopingEnabled = true;
+            return Math.max(1L, pendingDelayTicks);
+        }
+
+        private long calculateRemainingTicks() {
+            if (task != null && nextScheduledAtMs > 0L) {
+                long remainingMs = nextScheduledAtMs - System.currentTimeMillis();
+                long ticks = (long) Math.ceil(remainingMs / 50.0D);
+                return Math.max(1L, ticks);
+            }
+            return Math.max(1L, pendingDelayTicks);
         }
     }
 
