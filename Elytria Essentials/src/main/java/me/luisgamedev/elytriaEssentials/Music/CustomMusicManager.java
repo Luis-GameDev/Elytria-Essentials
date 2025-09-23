@@ -93,7 +93,6 @@ public class CustomMusicManager implements Listener {
     @EventHandler
     public void onRegionEnter(RegionEnteredEvent event) {
         Player player = event.getPlayer();
-        player.sendMessage("You entered the region: " + event.getRegion() + " : " + event.getRegion().getType().getName());
 
         if (player == null || entries.isEmpty()) {
             return;
