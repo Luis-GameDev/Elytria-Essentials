@@ -31,6 +31,8 @@ public class CustomMusicManager implements Listener {
     private final Map<String, List<MusicEntry>> regionToEntries = new HashMap<>();
     private final Map<UUID, ActivePlayback> activePlayback = new HashMap<>();
     private final Map<UUID, Map<MusicEntry, Integer>> playerRegionCounts = new HashMap<>();
+    private final Map<UUID, BukkitTask> vanillaMusicGuards = new HashMap<>();
+    private final Map<UUID, BukkitTask> loopCleanupTasks = new HashMap<>();
 
     public CustomMusicManager(ElytriaEssentials plugin) {
         this.plugin = plugin;
@@ -166,7 +168,7 @@ public class CustomMusicManager implements Listener {
         ActivePlayback current = activePlayback.get(uuid);
         if (desired == null) {
             if (current != null) {
-                disableLooping(current);
+                disableLooping(uuid, current);
             }
             return;
         }
@@ -181,6 +183,8 @@ public class CustomMusicManager implements Listener {
         ActivePlayback current = activePlayback.get(uuid);
         if (current != null) {
             if (current.entry.equals(entry)) {
+                cancelLoopCleanup(uuid);
+                ensureVanillaMusicGuard(uuid);
                 stopVanillaMusic(player);
                 if (!current.isLoopingEnabled()) {
                     resumeLoop(uuid, current);
@@ -189,6 +193,7 @@ public class CustomMusicManager implements Listener {
             }
             stopPlayback(player, current);
         }
+        cancelLoopCleanup(uuid);
         stopVanillaMusic(player);
         ActivePlayback playback = new ActivePlayback(entry);
         activePlayback.put(uuid, playback);
@@ -196,6 +201,8 @@ public class CustomMusicManager implements Listener {
     }
 
     private void scheduleNextPlayback(UUID uuid, ActivePlayback playback, long delayTicks) {
+        cancelLoopCleanup(uuid);
+        ensureVanillaMusicGuard(uuid);
         Runnable runnable = () -> {
             Player currentPlayer = Bukkit.getPlayer(uuid);
             if (currentPlayer == null || !currentPlayer.isOnline()) {
@@ -219,22 +226,83 @@ public class CustomMusicManager implements Listener {
         playback.onScheduled(task, delayTicks);
     }
 
+    private void ensureVanillaMusicGuard(UUID uuid) {
+        if (vanillaMusicGuards.containsKey(uuid)) {
+            return;
+        }
+        BukkitTask task = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
+            ActivePlayback playback = activePlayback.get(uuid);
+            if (playback == null) {
+                cancelVanillaMusicGuard(uuid);
+                return;
+            }
+            Player player = Bukkit.getPlayer(uuid);
+            if (player == null || !player.isOnline()) {
+                cancelVanillaMusicGuard(uuid);
+                stop(uuid);
+                return;
+            }
+            player.stopSound(SoundCategory.MUSIC);
+        }, 0L, 40L);
+        vanillaMusicGuards.put(uuid, task);
+    }
+
+    private void cancelVanillaMusicGuard(UUID uuid) {
+        BukkitTask task = vanillaMusicGuards.remove(uuid);
+        if (task != null) {
+            task.cancel();
+        }
+    }
+
+    private void scheduleLoopCleanup(UUID uuid, ActivePlayback playback) {
+        if (playback == null) {
+            cancelLoopCleanup(uuid);
+            cancelVanillaMusicGuard(uuid);
+            return;
+        }
+        long delay = Math.max(1L, playback.getCleanupDelayTicks());
+        cancelLoopCleanup(uuid);
+        BukkitTask task = Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            loopCleanupTasks.remove(uuid);
+            ActivePlayback current = activePlayback.get(uuid);
+            if (current != playback || current.isLoopingEnabled()) {
+                return;
+            }
+            cancelVanillaMusicGuard(uuid);
+            activePlayback.remove(uuid);
+        }, delay);
+        loopCleanupTasks.put(uuid, task);
+    }
+
+    private void cancelLoopCleanup(UUID uuid) {
+        BukkitTask task = loopCleanupTasks.remove(uuid);
+        if (task != null) {
+            task.cancel();
+        }
+    }
+
     private void stopVanillaMusic(Player player) {
         player.stopSound(SoundCategory.MUSIC);
     }
 
     private void stopPlayback(Player player, ActivePlayback playback) {
+        UUID uuid = player.getUniqueId();
         playback.cancel();
         playback.setLoopingEnabled(false);
         player.stopSound(playback.entry.getSoundKey(), playback.entry.getSoundCategory());
-        activePlayback.remove(player.getUniqueId());
+        activePlayback.remove(uuid);
+        cancelLoopCleanup(uuid);
+        cancelVanillaMusicGuard(uuid);
     }
 
-    private void disableLooping(ActivePlayback playback) {
-        if (playback == null || !playback.isLoopingEnabled()) {
+    private void disableLooping(UUID uuid, ActivePlayback playback) {
+        if (playback == null) {
+            cancelLoopCleanup(uuid);
+            cancelVanillaMusicGuard(uuid);
             return;
         }
         playback.pauseLooping();
+        scheduleLoopCleanup(uuid, playback);
     }
 
     private void resumeLoop(UUID uuid, ActivePlayback playback) {
@@ -252,6 +320,8 @@ public class CustomMusicManager implements Listener {
             playback.setLoopingEnabled(false);
             player.stopSound(playback.entry.getSoundKey(), playback.entry.getSoundCategory());
         }
+        cancelLoopCleanup(uuid);
+        cancelVanillaMusicGuard(uuid);
         playerRegionCounts.remove(uuid);
     }
 
@@ -263,8 +333,19 @@ public class CustomMusicManager implements Listener {
                 stopPlayback(player, entry.getValue());
             } else {
                 entry.getValue().cancel();
+                entry.getValue().setLoopingEnabled(false);
+                cancelLoopCleanup(uuid);
+                cancelVanillaMusicGuard(uuid);
             }
         }
+        for (BukkitTask task : loopCleanupTasks.values()) {
+            task.cancel();
+        }
+        loopCleanupTasks.clear();
+        for (BukkitTask task : vanillaMusicGuards.values()) {
+            task.cancel();
+        }
+        vanillaMusicGuards.clear();
         activePlayback.clear();
         playerRegionCounts.clear();
     }
@@ -275,6 +356,8 @@ public class CustomMusicManager implements Listener {
             playback.cancel();
             playback.setLoopingEnabled(false);
         }
+        cancelLoopCleanup(uuid);
+        cancelVanillaMusicGuard(uuid);
     }
 
     private static class ActivePlayback {
@@ -283,6 +366,7 @@ public class CustomMusicManager implements Listener {
         private boolean loopingEnabled = true;
         private long nextScheduledAtMs = -1L;
         private long pendingDelayTicks = 1L;
+        private long pausedAtMs = -1L;
 
         private ActivePlayback(MusicEntry entry) {
             this.entry = entry;
@@ -297,6 +381,7 @@ public class CustomMusicManager implements Listener {
             } else {
                 this.nextScheduledAtMs = System.currentTimeMillis();
             }
+            this.pausedAtMs = -1L;
         }
 
         private void cancel() {
@@ -319,24 +404,44 @@ public class CustomMusicManager implements Listener {
             if (!loopingEnabled) {
                 return;
             }
-            long remaining = calculateRemainingTicks();
+            long remaining = Math.max(1L, calculateRemainingTicksRaw());
             loopingEnabled = false;
             pendingDelayTicks = remaining;
+            pausedAtMs = System.currentTimeMillis();
             cancel();
         }
 
         private long resumeLoopingDelay() {
+            long remaining = calculateRemainingTicksRaw();
             loopingEnabled = true;
-            return Math.max(1L, pendingDelayTicks);
+            pausedAtMs = -1L;
+            if (remaining <= 0L) {
+                return 0L;
+            }
+            return remaining;
         }
 
         private long calculateRemainingTicks() {
+            return Math.max(1L, calculateRemainingTicksRaw());
+        }
+
+        private long calculateRemainingTicksRaw() {
             if (task != null && nextScheduledAtMs > 0L) {
                 long remainingMs = nextScheduledAtMs - System.currentTimeMillis();
                 long ticks = (long) Math.ceil(remainingMs / 50.0D);
-                return Math.max(1L, ticks);
+                return Math.max(0L, ticks);
             }
-            return Math.max(1L, pendingDelayTicks);
+            if (pausedAtMs > 0L) {
+                long elapsedMs = System.currentTimeMillis() - pausedAtMs;
+                long elapsedTicks = (long) Math.floor(elapsedMs / 50.0D);
+                long remaining = pendingDelayTicks - elapsedTicks;
+                return Math.max(0L, remaining);
+            }
+            return Math.max(0L, pendingDelayTicks);
+        }
+
+        private long getCleanupDelayTicks() {
+            return Math.max(1L, calculateRemainingTicksRaw());
         }
     }
 
