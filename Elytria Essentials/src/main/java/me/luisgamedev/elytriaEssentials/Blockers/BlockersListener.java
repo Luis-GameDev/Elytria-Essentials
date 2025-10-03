@@ -3,6 +3,7 @@ package me.luisgamedev.elytriaEssentials.Blockers;
 import org.bukkit.Keyed;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
+import org.bukkit.entity.Item;
 import org.bukkit.entity.TNTPrimed;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -15,6 +16,7 @@ import org.bukkit.event.inventory.InventoryMoveItemEvent;
 import org.bukkit.event.inventory.InventoryPickupItemEvent;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.inventory.PrepareItemCraftEvent;
+import org.bukkit.event.player.PlayerFishEvent;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
 import org.bukkit.event.player.PlayerPortalEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
@@ -46,6 +48,10 @@ public class BlockersListener implements Listener {
             Material.TOTEM_OF_UNDYING,
             Material.WIND_CHARGE,
             Material.MACE
+    );
+
+    private static final Set<Material> BANNED_FISH_LOOT = EnumSet.of(
+            Material.ENCHANTED_BOOK
     );
 
     private static final Set<EntityType> BAN_ALL_SPAWNS = EnumSet.of(
@@ -130,6 +136,32 @@ public class BlockersListener implements Listener {
         ItemStack it = e.getItem();
         if (it != null && it.getType() == Material.ENCHANTED_GOLDEN_APPLE) {
             e.setCancelled(true);
+        }
+    }
+
+    @EventHandler(ignoreCancelled = true)
+    public void onPlayerFish(PlayerFishEvent event) {
+        if (event.getState() != PlayerFishEvent.State.CAUGHT_FISH) {
+            return;
+        }
+
+        if (!(event.getCaught() instanceof Item caughtItem)) {
+            return;
+        }
+
+        ItemStack stack = caughtItem.getItemStack();
+        if (stack == null) {
+            return;
+        }
+
+        Material type = stack.getType();
+        if (BANNED_FISH_LOOT.contains(type)) {
+            caughtItem.setItemStack(new ItemStack(Material.COD));
+            return;
+        }
+
+        if ((type == Material.BOW || type == Material.FISHING_ROD) && !stack.getEnchantments().isEmpty()) {
+            caughtItem.setItemStack(new ItemStack(Material.COD));
         }
     }
 
