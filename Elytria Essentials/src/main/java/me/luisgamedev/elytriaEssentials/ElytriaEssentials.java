@@ -19,13 +19,16 @@ import net.milkbowl.vault.economy.Economy;
 import java.io.File;
 
 import me.luisgamedev.elytriaEssentials.Blockers.BlockersListener;
+import me.luisgamedev.elytriaEssentials.RuneController.RuneController;
 
 public final class ElytriaEssentials extends JavaPlugin {
 
     private ClanManager clanManager;
     private FileConfiguration languageConfig;
     private CustomMusicManager musicManager;
+
     private Economy economy;
+    private RuneController runeController;
 
     @Override
     public void onEnable() {
@@ -43,6 +46,7 @@ public final class ElytriaEssentials extends JavaPlugin {
         ClanCommand clanCommand = new ClanCommand(this, clanManager);
         getCommand("clan").setExecutor(clanCommand);
         getCommand("clan").setTabCompleter(clanCommand);
+
         setupEconomy();
         if (economy != null) {
             CustomRepairManager repairManager = new CustomRepairManager(this, economy);
@@ -50,6 +54,14 @@ public final class ElytriaEssentials extends JavaPlugin {
                 pm.registerEvents(repairManager, this);
             }
         }
+
+        if (Bukkit.getPluginManager().isPluginEnabled("MMOItems")) {
+            runeController = new RuneController(this);
+        } else {
+            getLogger().warning("MMOItems plugin not found. Rune Controller will be disabled.");
+        }
+
+
         if (Bukkit.getPluginManager().isPluginEnabled("PlaceholderAPI")) {
             new RegisterPlaceholders(this, clanManager).register();
         }
@@ -71,6 +83,7 @@ public final class ElytriaEssentials extends JavaPlugin {
             musicManager = null;
         }
         economy = null;
+        runeController = null;
     }
 
     public FileConfiguration getLanguageConfig() {
