@@ -236,8 +236,8 @@ public final class RuneController {
         } else {
             container.set(runeKey, PersistentDataType.INTEGER, updated);
         }
-        ensureBaseLevel(meta, Enchantment.DURABILITY, baseUnbreakingKey);
-        ensureBaseLevel(meta, Enchantment.PROTECTION_ENVIRONMENTAL, baseProtectionKey);
+        ensureBaseLevel(meta, Enchantment.UNBREAKING, baseUnbreakingKey);
+        ensureBaseLevel(meta, Enchantment.PROTECTION, baseProtectionKey);
         applyRuneEnchantments(meta);
         item.setItemMeta(meta);
     }
@@ -265,9 +265,9 @@ public final class RuneController {
             meta.removeEnchant(Enchantment.UNBREAKING);
         }
         if (protectionLevel > 0) {
-            meta.addEnchant(Enchantment.PROTECTION_ENVIRONMENTAL, protectionLevel, true);
+            meta.addEnchant(Enchantment.PROTECTION, protectionLevel, true);
         } else {
-            meta.removeEnchant(Enchantment.PROTECTION_ENVIRONMENTAL);
+            meta.removeEnchant(Enchantment.PROTECTION);
         }
     }
 

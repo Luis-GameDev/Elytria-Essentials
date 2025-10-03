@@ -59,5 +59,12 @@ singularitySound:
   regions:
     - "singularity"
 
+# Custom Repair
+custom-repair:
+  enabled: true
+  base-cost-per-durability: 0.25
+  cost-growth-factor: 1.5
+  npcs: [11]
+
 
 
