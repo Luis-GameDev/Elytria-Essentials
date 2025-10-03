@@ -1,5 +1,6 @@
 package me.luisgamedev.elytriaEssentials;
 
+import me.luisgamedev.elytriaEssentials.CustomRepair.CustomRepairManager;
 import me.luisgamedev.elytriaEssentials.OutpostTeleport.TeleportListener;
 import me.luisgamedev.elytriaEssentials.ClanSystem.ClanListener;
 import me.luisgamedev.elytriaEssentials.ClanSystem.ClanManager;
@@ -12,6 +13,8 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.ChatColor;
+import org.bukkit.plugin.RegisteredServiceProvider;
+import net.milkbowl.vault.economy.Economy;
 
 import java.io.File;
 
@@ -22,6 +25,7 @@ public final class ElytriaEssentials extends JavaPlugin {
     private ClanManager clanManager;
     private FileConfiguration languageConfig;
     private CustomMusicManager musicManager;
+    private Economy economy;
 
     @Override
     public void onEnable() {
@@ -39,6 +43,13 @@ public final class ElytriaEssentials extends JavaPlugin {
         ClanCommand clanCommand = new ClanCommand(this, clanManager);
         getCommand("clan").setExecutor(clanCommand);
         getCommand("clan").setTabCompleter(clanCommand);
+        setupEconomy();
+        if (economy != null) {
+            CustomRepairManager repairManager = new CustomRepairManager(this, economy);
+            if (repairManager.isActive()) {
+                pm.registerEvents(repairManager, this);
+            }
+        }
         if (Bukkit.getPluginManager().isPluginEnabled("PlaceholderAPI")) {
             new RegisterPlaceholders(this, clanManager).register();
         }
@@ -59,6 +70,7 @@ public final class ElytriaEssentials extends JavaPlugin {
             musicManager.shutdown();
             musicManager = null;
         }
+        economy = null;
     }
 
     public FileConfiguration getLanguageConfig() {
@@ -69,5 +81,18 @@ public final class ElytriaEssentials extends JavaPlugin {
         String prefix = languageConfig.getString("prefix", "");
         String message = languageConfig.getString(path, "");
         return ChatColor.translateAlternateColorCodes('&', prefix + message);
+    }
+
+    private void setupEconomy() {
+        if (!Bukkit.getPluginManager().isPluginEnabled("Vault")) {
+            getLogger().warning("Vault plugin not found. Custom repair feature disabled.");
+            return;
+        }
+        RegisteredServiceProvider<Economy> registration = getServer().getServicesManager().getRegistration(Economy.class);
+        if (registration == null) {
+            getLogger().warning("No Vault economy provider registered. Custom repair feature disabled.");
+            return;
+        }
+        economy = registration.getProvider();
     }
 }
