@@ -16,12 +16,14 @@ import org.bukkit.ChatColor;
 import java.io.File;
 
 import me.luisgamedev.elytriaEssentials.Blockers.BlockersListener;
+import me.luisgamedev.elytriaEssentials.RuneController.RuneController;
 
 public final class ElytriaEssentials extends JavaPlugin {
 
     private ClanManager clanManager;
     private FileConfiguration languageConfig;
     private CustomMusicManager musicManager;
+    private RuneController runeController;
 
     @Override
     public void onEnable() {
@@ -39,6 +41,12 @@ public final class ElytriaEssentials extends JavaPlugin {
         ClanCommand clanCommand = new ClanCommand(this, clanManager);
         getCommand("clan").setExecutor(clanCommand);
         getCommand("clan").setTabCompleter(clanCommand);
+        if (Bukkit.getPluginManager().isPluginEnabled("MMOItems")) {
+            runeController = new RuneController(this);
+        } else {
+            getLogger().warning("MMOItems plugin not found. Rune Controller will be disabled.");
+        }
+
         if (Bukkit.getPluginManager().isPluginEnabled("PlaceholderAPI")) {
             new RegisterPlaceholders(this, clanManager).register();
         }
@@ -59,6 +67,7 @@ public final class ElytriaEssentials extends JavaPlugin {
             musicManager.shutdown();
             musicManager = null;
         }
+        runeController = null;
     }
 
     public FileConfiguration getLanguageConfig() {
