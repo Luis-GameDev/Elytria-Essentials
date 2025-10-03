@@ -35,7 +35,15 @@ public class CustomMusicManager implements Listener {
     private final Map<UUID, BukkitTask> loopCleanupTasks = new HashMap<>();
     private static final Set<String> VANILLA_MUSIC_KEYS = Set.of(
             "minecraft:custom.ambient_1",
-            "minecraft:custom.ambient_2"
+            "minecraft:custom.ambient_2",
+            "minecraft:music.game",
+            "minecraft:music.creative",
+            "minecraft:music.under_water",
+            "minecraft:music.dripstone_caves",
+            "minecraft:music.deep_dark",
+            "minecraft:music.lush_caves",
+            "minecraft:music.battle",
+            "minecraft:music.menu"
     );
 
     public CustomMusicManager(ElytriaEssentials plugin) {

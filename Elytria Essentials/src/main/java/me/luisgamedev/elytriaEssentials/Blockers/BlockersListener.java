@@ -187,5 +187,15 @@ public class BlockersListener implements Listener {
             event.setCancelled(true);
         }
     }
+
+    @EventHandler
+    public void onSplashPotionUse(PotionSplashEvent event) {
+        event.setCancelled(true);
+    }
+
+    @EventHandler
+    public void onLingeringPotionUse(LingeringPotionSplashEvent event) {
+        event.setCancelled(true);
+    }
 }
 
