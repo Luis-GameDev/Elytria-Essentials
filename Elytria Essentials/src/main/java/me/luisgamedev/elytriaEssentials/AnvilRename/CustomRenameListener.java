@@ -70,15 +70,13 @@ public class CustomRenameListener implements Listener {
 
         AnvilInventory inventory = event.getInventory();
         inventory.setRepairCost(0);
+        schedulePlaceholderRefresh(inventory);
 
         ItemStack leftInput = inventory.getItem(0);
         if (leftInput == null || leftInput.getType().isAir()) {
-            clearPlaceholder(inventory);
             event.setResult(null);
             return;
         }
-
-        inventory.setItem(1, createPriceDisplay());
 
         String renameText = inventory.getRenameText();
         if (renameText == null || renameText.isBlank()) {
@@ -230,7 +228,7 @@ public class CustomRenameListener implements Listener {
         ItemStack leftInput = inventory.getItem(0);
         if (leftInput == null || leftInput.getType().isAir()) {
             clearPlaceholder(inventory);
-        } else {
+        } else if (!isPriceDisplay(inventory.getItem(1))) {
             inventory.setItem(1, createPriceDisplay());
         }
         inventory.setRepairCost(0);
