@@ -15,7 +15,6 @@ import org.bukkit.event.entity.*;
 import org.bukkit.event.inventory.InventoryMoveItemEvent;
 import org.bukkit.event.inventory.InventoryPickupItemEvent;
 import org.bukkit.event.inventory.InventoryType;
-import org.bukkit.event.inventory.PrepareAnvilEvent;
 import org.bukkit.event.inventory.PrepareItemCraftEvent;
 import org.bukkit.event.player.PlayerFishEvent;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
@@ -192,15 +191,6 @@ public class BlockersListener implements Listener {
     public void onHopperPickup(InventoryPickupItemEvent event) {
         if (event.getInventory().getType() == InventoryType.HOPPER) {
             event.setCancelled(true);
-        }
-    }
-
-    @EventHandler
-    public void onPrepareAnvil(PrepareAnvilEvent event) {
-        ItemStack rightInput = event.getInventory().getItem(1);
-        if (rightInput != null && rightInput.getType() != Material.AIR) {
-            event.setResult(new ItemStack(Material.AIR));
-            event.getInventory().setRepairCost(0);
         }
     }
 

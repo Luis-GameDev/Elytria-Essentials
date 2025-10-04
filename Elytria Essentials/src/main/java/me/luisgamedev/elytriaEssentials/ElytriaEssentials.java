@@ -1,6 +1,7 @@
 package me.luisgamedev.elytriaEssentials;
 
 import me.luisgamedev.elytriaEssentials.CustomRepair.CustomRepairManager;
+import me.luisgamedev.elytriaEssentials.AnvilRename.CustomRenameListener;
 import me.luisgamedev.elytriaEssentials.OutpostTeleport.TeleportListener;
 import me.luisgamedev.elytriaEssentials.ClanSystem.ClanListener;
 import me.luisgamedev.elytriaEssentials.ClanSystem.ClanManager;
@@ -54,6 +55,11 @@ public final class ElytriaEssentials extends JavaPlugin {
             CustomRepairManager repairManager = new CustomRepairManager(this, economy);
             if (repairManager.isActive()) {
                 pm.registerEvents(repairManager, this);
+            }
+
+            CustomRenameListener renameListener = new CustomRenameListener(this, economy);
+            if (renameListener.isActive()) {
+                pm.registerEvents(renameListener, this);
             }
         }
 
