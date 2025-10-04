@@ -6,7 +6,6 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.milkbowl.vault.economy.Economy;
 import net.milkbowl.vault.economy.EconomyResponse;
-import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.configuration.ConfigurationSection;
@@ -19,8 +18,6 @@ import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.inventory.PrepareAnvilEvent;
 import org.bukkit.inventory.AnvilInventory;
-import org.bukkit.inventory.Inventory;
-import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.InventoryView;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.Damageable;
@@ -94,29 +91,39 @@ public class CustomRepairManager implements Listener {
     }
 
     private void openRepairMenu(Player player) {
-        RepairInventoryHolder holder = new RepairInventoryHolder();
-        AnvilInventory inventory = (AnvilInventory) Bukkit.createInventory(holder, org.bukkit.event.inventory.InventoryType.ANVIL, menuTitle);
-        holder.setInventory(inventory);
+        InventoryView view = player.openAnvil(player.getLocation(), true);
+        if (view == null) {
+            plugin.getLogger().warning("Failed to open custom repair menu for " + player.getName());
+            return;
+        }
+
+        view.setTitle(menuTitle);
+        if (!(view.getTopInventory() instanceof AnvilInventory inventory)) {
+            plugin.getLogger().warning("Custom repair menu opened without an anvil inventory for " + player.getName());
+            return;
+        }
         inventory.setItem(1, createInfoItem(Component.text("Insert an item to repair", NamedTextColor.YELLOW), List.of()));
         sessions.put(player.getUniqueId(), new RepairSession());
-        player.openInventory(inventory);
     }
 
     @EventHandler
     public void onPrepareAnvil(PrepareAnvilEvent event) {
-        if (!(event.getInventory().getHolder() instanceof RepairInventoryHolder)) {
+        InventoryView view = event.getView();
+        if (!menuTitle.equals(view.title())) {
             return;
         }
 
-        InventoryView view = event.getView();
         if (!(view.getPlayer() instanceof Player player)) {
+            return;
+        }
+
+        if (!(event.getInventory() instanceof AnvilInventory inventory)) {
             return;
         }
 
         RepairSession session = sessions.computeIfAbsent(player.getUniqueId(), uuid -> new RepairSession());
         session.reset();
 
-        AnvilInventory inventory = event.getInventory();
         inventory.setRepairCost(0);
         ItemStack input = inventory.getItem(0);
 
@@ -179,17 +186,18 @@ public class CustomRepairManager implements Listener {
 
     @EventHandler
     public void onInventoryClick(InventoryClickEvent event) {
-        Inventory topInventory = event.getView().getTopInventory();
-        if (!(topInventory instanceof AnvilInventory anvilInventory)) {
+        InventoryView view = event.getView();
+        if (!menuTitle.equals(view.title())) {
             return;
         }
-        if (!(anvilInventory.getHolder() instanceof RepairInventoryHolder)) {
+
+        if (!(view.getTopInventory() instanceof AnvilInventory topInventory)) {
             return;
         }
         if (!(event.getWhoClicked() instanceof Player player)) {
             return;
         }
-
+        AnvilInventory anvilInventory = topInventory;
         RepairSession session = sessions.get(player.getUniqueId());
         if (session == null) {
             event.setCancelled(true);
@@ -261,11 +269,12 @@ public class CustomRepairManager implements Listener {
 
     @EventHandler
     public void onInventoryDrag(InventoryDragEvent event) {
-        Inventory inventory = event.getInventory();
-        if (!(inventory instanceof AnvilInventory anvilInventory)) {
+        InventoryView view = event.getView();
+        if (!menuTitle.equals(view.title())) {
             return;
         }
-        if (!(anvilInventory.getHolder() instanceof RepairInventoryHolder)) {
+
+        if (!(view.getTopInventory() instanceof AnvilInventory)) {
             return;
         }
 
@@ -279,15 +288,15 @@ public class CustomRepairManager implements Listener {
 
     @EventHandler
     public void onInventoryClose(InventoryCloseEvent event) {
-        Inventory inventory = event.getInventory();
-        if (!(inventory instanceof AnvilInventory anvilInventory)) {
-            return;
-        }
-        if (!(anvilInventory.getHolder() instanceof RepairInventoryHolder)) {
+        InventoryView view = event.getView();
+        if (!menuTitle.equals(view.title())) {
             return;
         }
 
-        anvilInventory.setItem(1, null);
+        if (!(view.getTopInventory() instanceof AnvilInventory inventory)) {
+            return;
+        }
+        inventory.setItem(1, null);
         sessions.remove(event.getPlayer().getUniqueId());
     }
 
@@ -319,19 +328,6 @@ public class CustomRepairManager implements Listener {
     private void setRepairCount(ItemMeta meta, int value) {
         PersistentDataContainer container = meta.getPersistentDataContainer();
         container.set(repairCountKey, PersistentDataType.INTEGER, value);
-    }
-
-    private static class RepairInventoryHolder implements InventoryHolder {
-        private AnvilInventory inventory;
-
-        @Override
-        public Inventory getInventory() {
-            return inventory;
-        }
-
-        public void setInventory(AnvilInventory inventory) {
-            this.inventory = inventory;
-        }
     }
 
     private static class RepairSession {
