@@ -196,15 +196,6 @@ public class BlockersListener implements Listener {
     }
 
     @EventHandler
-    public void onPrepareAnvil(PrepareAnvilEvent event) {
-        ItemStack rightInput = event.getInventory().getItem(1);
-        if (rightInput != null && rightInput.getType() != Material.AIR) {
-            event.setResult(new ItemStack(Material.AIR));
-            event.getInventory().setRepairCost(0);
-        }
-    }
-
-    @EventHandler
     public void onRedstoneChange(BlockRedstoneEvent event) {
         if (event.getBlock().getType() == Material.REDSTONE_WIRE || event.getBlock().getType() == Material.REPEATER) {
             event.setNewCurrent(0);
