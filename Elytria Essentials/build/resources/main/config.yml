@@ -66,5 +66,14 @@ custom-repair:
   cost-growth-factor: 1.5
   npcs: [11]
 
+# Custom Rename
+custom-rename:
+  enabled: true
+  price: 250.0
+
+# Random Information
+random-information:
+  interval-seconds: 1200
+
 
 
