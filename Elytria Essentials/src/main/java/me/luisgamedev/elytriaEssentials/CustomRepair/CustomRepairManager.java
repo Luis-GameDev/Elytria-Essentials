@@ -408,7 +408,6 @@ public class CustomRepairManager implements Listener {
     private void returnItems(Player player, RepairSession session) {
         Inventory inventory = session.getInventory();
         ItemStack input = inventory.getItem(INPUT_SLOT);
-        ItemStack result = inventory.getItem(RESULT_SLOT);
         inventory.setItem(INPUT_SLOT, null);
         inventory.setItem(RESULT_SLOT, null);
         inventory.setItem(INFO_SLOT, null);
@@ -417,9 +416,6 @@ public class CustomRepairManager implements Listener {
         Map<Integer, ItemStack> overflow = new HashMap<>();
         if (input != null && !input.getType().isAir()) {
             overflow.putAll(player.getInventory().addItem(input));
-        }
-        if (result != null && !result.getType().isAir()) {
-            overflow.putAll(player.getInventory().addItem(result));
         }
         overflow.values().forEach(item -> player.getWorld().dropItemNaturally(player.getLocation(), item));
     }
