@@ -47,7 +47,7 @@ public class CustomRepairManager implements Listener {
     private final double costGrowthFactor;
     private final NamespacedKey repairCountKey;
     private final Map<UUID, RepairSession> sessions = new HashMap<>();
-    private final Component menuTitle = Component.text("Repair", NamedTextColor.GOLD);
+    private final Component menuTitle = Component.text("Repair", NamedTextColor.DARK_PURPLE);
     private final ItemStack fillerItem;
     private final boolean active;
 
