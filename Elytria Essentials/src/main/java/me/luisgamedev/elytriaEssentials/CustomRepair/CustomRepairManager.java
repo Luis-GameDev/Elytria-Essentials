@@ -97,7 +97,7 @@ public class CustomRepairManager implements Listener {
             return;
         }
 
-        view.setTitle(menuTitle);
+        view.setTitle("Repair");
         if (!(view.getTopInventory() instanceof AnvilInventory inventory)) {
             plugin.getLogger().warning("Custom repair menu opened without an anvil inventory for " + player.getName());
             return;

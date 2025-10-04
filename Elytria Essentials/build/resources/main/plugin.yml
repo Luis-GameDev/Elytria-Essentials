@@ -1,5 +1,5 @@
 name: ElytriaEssentials
-version: '2.1'
+version: '2.2'
 main: me.luisgamedev.elytriaEssentials.ElytriaEssentials
 api-version: '1.21'
 depend: [WorldGuard]
