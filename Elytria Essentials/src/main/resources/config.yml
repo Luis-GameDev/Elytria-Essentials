@@ -66,5 +66,9 @@ custom-repair:
   cost-growth-factor: 1.5
   npcs: [11]
 
+# Random Information
+random-information:
+  interval-seconds: 600
+
 
 
