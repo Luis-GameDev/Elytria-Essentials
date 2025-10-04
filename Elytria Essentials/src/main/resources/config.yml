@@ -68,7 +68,7 @@ custom-repair:
 
 # Random Information
 random-information:
-  interval-seconds: 600
+  interval-seconds: 1200
 
 
 
