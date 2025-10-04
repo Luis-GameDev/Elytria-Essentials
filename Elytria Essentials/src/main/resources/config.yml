@@ -69,7 +69,7 @@ custom-repair:
 # Custom Rename
 custom-rename:
   enabled: true
-  price: 250.0
+  price: 1000.0
 
 # Random Information
 random-information:
