@@ -20,6 +20,7 @@ import java.io.File;
 
 import me.luisgamedev.elytriaEssentials.Blockers.BlockersListener;
 import me.luisgamedev.elytriaEssentials.RuneController.RuneController;
+import me.luisgamedev.elytriaEssentials.RandomInformation.RandomInformationManager;
 
 public final class ElytriaEssentials extends JavaPlugin {
 
@@ -29,6 +30,7 @@ public final class ElytriaEssentials extends JavaPlugin {
 
     private Economy economy;
     private RuneController runeController;
+    private RandomInformationManager randomInformationManager;
 
     @Override
     public void onEnable() {
@@ -74,6 +76,14 @@ public final class ElytriaEssentials extends JavaPlugin {
         } else {
             getLogger().warning("WGRegionEvents plugin not found. Custom music will be disabled.");
         }
+
+        randomInformationManager = new RandomInformationManager(this);
+        long intervalSeconds = getConfig().getLong("random-information.interval-seconds", 600L);
+        if (intervalSeconds > 0) {
+            randomInformationManager.start(intervalSeconds * 20L);
+        } else {
+            getLogger().warning("Random Information feature disabled because interval is not greater than zero.");
+        }
     }
 
     @Override
@@ -81,6 +91,10 @@ public final class ElytriaEssentials extends JavaPlugin {
         if (musicManager != null) {
             musicManager.shutdown();
             musicManager = null;
+        }
+        if (randomInformationManager != null) {
+            randomInformationManager.stop();
+            randomInformationManager = null;
         }
         economy = null;
         runeController = null;
