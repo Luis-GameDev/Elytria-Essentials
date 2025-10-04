@@ -47,7 +47,7 @@ public class CustomRepairManager implements Listener {
     private final double costGrowthFactor;
     private final NamespacedKey repairCountKey;
     private final Map<UUID, RepairSession> sessions = new HashMap<>();
-    private final Component menuTitle = Component.text("Custom Repair", NamedTextColor.GOLD);
+    private final Component menuTitle = Component.text("Repair", NamedTextColor.GOLD);
     private final ItemStack fillerItem;
     private final boolean active;
 
@@ -138,7 +138,6 @@ public class CustomRepairManager implements Listener {
             }
 
             if (rawSlot == INPUT_SLOT) {
-                // allow interaction but update afterwards
                 scheduleRefresh(player, session);
                 return;
             }
