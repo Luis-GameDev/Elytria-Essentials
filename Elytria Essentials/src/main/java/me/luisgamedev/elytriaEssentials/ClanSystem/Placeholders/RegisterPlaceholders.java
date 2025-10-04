@@ -4,16 +4,20 @@ import me.clip.placeholderapi.expansion.PlaceholderExpansion;
 import me.luisgamedev.elytriaEssentials.ClanSystem.Clan;
 import me.luisgamedev.elytriaEssentials.ClanSystem.ClanManager;
 import me.luisgamedev.elytriaEssentials.ElytriaEssentials;
+import me.luisgamedev.elytriaEssentials.Soulbinding.SoulbindingManager;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
 
 public class RegisterPlaceholders extends PlaceholderExpansion {
 
     private final ElytriaEssentials plugin;
     private final ClanManager manager;
+    private final SoulbindingManager soulbindingManager;
 
-    public RegisterPlaceholders(ElytriaEssentials plugin, ClanManager manager) {
+    public RegisterPlaceholders(ElytriaEssentials plugin, ClanManager manager, SoulbindingManager soulbindingManager) {
         this.plugin = plugin;
         this.manager = manager;
+        this.soulbindingManager = soulbindingManager;
     }
 
     @Override
@@ -36,6 +40,15 @@ public class RegisterPlaceholders extends PlaceholderExpansion {
         if (player == null) {
             return "";
         }
+        if (params.equalsIgnoreCase("soulbinding_lore")) {
+            if (soulbindingManager == null) {
+                return "";
+            }
+            ItemStack item = player.getInventory().getItemInMainHand();
+            int count = soulbindingManager.getSoulbindingCount(item);
+            return count > 0 ? "Soulbindings: " + count : "";
+        }
+
         Clan clan = manager.getClan(player.getUniqueId());
         if (params.equalsIgnoreCase("clantag")) {
             return clan != null ? clan.getTag() : "";

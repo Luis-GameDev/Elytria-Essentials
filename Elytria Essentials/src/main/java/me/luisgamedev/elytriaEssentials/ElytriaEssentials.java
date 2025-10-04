@@ -7,6 +7,7 @@ import me.luisgamedev.elytriaEssentials.ClanSystem.ClanManager;
 import me.luisgamedev.elytriaEssentials.ClanSystem.Commands.ClanCommand;
 import me.luisgamedev.elytriaEssentials.ClanSystem.Placeholders.RegisterPlaceholders;
 import me.luisgamedev.elytriaEssentials.Music.CustomMusicManager;
+import me.luisgamedev.elytriaEssentials.Soulbinding.SoulbindingManager;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -29,6 +30,7 @@ public final class ElytriaEssentials extends JavaPlugin {
 
     private Economy economy;
     private RuneController runeController;
+    private SoulbindingManager soulbindingManager;
 
     @Override
     public void onEnable() {
@@ -53,6 +55,14 @@ public final class ElytriaEssentials extends JavaPlugin {
             if (repairManager.isActive()) {
                 pm.registerEvents(repairManager, this);
             }
+
+            SoulbindingManager soulbindingManager = new SoulbindingManager(this, economy);
+            if (soulbindingManager.isActive()) {
+                pm.registerEvents(soulbindingManager, this);
+                this.soulbindingManager = soulbindingManager;
+            } else {
+                this.soulbindingManager = null;
+            }
         }
 
         if (Bukkit.getPluginManager().isPluginEnabled("MMOItems")) {
@@ -63,7 +73,7 @@ public final class ElytriaEssentials extends JavaPlugin {
 
 
         if (Bukkit.getPluginManager().isPluginEnabled("PlaceholderAPI")) {
-            new RegisterPlaceholders(this, clanManager).register();
+            new RegisterPlaceholders(this, clanManager, soulbindingManager).register();
         }
         if (Bukkit.getPluginManager().isPluginEnabled("WGRegionEvents")) {
             CustomMusicManager manager = new CustomMusicManager(this);
@@ -84,6 +94,11 @@ public final class ElytriaEssentials extends JavaPlugin {
         }
         economy = null;
         runeController = null;
+        soulbindingManager = null;
+    }
+
+    public SoulbindingManager getSoulbindingManager() {
+        return soulbindingManager;
     }
 
     public FileConfiguration getLanguageConfig() {

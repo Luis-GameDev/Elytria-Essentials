@@ -66,5 +66,14 @@ custom-repair:
   cost-growth-factor: 1.5
   npcs: [11]
 
+# Soulbindings
+soulbindings:
+  enabled: true
+  npc-id: 12
+  price-per-soulbinding: 250.0
+  max-stack: 3
+  durability-loss-flat: 25
+  durability-loss-percent: 0.05
+
 
 
