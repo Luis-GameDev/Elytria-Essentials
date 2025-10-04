@@ -38,6 +38,7 @@ public class CustomRepairManager implements Listener {
     private static final int INVENTORY_SIZE = 27;
     private static final int INPUT_SLOT = 10;
     private static final int INFO_SLOT = 13;
+    private static final NamespacedKey COIN_MODEL_KEY = NamespacedKey.fromString("elytria:coin");
     private static final int RESULT_SLOT = 16;
 
     private final ElytriaEssentials plugin;
@@ -390,6 +391,9 @@ public class CustomRepairManager implements Listener {
             meta.lore(null);
         } else {
             meta.lore(lore);
+        }
+        if (COIN_MODEL_KEY != null && (material == Material.PAPER || material == Material.EMERALD)) {
+            meta.setItemModel(COIN_MODEL_KEY);
         }
         item.setItemMeta(meta);
         return item;
