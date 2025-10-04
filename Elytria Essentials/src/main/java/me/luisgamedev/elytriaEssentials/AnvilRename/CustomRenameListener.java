@@ -71,6 +71,7 @@ public class CustomRenameListener implements Listener {
         AnvilInventory inventory = event.getInventory();
         inventory.setRepairCost(0);
         schedulePlaceholderRefresh(inventory);
+        inventory.setItem(2, null);
 
         ItemStack leftInput = inventory.getItem(0);
         if (leftInput == null || leftInput.getType().isAir()) {
@@ -92,6 +93,7 @@ public class CustomRenameListener implements Listener {
             result.setItemMeta(meta);
         }
         event.setResult(result);
+        inventory.setItem(2, result);
     }
 
     @EventHandler
@@ -164,7 +166,7 @@ public class CustomRenameListener implements Listener {
         }
 
         ItemStack leftInput = inventory.getItem(0);
-        ItemStack result = inventory.getItem(2);
+        ItemStack result = inventory.getResult();
         if (leftInput == null || leftInput.getType().isAir() || result == null || result.getType().isAir()) {
             event.setCancelled(true);
             return;
@@ -176,29 +178,31 @@ public class CustomRenameListener implements Listener {
             return;
         }
 
+        boolean shiftClick = event.isShiftClick();
+        ItemStack resultClone = result.clone();
+
+        event.setCancelled(true);
+
         if (renameCost > 0D) {
             if (!economy.has(player, renameCost)) {
-                event.setCancelled(true);
                 player.sendMessage(Component.text("You need " + formatCurrency(renameCost) + " to rename this item.", NamedTextColor.RED));
                 return;
             }
 
             EconomyResponse response = economy.withdrawPlayer(player, renameCost);
             if (!response.transactionSuccess()) {
-                event.setCancelled(true);
                 player.sendMessage(Component.text("Transaction failed: " + response.errorMessage, NamedTextColor.RED));
                 return;
             }
 
-            Bukkit.getScheduler().runTask(plugin, () -> finalizeTransaction(player, inventory, renameCost, true));
+            Bukkit.getScheduler().runTask(plugin, () -> finalizeTransaction(player, inventory, resultClone, renameCost, true, shiftClick));
         } else {
-            Bukkit.getScheduler().runTask(plugin, () -> finalizeTransaction(player, inventory, 0D, false));
+            Bukkit.getScheduler().runTask(plugin, () -> finalizeTransaction(player, inventory, resultClone, 0D, false, shiftClick));
         }
     }
 
-    private void finalizeTransaction(Player player, AnvilInventory inventory, double cost, boolean withdrew) {
-        boolean renameCompleted = isRenameCompleted(inventory);
-        if (!renameCompleted) {
+    private void finalizeTransaction(Player player, AnvilInventory inventory, ItemStack result, double cost, boolean withdrew, boolean shiftClick) {
+        if (!deliverResult(player, result, shiftClick)) {
             if (withdrew) {
                 economy.depositPlayer(player, cost);
                 player.sendMessage(Component.text("Rename failed. Refunded " + formatCurrency(cost) + ".", NamedTextColor.RED));
@@ -207,6 +211,11 @@ public class CustomRenameListener implements Listener {
             return;
         }
 
+        consumeLeftInput(inventory);
+        inventory.setItem(2, null);
+        inventory.setRepairCost(0);
+        player.updateInventory();
+
         if (withdrew && cost > 0D) {
             player.sendMessage(Component.text("Renamed item for " + formatCurrency(cost) + ".", NamedTextColor.GOLD));
         }
@@ -214,10 +223,49 @@ public class CustomRenameListener implements Listener {
         schedulePlaceholderRefresh(inventory);
     }
 
-    private boolean isRenameCompleted(AnvilInventory inventory) {
+    private boolean deliverResult(Player player, ItemStack result, boolean shiftClick) {
+        if (shiftClick) {
+            if (!canStoreResult(player, result)) {
+                player.sendMessage(Component.text("You need free inventory space to take the renamed item.", NamedTextColor.RED));
+                return false;
+            }
+            player.getInventory().addItem(result);
+        } else {
+            ItemStack cursor = player.getItemOnCursor();
+            if (cursor != null && !cursor.getType().isAir()) {
+                player.sendMessage(Component.text("Clear your cursor before taking the renamed item.", NamedTextColor.RED));
+                return false;
+            }
+            player.setItemOnCursor(result);
+        }
+        return true;
+    }
+
+    private boolean canStoreResult(Player player, ItemStack item) {
+        int remaining = item.getAmount();
+        int maxStack = item.getMaxStackSize();
+        for (ItemStack content : player.getInventory().getStorageContents()) {
+            if (content == null || content.getType().isAir()) {
+                remaining -= Math.min(maxStack, remaining);
+            } else if (content.isSimilar(item)) {
+                int space = Math.min(maxStack, content.getMaxStackSize()) - content.getAmount();
+                if (space > 0) {
+                    remaining -= Math.min(space, remaining);
+                }
+            }
+            if (remaining <= 0) {
+                return true;
+            }
+        }
+        return remaining <= 0;
+    }
+
+    private void consumeLeftInput(AnvilInventory inventory) {
         ItemStack left = inventory.getItem(0);
-        ItemStack result = inventory.getItem(2);
-        return (left == null || left.getType().isAir()) && (result == null || result.getType().isAir());
+        if (left == null || left.getType().isAir()) {
+            return;
+        }
+        inventory.setItem(0, null);
     }
 
     private void schedulePlaceholderRefresh(AnvilInventory inventory) {
@@ -258,8 +306,7 @@ public class CustomRenameListener implements Listener {
         ItemMeta meta = item.getItemMeta();
         meta.displayName(Component.text("Rename Cost: " + formatCurrency(renameCost), NamedTextColor.GOLD));
         meta.lore(List.of(
-                Component.text("Type a new name below.", NamedTextColor.YELLOW),
-                Component.text("No experience required.", NamedTextColor.GRAY)
+                Component.text("Type a new name below.", NamedTextColor.YELLOW)
         ));
         if (COIN_MODEL_KEY != null) {
             meta.setItemModel(COIN_MODEL_KEY);
