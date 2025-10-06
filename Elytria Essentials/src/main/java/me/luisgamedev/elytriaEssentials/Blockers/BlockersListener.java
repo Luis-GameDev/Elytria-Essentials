@@ -106,7 +106,7 @@ public class BlockersListener implements Listener {
             e.setCancelled(true);
             return;
         }
-        if (BAN_NATURAL_SPAWNS.contains(type) && e.getSpawnReason() == CreatureSpawnEvent.SpawnReason.NATURAL) {
+        if (BAN_NATURAL_SPAWNS.contains(type) && e.getSpawnReason() == CreatureSpawnEvent.SpawnReason.NATURAL || e.getSpawnReason() == CreatureSpawnEvent.SpawnReason.BUILD_WITHER) {
             e.setCancelled(true);
             return;
         }
