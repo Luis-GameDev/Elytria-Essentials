@@ -1,10 +1,6 @@
-name: ElytriaEssentials
-version: '2.2'
+name: RegionMusic
+version: '1.0'
 main: me.luisgamedev.elytriaEssentials.ElytriaEssentials
 api-version: '1.21'
 depend: [WorldGuard]
-softdepend: [Citizens, WGRegionEvents, MMOItems, Vault]
-commands:
-  clan:
-    description: Clan management command
-    usage: /clan
+softdepend: [WGRegionEvents]

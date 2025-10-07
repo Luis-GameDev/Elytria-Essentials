@@ -1,78 +1,19 @@
 package me.luisgamedev.elytriaEssentials;
 
-import me.luisgamedev.elytriaEssentials.CustomRepair.CustomRepairManager;
-import me.luisgamedev.elytriaEssentials.AnvilRename.CustomRenameListener;
-import me.luisgamedev.elytriaEssentials.OutpostTeleport.TeleportListener;
-import me.luisgamedev.elytriaEssentials.ClanSystem.ClanListener;
-import me.luisgamedev.elytriaEssentials.ClanSystem.ClanManager;
-import me.luisgamedev.elytriaEssentials.ClanSystem.Commands.ClanCommand;
-import me.luisgamedev.elytriaEssentials.ClanSystem.Placeholders.RegisterPlaceholders;
 import me.luisgamedev.elytriaEssentials.Music.CustomMusicManager;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.configuration.file.FileConfiguration;
-import org.bukkit.configuration.file.YamlConfiguration;
-import org.bukkit.ChatColor;
-import org.bukkit.plugin.RegisteredServiceProvider;
-import net.milkbowl.vault.economy.Economy;
-
-import java.io.File;
-
-import me.luisgamedev.elytriaEssentials.Blockers.BlockersListener;
-import me.luisgamedev.elytriaEssentials.RuneController.RuneController;
-import me.luisgamedev.elytriaEssentials.RandomInformation.RandomInformationManager;
 
 public final class ElytriaEssentials extends JavaPlugin {
 
-    private ClanManager clanManager;
-    private FileConfiguration languageConfig;
     private CustomMusicManager musicManager;
-
-    private Economy economy;
-    private RuneController runeController;
-    private RandomInformationManager randomInformationManager;
 
     @Override
     public void onEnable() {
         saveDefaultConfig();
-        File langFile = new File(getDataFolder(), "language.yml");
-        if (!langFile.exists()) {
-            saveResource("language.yml", false);
-        }
-        languageConfig = YamlConfiguration.loadConfiguration(langFile);
         PluginManager pm = Bukkit.getPluginManager();
-        pm.registerEvents(new TeleportListener(this), this);
-        pm.registerEvents(new BlockersListener(), this);
-        clanManager = new ClanManager(this);
-        pm.registerEvents(new ClanListener(this, clanManager), this);
-        ClanCommand clanCommand = new ClanCommand(this, clanManager);
-        getCommand("clan").setExecutor(clanCommand);
-        getCommand("clan").setTabCompleter(clanCommand);
 
-        setupEconomy();
-        if (economy != null) {
-            CustomRepairManager repairManager = new CustomRepairManager(this, economy);
-            if (repairManager.isActive()) {
-                pm.registerEvents(repairManager, this);
-            }
-
-            CustomRenameListener renameListener = new CustomRenameListener(this, economy);
-            if (renameListener.isActive()) {
-                pm.registerEvents(renameListener, this);
-            }
-        }
-
-        if (Bukkit.getPluginManager().isPluginEnabled("MMOItems")) {
-            runeController = new RuneController(this);
-        } else {
-            getLogger().warning("MMOItems plugin not found. Rune Controller will be disabled.");
-        }
-
-
-        if (Bukkit.getPluginManager().isPluginEnabled("PlaceholderAPI")) {
-            new RegisterPlaceholders(this, clanManager).register();
-        }
         if (Bukkit.getPluginManager().isPluginEnabled("WGRegionEvents")) {
             CustomMusicManager manager = new CustomMusicManager(this);
             if (manager.hasEntries()) {
@@ -82,14 +23,6 @@ public final class ElytriaEssentials extends JavaPlugin {
         } else {
             getLogger().warning("WGRegionEvents plugin not found. Custom music will be disabled.");
         }
-
-        randomInformationManager = new RandomInformationManager(this);
-        long intervalSeconds = getConfig().getLong("random-information.interval-seconds", 600L);
-        if (intervalSeconds > 0) {
-            randomInformationManager.start(intervalSeconds * 20L);
-        } else {
-            getLogger().warning("Random Information feature disabled because interval is not greater than zero.");
-        }
     }
 
     @Override
@@ -98,34 +31,5 @@ public final class ElytriaEssentials extends JavaPlugin {
             musicManager.shutdown();
             musicManager = null;
         }
-        if (randomInformationManager != null) {
-            randomInformationManager.stop();
-            randomInformationManager = null;
-        }
-        economy = null;
-        runeController = null;
-    }
-
-    public FileConfiguration getLanguageConfig() {
-        return languageConfig;
-    }
-
-    public String getMessage(String path) {
-        String prefix = languageConfig.getString("prefix", "");
-        String message = languageConfig.getString(path, "");
-        return ChatColor.translateAlternateColorCodes('&', prefix + message);
-    }
-
-    private void setupEconomy() {
-        if (!Bukkit.getPluginManager().isPluginEnabled("Vault")) {
-            getLogger().warning("Vault plugin not found. Custom repair feature disabled.");
-            return;
-        }
-        RegisteredServiceProvider<Economy> registration = getServer().getServicesManager().getRegistration(Economy.class);
-        if (registration == null) {
-            getLogger().warning("No Vault economy provider registered. Custom repair feature disabled.");
-            return;
-        }
-        economy = registration.getProvider();
     }
 }
