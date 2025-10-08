@@ -3,6 +3,7 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/Elytria_Essentials.main.iml" filepath="$PROJECT_DIR$/.idea/modules/Elytria_Essentials.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/me.luisgamedev.Elytria_Essentials.main.iml" filepath="$PROJECT_DIR$/.idea/modules/me.luisgamedev.Elytria_Essentials.main.iml" />
     </modules>
   </component>
 </project>
