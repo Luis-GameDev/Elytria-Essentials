@@ -32,6 +32,7 @@ public final class RuneController {
             "RUNE_OF_PROTECTION"
     ));
 
+    // TODO: Fix method finding
     private final ElytriaEssentials plugin;
     private final Listener listener = new Listener() {};
     private final NamespacedKey baseUnbreakingKey;
