@@ -8,6 +8,7 @@ import me.luisgamedev.elytriaEssentials.ClanSystem.ClanManager;
 import me.luisgamedev.elytriaEssentials.ClanSystem.Commands.ClanCommand;
 import me.luisgamedev.elytriaEssentials.ClanSystem.Placeholders.RegisterPlaceholders;
 import me.luisgamedev.elytriaEssentials.Music.CustomMusicManager;
+import me.luisgamedev.elytriaEssentials.HUD.HudManager;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -28,6 +29,7 @@ public final class ElytriaEssentials extends JavaPlugin {
     private ClanManager clanManager;
     private FileConfiguration languageConfig;
     private CustomMusicManager musicManager;
+    private HudManager hudManager;
 
     private Economy economy;
     private RuneController runeController;
@@ -83,6 +85,13 @@ public final class ElytriaEssentials extends JavaPlugin {
             getLogger().warning("WGRegionEvents plugin not found. Custom music will be disabled.");
         }
 
+        if (Bukkit.getPluginManager().isPluginEnabled("MMOCore") &&
+                Bukkit.getPluginManager().isPluginEnabled("MythicHUD")) {
+            hudManager = new HudManager(this);
+        } else {
+            getLogger().info("MMOCore or MythicHUD not detected. MythicHUD class layouts will not be managed.");
+        }
+
         randomInformationManager = new RandomInformationManager(this);
         long intervalSeconds = getConfig().getLong("random-information.interval-seconds", 600L);
         if (intervalSeconds > 0) {
@@ -101,6 +110,10 @@ public final class ElytriaEssentials extends JavaPlugin {
         if (randomInformationManager != null) {
             randomInformationManager.stop();
             randomInformationManager = null;
+        }
+        if (hudManager != null) {
+            hudManager.shutdown();
+            hudManager = null;
         }
         economy = null;
         runeController = null;
