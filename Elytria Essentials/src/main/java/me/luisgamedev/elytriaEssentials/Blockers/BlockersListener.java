@@ -16,10 +16,7 @@ import org.bukkit.event.inventory.InventoryMoveItemEvent;
 import org.bukkit.event.inventory.InventoryPickupItemEvent;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.inventory.PrepareItemCraftEvent;
-import org.bukkit.event.player.PlayerFishEvent;
-import org.bukkit.event.player.PlayerItemConsumeEvent;
-import org.bukkit.event.player.PlayerPortalEvent;
-import org.bukkit.event.player.PlayerTeleportEvent;
+import org.bukkit.event.player.*;
 import org.bukkit.event.world.PortalCreateEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.Recipe;
@@ -81,6 +78,13 @@ public class BlockersListener implements Listener {
                 event.getInventory().setResult(new ItemStack(Material.AIR));
             }
         }
+    }
+
+    @EventHandler
+    public void onShulkerOpen(PlayerInteractEvent e) {
+        if (e.getClickedBlock() == null) return;
+        Material type = e.getClickedBlock().getType();
+        if (type.name().endsWith("SHULKER_BOX")) e.setCancelled(true);
     }
 
     @EventHandler
