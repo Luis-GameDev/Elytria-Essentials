@@ -75,5 +75,11 @@ custom-rename:
 random-information:
   interval-seconds: 1200
 
+# Chest Limiter
+chest-limiter:
+  enabled: true
+  max-chests-per-chunk: 50
+  limit-message: "&cThis chunk already has the maximum number of chests (%max%)."
+
 
 
