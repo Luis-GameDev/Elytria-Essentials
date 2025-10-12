@@ -23,6 +23,7 @@ import java.io.File;
 import me.luisgamedev.elytriaEssentials.Blockers.BlockersListener;
 import me.luisgamedev.elytriaEssentials.RuneController.RuneController;
 import me.luisgamedev.elytriaEssentials.RandomInformation.RandomInformationManager;
+import me.luisgamedev.elytriaEssentials.ChestLimiter.ChestLimiterManager;
 
 public final class ElytriaEssentials extends JavaPlugin {
 
@@ -46,6 +47,7 @@ public final class ElytriaEssentials extends JavaPlugin {
         PluginManager pm = Bukkit.getPluginManager();
         pm.registerEvents(new TeleportListener(this), this);
         pm.registerEvents(new BlockersListener(), this);
+        pm.registerEvents(new ChestLimiterManager(this), this);
         clanManager = new ClanManager(this);
         pm.registerEvents(new ClanListener(this, clanManager), this);
         ClanCommand clanCommand = new ClanCommand(this, clanManager);
