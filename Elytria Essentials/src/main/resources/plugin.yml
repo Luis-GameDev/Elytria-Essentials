@@ -8,3 +8,8 @@ commands:
   clan:
     description: Clan management command
     usage: /clan
+  npcshop:
+    description: Manage NPC buy shops
+    usage: /npcshop additem <shopId> <price>
+    permission: elytria.npcshop.manage
+    permission-message: You do not have permission to manage NPC shops.
