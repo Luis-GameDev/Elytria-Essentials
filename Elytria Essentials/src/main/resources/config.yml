@@ -84,9 +84,9 @@ chest-limiter:
 # NPC Shops
 npc-shops:
   example-shop:
-    npc-id: 25
-    title: "&6Example Shop"
-    size: 27
+    npc-id: 3
+    title: "&6Decoration Shop"
+    size: 54
 
 
 
