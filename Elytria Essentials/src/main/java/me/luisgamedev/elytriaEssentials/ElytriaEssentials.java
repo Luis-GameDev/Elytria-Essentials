@@ -9,6 +9,9 @@ import me.luisgamedev.elytriaEssentials.ClanSystem.Commands.ClanCommand;
 import me.luisgamedev.elytriaEssentials.ClanSystem.Placeholders.RegisterPlaceholders;
 import me.luisgamedev.elytriaEssentials.Music.CustomMusicManager;
 import me.luisgamedev.elytriaEssentials.HUD.HudManager;
+import me.luisgamedev.elytriaEssentials.ShopSystem.ShopCommand;
+import me.luisgamedev.elytriaEssentials.ShopSystem.ShopListener;
+import me.luisgamedev.elytriaEssentials.ShopSystem.ShopManager;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -17,6 +20,7 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.ChatColor;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import net.milkbowl.vault.economy.Economy;
+import org.bukkit.command.PluginCommand;
 
 import java.io.File;
 
@@ -35,6 +39,7 @@ public final class ElytriaEssentials extends JavaPlugin {
     private Economy economy;
     private RuneController runeController;
     private RandomInformationManager randomInformationManager;
+    private ShopManager shopManager;
 
     @Override
     public void onEnable() {
@@ -101,6 +106,18 @@ public final class ElytriaEssentials extends JavaPlugin {
         } else {
             getLogger().warning("Random Information feature disabled because interval is not greater than zero.");
         }
+
+        shopManager = new ShopManager(this);
+        ShopListener shopListener = new ShopListener(this, shopManager);
+        pm.registerEvents(shopListener, this);
+        ShopCommand shopCommand = new ShopCommand(shopManager);
+        PluginCommand npcShopCommand = getCommand("npcshop");
+        if (npcShopCommand != null) {
+            npcShopCommand.setExecutor(shopCommand);
+            npcShopCommand.setTabCompleter(shopCommand);
+        } else {
+            getLogger().warning("npcshop command is not defined in plugin.yml");
+        }
     }
 
     @Override
@@ -119,6 +136,7 @@ public final class ElytriaEssentials extends JavaPlugin {
         }
         economy = null;
         runeController = null;
+        shopManager = null;
     }
 
     public FileConfiguration getLanguageConfig() {
@@ -142,5 +160,13 @@ public final class ElytriaEssentials extends JavaPlugin {
             return;
         }
         economy = registration.getProvider();
+    }
+
+    public Economy getEconomy() {
+        return economy;
+    }
+
+    public ShopManager getShopManager() {
+        return shopManager;
     }
 }
