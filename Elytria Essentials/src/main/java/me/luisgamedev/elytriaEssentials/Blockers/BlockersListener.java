@@ -8,6 +8,7 @@ import org.bukkit.entity.TNTPrimed;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockDispenseEvent;
 import org.bukkit.event.block.BlockPistonRetractEvent;
 import org.bukkit.event.block.BlockRedstoneEvent;
@@ -83,8 +84,11 @@ public class BlockersListener implements Listener {
     @EventHandler
     public void onShulkerOpen(PlayerInteractEvent e) {
         if (e.getClickedBlock() == null) return;
+        if (e.getAction() != Action.RIGHT_CLICK_BLOCK) return;
         Material type = e.getClickedBlock().getType();
-        if (type.name().endsWith("SHULKER_BOX")) e.setCancelled(true);
+        if (type.name().endsWith("SHULKER_BOX")) {
+            e.setCancelled(true);
+        }
     }
 
     @EventHandler

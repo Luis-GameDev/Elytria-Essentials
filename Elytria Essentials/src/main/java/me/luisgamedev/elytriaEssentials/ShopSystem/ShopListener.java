@@ -67,13 +67,13 @@ public class ShopListener implements Listener {
         if (session == null) {
             return;
         }
-        if (!event.getView().getTopInventory().equals(session.inventory())) {
+        if (!event.getView().getTopInventory().equals(session.inventory)) {
             return;
         }
         if (event.getClickedInventory() == null) {
             return;
         }
-        if (!event.getClickedInventory().equals(session.inventory())) {
+        if (!event.getClickedInventory().equals(session.inventory)) {
             if (event.isShiftClick()) {
                 event.setCancelled(true);
             }
