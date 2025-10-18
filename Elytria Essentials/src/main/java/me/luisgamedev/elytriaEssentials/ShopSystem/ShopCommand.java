@@ -39,10 +39,6 @@ public class ShopCommand implements CommandExecutor, TabCompleter {
             sender.sendMessage(ChatColor.translateAlternateColorCodes('&', "&cUnknown shop '&4" + shopId + "&c'."));
             return true;
         }
-        if (shop.getItems().size() >= shop.getSize()) {
-            sender.sendMessage(ChatColor.translateAlternateColorCodes('&', "&cThis shop is full."));
-            return true;
-        }
         double price;
         try {
             price = Double.parseDouble(args[2]);
