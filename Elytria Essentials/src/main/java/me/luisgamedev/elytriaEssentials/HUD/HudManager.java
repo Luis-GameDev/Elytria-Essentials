@@ -7,6 +7,7 @@ import org.bukkit.event.Event;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.plugin.EventExecutor;
 import org.bukkit.plugin.Plugin;
@@ -216,8 +217,27 @@ public class HudManager implements Listener {
     }
 
     private void dispatchLayoutCommand(String playerName, String layout, String action) {
+        dispatchLayoutCommand(playerName, layout, action, false);
+    }
+
+    private void dispatchLayoutCommand(String playerName, String layout, String action, boolean silent) {
         String command = String.format("mh layout %s %s %s", playerName, action, layout);
+        if (silent) {
+            command += " -s";
+        }
         Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command);
+    }
+
+    @EventHandler
+    public void onPlayerJoin(PlayerJoinEvent event) {
+        Player player = event.getPlayer();
+        assignDefaultLayouts(player);
+    }
+
+    private void assignDefaultLayouts(Player player) {
+        String playerName = player.getName();
+        dispatchLayoutCommand(playerName, "mmohud-layout", "add", true);
+        dispatchLayoutCommand(playerName, "partyhud-mmo-layout", "add", true);
     }
 
     @EventHandler
