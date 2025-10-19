@@ -41,5 +41,10 @@
       <option name="name" value="maven3" />
       <option name="url" value="https://maven.enginehub.org/repo/" />
     </remote-repository>
+    <remote-repository>
+      <option name="id" value="maven4" />
+      <option name="name" value="maven4" />
+      <option name="url" value="https://repo.mythiccraft.io/snapshots" />
+    </remote-repository>
   </component>
 </project>

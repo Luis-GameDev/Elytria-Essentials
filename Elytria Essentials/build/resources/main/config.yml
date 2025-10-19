@@ -85,8 +85,8 @@ chest-limiter:
 npc-shops:
   example-shop:
     npc-id: 3
-    title: "&6Decoration Shop"
-    size: 54
+    title: "&5Decoration Shop"
+    size: 54 # Number of slots in the shop GUI (must be a multiple of 9, max 54)
 
 
 

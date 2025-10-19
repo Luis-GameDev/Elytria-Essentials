@@ -3,7 +3,7 @@ version: '2.3'
 main: me.luisgamedev.elytriaEssentials.ElytriaEssentials
 api-version: '1.21'
 depend: [WorldGuard]
-softdepend: [Citizens, WGRegionEvents, MMOItems, Vault, MMOCore, MythicHUD]
+softdepend: [Citizens, WGRegionEvents, MMOItems, Vault, MMOCore, MythicHUD, MythicLib]
 commands:
   clan:
     description: Clan management command
@@ -12,4 +12,10 @@ commands:
     description: Manage NPC buy shops
     usage: /npcshop additem <shopId> <price>
     permission: elytria.npcshop.manage
+    default: op
     permission-message: You do not have permission to manage NPC shops.
+  mmocd:
+    description: Reduce a player's MMOCore/MythicLib skill cooldown (console-only).
+    usage: /mmocd <abilityId> <percent(1-100)> <playerName>
+    permission: elytria.cooldownAPI.use
+    default: op

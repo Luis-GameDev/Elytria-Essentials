@@ -1,5 +1,6 @@
 package me.luisgamedev.elytriaEssentials;
 
+import me.luisgamedev.elytriaEssentials.CooldownAPI.CooldownAdjustCommand;
 import me.luisgamedev.elytriaEssentials.CustomRepair.CustomRepairManager;
 import me.luisgamedev.elytriaEssentials.AnvilRename.CustomRenameListener;
 import me.luisgamedev.elytriaEssentials.OutpostTeleport.TeleportListener;
@@ -58,6 +59,7 @@ public final class ElytriaEssentials extends JavaPlugin {
         ClanCommand clanCommand = new ClanCommand(this, clanManager);
         getCommand("clan").setExecutor(clanCommand);
         getCommand("clan").setTabCompleter(clanCommand);
+        getCommand("mmocd").setExecutor(new CooldownAdjustCommand());
 
         setupEconomy();
         if (economy != null) {
