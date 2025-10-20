@@ -3,7 +3,12 @@ package me.luisgamedev.elytriaEssentials.Blockers;
 import org.bukkit.Keyed;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
+import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Item;
+import org.bukkit.entity.LivingEntity;
+import org.bukkit.entity.Monster;
+import org.bukkit.entity.Player;
+import org.bukkit.entity.Projectile;
 import org.bukkit.entity.TNTPrimed;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -21,7 +26,6 @@ import org.bukkit.event.player.*;
 import org.bukkit.event.world.PortalCreateEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.Recipe;
-import org.bukkit.entity.EntityType;
 
 import java.util.EnumSet;
 import java.util.Set;
@@ -235,6 +239,31 @@ public class BlockersListener implements Listener {
 
     @EventHandler
     public void onLingeringPotionUse(LingeringPotionSplashEvent event) {
+        event.setCancelled(true);
+    }
+
+    @EventHandler(ignoreCancelled = true)
+    public void onPlayerDamageNonAggroHostile(EntityDamageByEntityEvent event) {
+        if (!(event.getEntity() instanceof Monster monster)) {
+            return;
+        }
+
+        Player attacker = null;
+        if (event.getDamager() instanceof Player player) {
+            attacker = player;
+        } else if (event.getDamager() instanceof Projectile projectile && projectile.getShooter() instanceof Player shooter) {
+            attacker = shooter;
+        }
+
+        if (attacker == null) {
+            return;
+        }
+
+        LivingEntity target = monster.getTarget();
+        if (target instanceof Player) {
+            return;
+        }
+
         event.setCancelled(true);
     }
 }
