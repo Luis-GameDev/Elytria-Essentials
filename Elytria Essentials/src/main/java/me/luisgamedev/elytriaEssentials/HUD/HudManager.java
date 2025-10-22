@@ -1,6 +1,7 @@
 package me.luisgamedev.elytriaEssentials.HUD;
 
 import me.luisgamedev.elytriaEssentials.ElytriaEssentials;
+import net.Indyuce.mmocore.api.event.PlayerChangeClassEvent;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
@@ -36,6 +37,11 @@ public class HudManager implements Listener {
         this.plugin = plugin;
         Bukkit.getPluginManager().registerEvents(this, plugin);
         registerMmocoreListener();
+    }
+
+    @EventHandler
+    private void PlayerChangeClassEvent(PlayerChangeClassEvent event) {
+        // THIS WORKS
     }
 
     private void registerMmocoreListener() {
