@@ -8,19 +8,14 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
-import org.bukkit.event.player.PlayerQuitEvent;
 
-import java.util.HashMap;
 import java.util.Locale;
-import java.util.Map;
-import java.util.UUID;
 
 public class HudManager implements Listener {
-    private final ElytriaEssentials plugin;
-    private final Map<UUID, String> activeLayouts = new HashMap<>();
+    private final MythicHudIntegration mythicHud;
 
     public HudManager(ElytriaEssentials plugin) {
-        this.plugin = plugin;
+        this.mythicHud = new MythicHudIntegration(plugin.getLogger());
         Bukkit.getPluginManager().registerEvents(this, plugin);
     }
 
@@ -45,34 +40,34 @@ public class HudManager implements Listener {
         }
 
         String normalizedLayout = buildLayoutName(classIdentifier);
-        UUID playerId = player.getUniqueId();
-        String previousLayout = activeLayouts.get(playerId);
+        String previousLayout = buildLayoutName(event.getOldClass());
 
         if (previousLayout != null && !previousLayout.equalsIgnoreCase(normalizedLayout)) {
-            dispatchLayoutCommand(player.getName(), previousLayout, "remove");
+            mythicHud.removeLayout(player, previousLayout);
         }
 
-        if (!normalizedLayout.equalsIgnoreCase(previousLayout)) {
-            dispatchLayoutCommand(player.getName(), normalizedLayout, "add");
-            activeLayouts.put(playerId, normalizedLayout);
+        mythicHud.addLayout(player, normalizedLayout);
+    }
+
+    private String buildLayoutName(PlayerClass playerClass) {
+        if (playerClass == null) {
+            return null;
         }
+
+        String classIdentifier = playerClass.getId();
+        if (classIdentifier == null || classIdentifier.isBlank()) {
+            classIdentifier = playerClass.getName();
+        }
+        if (classIdentifier == null || classIdentifier.isBlank()) {
+            return null;
+        }
+
+        return buildLayoutName(classIdentifier);
     }
 
     private String buildLayoutName(String className) {
         String normalized = className.toLowerCase(Locale.ROOT).replace(' ', '-');
         return normalized + "-skillhud-layout";
-    }
-
-    private void dispatchLayoutCommand(String playerName, String layout, String action) {
-        dispatchLayoutCommand(playerName, layout, action, false);
-    }
-
-    private void dispatchLayoutCommand(String playerName, String layout, String action, boolean silent) {
-        String command = String.format("mh layout %s %s %s", playerName, action, layout);
-        if (silent) {
-            command += " -s";
-        }
-        Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command);
     }
 
     @EventHandler
@@ -82,17 +77,11 @@ public class HudManager implements Listener {
     }
 
     private void assignDefaultLayouts(Player player) {
-        String playerName = player.getName();
-        dispatchLayoutCommand(playerName, "mmohud-layout", "add", true);
-        dispatchLayoutCommand(playerName, "partyhud-mmo-layout", "add", true);
-    }
-
-    @EventHandler
-    public void onPlayerQuit(PlayerQuitEvent event) {
-        activeLayouts.remove(event.getPlayer().getUniqueId());
+        mythicHud.addLayout(player, "mmohud-layout");
+        mythicHud.addLayout(player, "partyhud-mmo-layout");
     }
 
     public void shutdown() {
-        activeLayouts.clear();
+        mythicHud.shutdown();
     }
 }
