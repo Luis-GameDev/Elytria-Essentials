@@ -29,6 +29,7 @@ import me.luisgamedev.elytriaEssentials.Blockers.BlockersListener;
 import me.luisgamedev.elytriaEssentials.RuneController.RuneController;
 import me.luisgamedev.elytriaEssentials.RandomInformation.RandomInformationManager;
 import me.luisgamedev.elytriaEssentials.ChestLimiter.ChestLimiterManager;
+import me.luisgamedev.elytriaEssentials.MMOItems.PersistentDataTransferListener;
 
 public final class ElytriaEssentials extends JavaPlugin {
 
@@ -41,6 +42,7 @@ public final class ElytriaEssentials extends JavaPlugin {
     private RuneController runeController;
     private RandomInformationManager randomInformationManager;
     private ShopManager shopManager;
+    private PersistentDataTransferListener persistentDataTransferListener;
 
     @Override
     public void onEnable() {
@@ -76,6 +78,7 @@ public final class ElytriaEssentials extends JavaPlugin {
 
         if (Bukkit.getPluginManager().isPluginEnabled("MMOItems")) {
             runeController = new RuneController(this);
+            persistentDataTransferListener = new PersistentDataTransferListener(this);
         } else {
             getLogger().warning("MMOItems plugin not found. Rune Controller will be disabled.");
         }
@@ -139,6 +142,7 @@ public final class ElytriaEssentials extends JavaPlugin {
         economy = null;
         runeController = null;
         shopManager = null;
+        persistentDataTransferListener = null;
     }
 
     public FileConfiguration getLanguageConfig() {
