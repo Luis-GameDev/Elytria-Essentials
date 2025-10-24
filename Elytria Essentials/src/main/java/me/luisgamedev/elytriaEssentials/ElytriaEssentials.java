@@ -133,7 +133,6 @@ public final class ElytriaEssentials extends JavaPlugin {
             randomInformationManager = null;
         }
         if (hudManager != null) {
-            hudManager.shutdown();
             hudManager = null;
         }
         economy = null;
