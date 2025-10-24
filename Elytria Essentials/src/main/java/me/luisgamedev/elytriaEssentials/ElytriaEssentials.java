@@ -29,7 +29,7 @@ import me.luisgamedev.elytriaEssentials.Blockers.BlockersListener;
 import me.luisgamedev.elytriaEssentials.RuneController.RuneController;
 import me.luisgamedev.elytriaEssentials.RandomInformation.RandomInformationManager;
 import me.luisgamedev.elytriaEssentials.ChestLimiter.ChestLimiterManager;
-import me.luisgamedev.elytriaEssentials.MMOItems.PersistentDataTransferListener;
+import me.luisgamedev.elytriaEssentials.MMOItemsListener.PersistentDataTransferListener;
 
 public final class ElytriaEssentials extends JavaPlugin {
 

@@ -1,9 +1,10 @@
-package me.luisgamedev.elytriaEssentials.MMOItems;
+package me.luisgamedev.elytriaEssentials.MMOItemsListener;
 
 import io.lumine.mmoitems.api.event.item.MMOItemReforgeEvent;
 import io.lumine.mmoitems.api.event.item.MMOItemUpdateEvent;
 import io.lumine.mmoitems.api.event.item.UpdateItemEvent;
-import io.lumine.mmoitems.api.event.item.UpdateMMOItemEvent;
+import net.Indyuce.mmoitems.api.event.item.UpdateMMOItemEvent;
+import net.Indyuce.mmoitems.api.event.item;
 import me.luisgamedev.elytriaEssentials.ElytriaEssentials;
 import org.bukkit.Bukkit;
 import org.bukkit.NamespacedKey;
