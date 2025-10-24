@@ -36,6 +36,7 @@ dependencies {
     compileOnly 'io.lumine.mythichud:mythichud-api:2.3.0'
     compileOnly files("libs/MythicLib-dist-1.7.1-20250911.223617-39.jar")
     compileOnly files("libs/MMOCore-1.13.1-20250912.211559-24.jar")
+    compileOnly files("libs/MMOItems-6.10.1-20250906.130656-32.jar")
 }
 
 tasks {
