@@ -40,7 +40,12 @@ public class HudManager implements Listener {
         }
 
         String normalizedLayout = buildLayoutName(classIdentifier);
-        String previousLayout = buildLayoutName(event.getOldClass());
+
+        PlayerClass previousClass = null;
+        if (event.getData() != null) {
+            previousClass = event.getData().getProfess();
+        }
+        String previousLayout = buildLayoutName(previousClass);
 
         if (!mythicHud.isReady()) {
             return;
