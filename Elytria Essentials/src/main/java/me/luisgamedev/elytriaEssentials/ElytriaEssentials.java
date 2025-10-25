@@ -9,7 +9,6 @@ import me.luisgamedev.elytriaEssentials.ClanSystem.ClanListener;
 import me.luisgamedev.elytriaEssentials.ClanSystem.ClanManager;
 import me.luisgamedev.elytriaEssentials.ClanSystem.Commands.ClanCommand;
 import me.luisgamedev.elytriaEssentials.ClanSystem.Placeholders.RegisterPlaceholders;
-import me.luisgamedev.elytriaEssentials.MMOCore.Placeholders.MMOClassPlaceholders;
 import me.luisgamedev.elytriaEssentials.Music.CustomMusicManager;
 import me.luisgamedev.elytriaEssentials.HUD.HudManager;
 import me.luisgamedev.elytriaEssentials.ShopSystem.ShopCommand;
@@ -90,7 +89,7 @@ public final class ElytriaEssentials extends JavaPlugin {
         if (Bukkit.getPluginManager().isPluginEnabled("PlaceholderAPI")) {
             new RegisterPlaceholders(this, clanManager).register();
             if (Bukkit.getPluginManager().isPluginEnabled("MMOCore")) {
-                new MMOClassPlaceholders(this).register();
+                new RegisterPlaceholders.MMOClassPlaceholders(this).register();
             } else {
                 getLogger().warning("MMOCore plugin not found. MMOCore class placeholders will be disabled.");
             }
