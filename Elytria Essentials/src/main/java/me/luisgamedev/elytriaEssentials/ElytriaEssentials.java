@@ -1,5 +1,6 @@
 package me.luisgamedev.elytriaEssentials;
 
+import me.luisgamedev.elytriaEssentials.ClassLimiter.ClassChangeManager;
 import me.luisgamedev.elytriaEssentials.CooldownAPI.CooldownAdjustCommand;
 import me.luisgamedev.elytriaEssentials.CustomRepair.CustomRepairManager;
 import me.luisgamedev.elytriaEssentials.AnvilRename.CustomRenameListener;
