@@ -46,5 +46,15 @@
       <option name="name" value="maven4" />
       <option name="url" value="https://repo.mythiccraft.io/snapshots" />
     </remote-repository>
+    <remote-repository>
+      <option name="id" value="maven5" />
+      <option name="name" value="maven5" />
+      <option name="url" value="https://mvn.lumine.io/repository/maven-releases/" />
+    </remote-repository>
+    <remote-repository>
+      <option name="id" value="maven5" />
+      <option name="name" value="maven5" />
+      <option name="url" value="https://mvn.lumine.io/repository/maven-snapshots/" />
+    </remote-repository>
   </component>
 </project>

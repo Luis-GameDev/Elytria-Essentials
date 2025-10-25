@@ -1,8 +1,8 @@
 package me.luisgamedev.elytriaEssentials.HUD;
 
-import io.lumine.mythichud.MythicHUD;
-import io.lumine.mythichud.api.hud.HudHolder;
-import io.lumine.mythichud.api.hud.layout.HudLayout;
+import io.lumine.mythichud.api.MythicHUD;
+import io.lumine.mythichud.api.HudHolder;
+import io.lumine.mythichud.api.element.layout.HudLayout;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 

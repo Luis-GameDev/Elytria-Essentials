@@ -20,6 +20,7 @@ repositories {
     maven { url = 'https://jitpack.io' }
     maven { url = 'https://maven.enginehub.org/repo/' }
     maven { url = "https://repo.mythiccraft.io/snapshots" }
+    //maven { url = "https://mvn.lumine.io/repository/maven-snapshots/" }
     flatDir { dirs 'libs' }
 }
 
@@ -33,7 +34,8 @@ dependencies {
     compileOnly 'com.sk89q.worldguard:worldguard-bukkit:7.0.9'
     compileOnly 'com.github.NetzkroneHD:WGRegionEvents:v1.7.4'
     compileOnly 'com.github.MilkBowl:VaultAPI:1.7.1'
-    compileOnly 'io.lumine.mythichud:mythichud-api:2.3.0'
+    //compileOnly 'io.lumine.mythichud:mythichud:api:1.2.4'
+    compileOnly files("libs/MythicHUD-1.2.4-SNAPSHOT-all-61.jar")
     compileOnly files("libs/MythicLib-dist-1.7.1-20250911.223617-39.jar")
     compileOnly files("libs/MMOCore-1.13.1-20250912.211559-24.jar")
     compileOnly files("libs/MMOItems-6.10.1-20250906.130656-32.jar")
