@@ -11,6 +11,6 @@ public class ClassChangeManager {
 
     @EventHandler
     public static void onClassChange(PlayerChangeClassEvent event) {
-        
+
     }
 }
