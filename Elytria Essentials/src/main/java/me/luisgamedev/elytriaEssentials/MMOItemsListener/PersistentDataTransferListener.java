@@ -1,11 +1,10 @@
 package me.luisgamedev.elytriaEssentials.MMOItemsListener;
 
-import net.Indyuce.mmoitems.api.event.item.MMOItemReforgeEvent; //not working
-import net.Indyuce.mmoitems.api.event.item.MMOItemUpdateEvent; //not working
-import net.Indyuce.mmoitems.api.event.item.UpdateItemEvent; //not working
-import net.Indyuce.mmoitems.api.event.item.UpdateMMOItemEvent; //not working
-import net.Indyuce.mmoitems.api.event.item; //not working
-import net.Indyuce.mmoitems.MMOItems; //not working
+import net.Indyuce.mmoitems.api.event.item.*;
+import net.Indyuce.mmoitems.api.event.*;
+import net.Indyuce.mmoitems.api.item.mmoitem.*;
+import net.Indyuce.mmoitems.api.item.mmoitem.LiveMMOItem;
+
 import me.luisgamedev.elytriaEssentials.ElytriaEssentials;
 import org.bukkit.Bukkit;
 import org.bukkit.NamespacedKey;
@@ -52,8 +51,8 @@ public final class PersistentDataTransferListener implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onMMOItemReforge(MMOItemReforgeEvent event) {
-        ItemStack original = event.getReforger().getOldItem();
-        ItemStack updated = event.getReforger().getNewItem();
+        LiveMMOItem original = event.getOldMMOItem();
+        MMOItem updated = event.getNewMMOItem();
         transferPersistentData(original, updated);
     }
 
@@ -72,7 +71,7 @@ public final class PersistentDataTransferListener implements Listener {
         transferPersistentData(event.getOldItem(), event.getNewItem());
     }
 
-    private void transferPersistentData(ItemStack original, ItemStack updated) {
+    private void transferPersistentData(LiveMMOItem original, MMOItem updated) {
         if (original == null || updated == null) {
             return;
         }
