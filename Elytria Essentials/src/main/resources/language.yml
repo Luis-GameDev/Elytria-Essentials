@@ -65,3 +65,6 @@ clan:
     created: "&eCreated: {date}"
     members: "&eMembers: {members}"
     captains: "&eCaptains: {captains}"
+class-limiter:
+  cooldown: "&cYou must wait {time} before changing your class again."
+  not-enough-points: "&cYou need at least 2 class points to change your class."

@@ -38,6 +38,7 @@ public final class ElytriaEssentials extends JavaPlugin {
     private FileConfiguration languageConfig;
     private CustomMusicManager musicManager;
     private HudManager hudManager;
+    private ClassChangeManager classChangeManager;
 
     private Economy economy;
     private RuneController runeController;
@@ -103,11 +104,17 @@ public final class ElytriaEssentials extends JavaPlugin {
             getLogger().warning("WGRegionEvents plugin not found. Custom music will be disabled.");
         }
 
-        if (Bukkit.getPluginManager().isPluginEnabled("MMOCore") &&
-                Bukkit.getPluginManager().isPluginEnabled("MythicHUD")) {
+        boolean mmocoreEnabled = Bukkit.getPluginManager().isPluginEnabled("MMOCore");
+        if (mmocoreEnabled && Bukkit.getPluginManager().isPluginEnabled("MythicHUD")) {
             hudManager = new HudManager(this);
         } else {
             getLogger().info("MMOCore or MythicHUD not detected. MythicHUD class layouts will not be managed.");
+        }
+
+        if (mmocoreEnabled) {
+            classChangeManager = new ClassChangeManager(this);
+        } else {
+            getLogger().info("MMOCore not detected. Class change limitations will be disabled.");
         }
 
         randomInformationManager = new RandomInformationManager(this);
@@ -144,6 +151,7 @@ public final class ElytriaEssentials extends JavaPlugin {
         if (hudManager != null) {
             hudManager = null;
         }
+        classChangeManager = null;
         economy = null;
         runeController = null;
         shopManager = null;
