@@ -2,8 +2,8 @@ name: ElytriaEssentials
 version: '2.3'
 main: me.luisgamedev.elytriaEssentials.ElytriaEssentials
 api-version: '1.21'
-depend: [WorldGuard]
-softdepend: [Citizens, WGRegionEvents, MMOItems, Vault, MMOCore, MythicHUD, MythicLib]
+depend: [Vault, Citizens, WorldGuard]
+softdepend: [WGRegionEvents, MMOItems, MMOCore, MythicHUD, MythicLib]
 commands:
   clan:
     description: Clan management command

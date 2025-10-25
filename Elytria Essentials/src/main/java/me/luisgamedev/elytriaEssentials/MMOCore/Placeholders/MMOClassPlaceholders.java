@@ -81,12 +81,12 @@ public class MMOClassPlaceholders extends PlaceholderExpansion {
         }
 
         if (!PlayerData.has(player)) {
-            return "0";
+            return "1";
         }
 
         PlayerData playerData = PlayerData.get(player);
         if (playerData == null) {
-            return "0";
+            return "1";
         }
 
         SavedClassInformation classInformation = getClassInformation(playerData, classId);
@@ -96,14 +96,14 @@ public class MMOClassPlaceholders extends PlaceholderExpansion {
 
         PlayerClass playerClass = resolvePlayerClass(classId);
         if (playerClass == null) {
-            return "0";
+            return "1";
         }
 
         if (Objects.equals(playerData.getProfess(), playerClass)) {
             return String.valueOf(playerData.getLevel());
         }
 
-        return "0";
+        return "1";
     }
 
     private SavedClassInformation getClassInformation(PlayerData playerData, String classId) {
