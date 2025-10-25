@@ -42,6 +42,10 @@ public class HudManager implements Listener {
         String normalizedLayout = buildLayoutName(classIdentifier);
         String previousLayout = buildLayoutName(event.getOldClass());
 
+        if (!mythicHud.isReady()) {
+            return;
+        }
+
         if (previousLayout != null && !previousLayout.equalsIgnoreCase(normalizedLayout)) {
             mythicHud.removeLayout(player, previousLayout);
         }
@@ -77,6 +81,9 @@ public class HudManager implements Listener {
     }
 
     private void assignDefaultLayouts(Player player) {
+        if (!mythicHud.isReady()) {
+            return;
+        }
         mythicHud.addLayout(player, "mmohud-layout");
         mythicHud.addLayout(player, "partyhud-mmo-layout");
     }
