@@ -100,10 +100,17 @@ final class MythicHudIntegration {
     }
 
     private Optional<HudHolder> resolveHolder(Player player) {
+        if (mythicHud == null) {
+            return Optional.empty();
+        }
+
         try {
-            HudHolder holder = mythicHud.holders().getPlayer(player);
-            if (holder != null) {
-                return Optional.of(holder);
+            var holderManager = mythicHud.holders();
+            if (holderManager != null) {
+                HudHolder holder = holderManager.getPlayer(player);
+                if (holder != null) {
+                    return Optional.of(holder);
+                }
             }
         } catch (Exception exception) {
             logger.log(Level.WARNING, "Failed to obtain MythicHUD holder for player " + player.getName(), exception);
@@ -118,8 +125,8 @@ final class MythicHudIntegration {
 
     private Optional<HudLayout> resolveLayout(String layoutName) {
         try {
-            var layoutService = mythicHud.layouts();
-            if (layoutService == null) {
+            var layoutManager = mythicHud.layouts();
+            if (layoutManager == null) {
                 if (!warnedMissingLayoutService) {
                     logger.warning("MythicHUD layout service is unavailable. Unable to manage layouts.");
                     warnedMissingLayoutService = true;
@@ -127,26 +134,18 @@ final class MythicHudIntegration {
                 return Optional.empty();
             }
 
-            Object lookupResult = layoutService.getLayout(layoutName);
-            if (lookupResult instanceof Optional<?> optional) {
-                return optional.filter(HudLayout.class::isInstance).map(HudLayout.class::cast);
-            }
-            if (lookupResult instanceof HudLayout layout) {
-                return Optional.of(layout);
-            }
-            if (lookupResult == null) {
+            if (!layoutManager.has(layoutName)) {
+                if (missingLayouts.add(layoutName)) {
+                    logger.warning("MythicHUD layout '" + layoutName + "' was not found. Check your MythicHUD configuration.");
+                }
                 return Optional.empty();
             }
-            logger.warning("Unexpected MythicHUD layout lookup response type: " + lookupResult.getClass().getName());
-            return Optional.empty();
+
+            HudLayout layout = layoutManager.get(layoutName);
+            return Optional.ofNullable(layout);
         } catch (Exception exception) {
             logger.log(Level.WARNING, "Failed to fetch MythicHUD layout '" + layoutName + "'", exception);
             return Optional.empty();
         }
-
-        if (missingLayouts.add(layoutName)) {
-            logger.warning("MythicHUD layout '" + layoutName + "' was not found. Check your MythicHUD configuration.");
-        }
-        return Optional.empty();
     }
 }
