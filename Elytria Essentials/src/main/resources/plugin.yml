@@ -19,3 +19,7 @@ commands:
     usage: /mmocd <abilityId> <percent(1-100)> <playerName>
     permission: elytria.cooldownAPI.use
     default: op
+permissions:
+  elytria.classchange.bypass:
+    description: Allows the player to bypass the class change cooldown.
+    default: op
