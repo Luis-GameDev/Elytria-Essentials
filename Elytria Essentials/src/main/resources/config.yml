@@ -75,6 +75,10 @@ custom-rename:
 random-information:
   interval-seconds: 1200
 
+# Class Limiter
+class-limiter:
+  class-change-cooldown-seconds: 86400 # 24 hours
+
 # Chest Limiter
 chest-limiter:
   enabled: true
