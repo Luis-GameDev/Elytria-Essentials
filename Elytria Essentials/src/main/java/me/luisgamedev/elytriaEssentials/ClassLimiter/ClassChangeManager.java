@@ -29,16 +29,19 @@ import java.util.logging.Level;
 
 public class ClassChangeManager implements Listener {
 
-    private static final long CLASS_CHANGE_COOLDOWN = Duration.ofDays(1).toMillis();
+    private static final String CLASS_CHANGE_BYPASS_PERMISSION = "elytria.classchange.bypass";
 
     private final ElytriaEssentials plugin;
     private final Database database;
+    private final long classChangeCooldownMillis;
     private final Map<UUID, Long> lastChangeCache = new ConcurrentHashMap<>();
     private final Map<UUID, Set<String>> unlockedClassCache = new ConcurrentHashMap<>();
 
     public ClassChangeManager(ElytriaEssentials plugin) {
         this.plugin = plugin;
         this.database = new Database(plugin);
+        long configuredSeconds = plugin.getConfig().getLong("class-limiter.class-change-cooldown-seconds", Duration.ofDays(1).toSeconds());
+        this.classChangeCooldownMillis = Math.max(0L, configuredSeconds) * 1000L;
         initializeTables();
         Bukkit.getPluginManager().registerEvents(this, plugin);
     }
@@ -83,12 +86,15 @@ public class ClassChangeManager implements Listener {
 
         UUID uuid = player.getUniqueId();
         long now = System.currentTimeMillis();
-        long lastChange = getLastClassChange(uuid);
-        if (lastChange > 0 && now - lastChange < CLASS_CHANGE_COOLDOWN) {
-            long remainingMillis = CLASS_CHANGE_COOLDOWN - (now - lastChange);
-            sendCooldownMessage(player, Duration.ofMillis(remainingMillis));
-            event.setCancelled(true);
-            return;
+        boolean bypassCooldown = player.hasPermission(CLASS_CHANGE_BYPASS_PERMISSION);
+        if (!bypassCooldown && classChangeCooldownMillis > 0) {
+            long lastChange = getLastClassChange(uuid);
+            if (lastChange > 0 && now - lastChange < classChangeCooldownMillis) {
+                long remainingMillis = classChangeCooldownMillis - (now - lastChange);
+                sendCooldownMessage(player, Duration.ofMillis(remainingMillis));
+                event.setCancelled(true);
+                return;
+            }
         }
 
         String newClassIdentifier = getClassIdentifier(newClass);
