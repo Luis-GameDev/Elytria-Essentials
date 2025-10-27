@@ -67,6 +67,7 @@ public final class PersistentDataTransferListener implements Listener {
             finished = extract(event.getNewMMOItem());
         }
 
+
         if (previous == null || finished == null) {
             return;
         }

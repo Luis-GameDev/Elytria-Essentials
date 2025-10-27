@@ -67,4 +67,4 @@ clan:
     captains: "&eCaptains: {captains}"
 class-limiter:
   cooldown: "&cYou must wait {time} before changing your class again."
-  not-enough-points: "&cYou need at least 2 class points to change your class."
+  not-enough-points: "&cYou need at least 1 class point to change your class."
