@@ -1,5 +1,6 @@
 package me.luisgamedev.elytriaEssentials.Blockers;
 
+import org.bukkit.GameMode;
 import org.bukkit.Keyed;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
@@ -249,13 +250,23 @@ public class BlockersListener implements Listener {
         }
 
         Player attacker = null;
+        boolean projectileAttack = false;
         if (event.getDamager() instanceof Player player) {
             attacker = player;
         } else if (event.getDamager() instanceof Projectile projectile && projectile.getShooter() instanceof Player shooter) {
             attacker = shooter;
+            projectileAttack = true;
         }
 
         if (attacker == null) {
+            return;
+        }
+
+        if (attacker.getGameMode() == GameMode.CREATIVE) {
+            return;
+        }
+
+        if (!projectileAttack) {
             return;
         }
 
@@ -264,7 +275,12 @@ public class BlockersListener implements Listener {
             return;
         }
 
-        event.setCancelled(true);
+        double reducedDamage = Math.min(event.getDamage(), 0.5);
+        if (reducedDamage <= 0) {
+            reducedDamage = 0.1;
+        }
+
+        event.setDamage(reducedDamage);
     }
 }
 
