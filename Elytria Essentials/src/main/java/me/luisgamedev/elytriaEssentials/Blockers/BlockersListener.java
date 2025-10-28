@@ -44,7 +44,6 @@ public class BlockersListener implements Listener {
             NamespacedKey.minecraft("mace"),
             NamespacedKey.minecraft("wind_charge"),
             NamespacedKey.minecraft("minecart"),
-            NamespacedKey.minecraft("tnt_minecart"),
             NamespacedKey.minecraft("furnace_minecart"),
             NamespacedKey.minecraft("chest_minecart"),
             NamespacedKey.minecraft("hopper_minecart")
