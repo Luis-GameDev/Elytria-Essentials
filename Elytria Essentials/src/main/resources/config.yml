@@ -59,6 +59,13 @@ singularitySound:
   regions:
     - "singularity"
 
+# Fall Damage Protection
+fall-damage-protection:
+  spawnProtection:
+    duration-seconds: 5
+    regions:
+      - "spawn"
+
 # Custom Repair
 custom-repair:
   enabled: true
