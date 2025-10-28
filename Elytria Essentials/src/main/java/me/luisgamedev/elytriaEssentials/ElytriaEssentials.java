@@ -15,6 +15,7 @@ import me.luisgamedev.elytriaEssentials.HUD.HudManager;
 import me.luisgamedev.elytriaEssentials.ShopSystem.ShopCommand;
 import me.luisgamedev.elytriaEssentials.ShopSystem.ShopListener;
 import me.luisgamedev.elytriaEssentials.ShopSystem.ShopManager;
+import me.luisgamedev.elytriaEssentials.Money.CoinPickupListener;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -78,6 +79,8 @@ public final class ElytriaEssentials extends JavaPlugin {
             if (renameListener.isActive()) {
                 pm.registerEvents(renameListener, this);
             }
+
+            pm.registerEvents(new CoinPickupListener(this), this);
         }
 
         if (Bukkit.getPluginManager().isPluginEnabled("MMOItems")) {
