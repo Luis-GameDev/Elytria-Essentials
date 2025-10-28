@@ -69,7 +69,6 @@ public class ManaRestoreCommand implements CommandExecutor {
 
         mmocore.setMana(newMana);
 
-        sender.sendMessage("§aRestored mana for " + playerName + " (" + currentMana + " -> " + newMana + ")");
         return true;
     }
 }
