@@ -20,6 +20,11 @@ commands:
     usage: /mmocd <abilityId> <percent(1-100)> <playerName>
     permission: elytria.cooldownAPI.use
     default: op
+  mmocdadd:
+    description: Apply a fixed amount of cooldown seconds to a player's MMOCore/MythicLib skill (console-only).
+    usage: /mmocdadd <abilityId> <seconds> <playerName>
+    permission: elytria.cooldownAPI.use
+    default: op
   mmomana:
     description: Restore a specific amount of MMOCore mana to a player (console-only).
     usage: /mmomana <amount> <playerName>
