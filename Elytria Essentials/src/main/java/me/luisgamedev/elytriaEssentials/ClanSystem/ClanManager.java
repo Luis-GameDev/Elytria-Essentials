@@ -13,6 +13,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.ChatColor;
+import org.bukkit.scheduler.BukkitRunnable;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -33,6 +34,7 @@ public class ClanManager {
     private final Map<UUID, String> playerClan = new HashMap<>();
     private final Map<UUID, String> invites = new HashMap<>();
     private final Map<UUID, Long> homeCooldowns = new HashMap<>();
+    private final Set<UUID> pendingHomeTeleports = new HashSet<>();
     private final Map<String, Long> setHomeCooldowns = new HashMap<>();
     private final Map<UUID, Long> disbandConfirmations = new HashMap<>();
     private final Map<UUID, PromotionConfirmation> promoteConfirmations = new HashMap<>();
@@ -545,14 +547,67 @@ public class ClanManager {
             player.sendMessage(plugin.getMessage("clan.home-cooldown").replace("{time}", formatTime(remaining)));
             return;
         }
-        homeCooldowns.put(player.getUniqueId(), now);
         Location home = clan.getHome();
-        if (home != null) {
-            player.teleport(home);
-            player.sendMessage(plugin.getMessage("clan.home-success"));
-        } else {
+        if (home == null) {
             player.sendMessage(plugin.getMessage("clan.home-not-set"));
+            return;
         }
+
+        UUID playerId = player.getUniqueId();
+        if (!pendingHomeTeleports.add(playerId)) {
+            player.sendMessage(plugin.getMessage("clan.home-already-teleporting"));
+            return;
+        }
+
+        Location startLocation = player.getLocation().clone();
+        Location targetLocation = home.clone();
+
+        new BukkitRunnable() {
+            private int seconds = 5;
+
+            @Override
+            public void run() {
+                if (!player.isOnline()) {
+                    cleanup(false);
+                    return;
+                }
+
+                if (hasMoved(startLocation, player.getLocation())) {
+                    cleanup(true);
+                    return;
+                }
+
+                if (seconds <= 0) {
+                    pendingHomeTeleports.remove(playerId);
+                    cancel();
+                    player.sendTitle("", "", 0, 0, 0);
+                    player.teleport(targetLocation);
+                    player.sendMessage(plugin.getMessage("clan.home-success"));
+                    homeCooldowns.put(playerId, System.currentTimeMillis());
+                    return;
+                }
+
+                player.sendTitle(
+                        getRawMessage("clan.home-countdown-title").replace("{time}", String.valueOf(seconds)),
+                        getRawMessage("clan.home-countdown-subtitle"),
+                        0,
+                        20,
+                        0
+                );
+                seconds--;
+            }
+
+            private void cleanup(boolean moved) {
+                pendingHomeTeleports.remove(playerId);
+                cancel();
+                if (player.isOnline()) {
+                    player.sendTitle("", "", 0, 0, 0);
+                    if (moved) {
+                        player.sendMessage(plugin.getMessage("clan.home-move-cancel"));
+                    }
+                }
+            }
+        }.runTaskTimer(plugin, 0L, 20L);
     }
 
     public void showClanInfo(Player player, String clanName) {
@@ -668,6 +723,26 @@ public class ClanManager {
                 member.sendMessage(message);
             }
         }
+    }
+
+    private boolean hasMoved(Location start, Location current) {
+        if (start == null || current == null) {
+            return true;
+        }
+        if (start.getWorld() == null || current.getWorld() == null) {
+            return true;
+        }
+        if (!start.getWorld().getUID().equals(current.getWorld().getUID())) {
+            return true;
+        }
+        return start.getBlockX() != current.getBlockX()
+                || start.getBlockY() != current.getBlockY()
+                || start.getBlockZ() != current.getBlockZ();
+    }
+
+    private String getRawMessage(String path) {
+        String message = plugin.getLanguageConfig().getString(path, "");
+        return ChatColor.translateAlternateColorCodes('&', message);
     }
 
     private static class PromotionConfirmation {
