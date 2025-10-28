@@ -17,16 +17,24 @@ import me.luisgamedev.elytriaEssentials.ShopSystem.ShopListener;
 import me.luisgamedev.elytriaEssentials.ShopSystem.ShopManager;
 import me.luisgamedev.elytriaEssentials.Money.CoinPickupListener;
 import org.bukkit.Bukkit;
-import org.bukkit.plugin.PluginManager;
-import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.ChatColor;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandMap;
+import org.bukkit.command.PluginCommand;
+import org.bukkit.command.SimpleCommandMap;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
-import org.bukkit.ChatColor;
+import org.bukkit.plugin.Plugin;
+import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.RegisteredServiceProvider;
+import org.bukkit.plugin.java.JavaPlugin;
+
 import net.milkbowl.vault.economy.Economy;
-import org.bukkit.command.PluginCommand;
 
 import java.io.File;
+import java.lang.reflect.Field;
+import java.util.Map;
+import java.util.logging.Level;
 
 import me.luisgamedev.elytriaEssentials.Blockers.BlockersListener;
 import me.luisgamedev.elytriaEssentials.RuneController.RuneController;
@@ -51,6 +59,7 @@ public final class ElytriaEssentials extends JavaPlugin {
     @Override
     public void onEnable() {
         saveDefaultConfig();
+        scheduleVentureChatPartyCommandRemoval();
         File langFile = new File(getDataFolder(), "language.yml");
         if (!langFile.exists()) {
             saveResource("language.yml", false);
@@ -140,6 +149,62 @@ public final class ElytriaEssentials extends JavaPlugin {
             npcShopCommand.setTabCompleter(shopCommand);
         } else {
             getLogger().warning("npcshop command is not defined in plugin.yml");
+        }
+    }
+
+    private void scheduleVentureChatPartyCommandRemoval() {
+        Bukkit.getScheduler().runTaskLater(this, () -> {
+            Plugin ventureChat = Bukkit.getPluginManager().getPlugin("VentureChat");
+            if (ventureChat == null || !ventureChat.isEnabled()) {
+                return;
+            }
+
+            CommandMap commandMap = getCommandMap();
+            if (!(commandMap instanceof SimpleCommandMap)) {
+                return;
+            }
+
+            SimpleCommandMap simpleCommandMap = (SimpleCommandMap) commandMap;
+
+            Map<String, Command> knownCommands = getKnownCommands(simpleCommandMap);
+            if (knownCommands == null) {
+                return;
+            }
+
+            removeCommand(simpleCommandMap, knownCommands, "party");
+            removeCommand(simpleCommandMap, knownCommands, "venturechat:party");
+            removeCommand(simpleCommandMap, knownCommands, "vchat:party");
+        }, 1L);
+    }
+
+    private CommandMap getCommandMap() {
+        try {
+            Field commandMapField = Bukkit.getServer().getClass().getDeclaredField("commandMap");
+            commandMapField.setAccessible(true);
+            return (CommandMap) commandMapField.get(Bukkit.getServer());
+        } catch (ReflectiveOperationException exception) {
+            getLogger().log(Level.WARNING, "Failed to access the Bukkit command map", exception);
+            return null;
+        }
+    }
+
+    private Map<String, Command> getKnownCommands(SimpleCommandMap commandMap) {
+        try {
+            Field knownCommandsField = SimpleCommandMap.class.getDeclaredField("knownCommands");
+            knownCommandsField.setAccessible(true);
+            @SuppressWarnings("unchecked")
+            Map<String, Command> knownCommands = (Map<String, Command>) knownCommandsField.get(commandMap);
+            return knownCommands;
+        } catch (ReflectiveOperationException exception) {
+            getLogger().log(Level.WARNING, "Failed to access VentureChat command entries", exception);
+            return null;
+        }
+    }
+
+    private void removeCommand(SimpleCommandMap commandMap, Map<String, Command> knownCommands, String label) {
+        Command command = knownCommands.remove(label);
+        if (command != null) {
+            command.unregister(commandMap);
         }
     }
 
