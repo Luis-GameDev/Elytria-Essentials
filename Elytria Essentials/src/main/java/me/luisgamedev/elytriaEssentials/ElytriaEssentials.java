@@ -17,6 +17,7 @@ import me.luisgamedev.elytriaEssentials.ShopSystem.ShopCommand;
 import me.luisgamedev.elytriaEssentials.ShopSystem.ShopListener;
 import me.luisgamedev.elytriaEssentials.ShopSystem.ShopManager;
 import me.luisgamedev.elytriaEssentials.Money.CoinPickupListener;
+import me.luisgamedev.elytriaEssentials.commands.ReloadCommand;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
@@ -61,6 +62,7 @@ public final class ElytriaEssentials extends JavaPlugin {
     @Override
     public void onEnable() {
         saveDefaultConfig();
+        reloadConfig();
         scheduleVentureChatPartyCommandRemoval();
         File langFile = new File(getDataFolder(), "language.yml");
         if (!langFile.exists()) {
@@ -78,6 +80,12 @@ public final class ElytriaEssentials extends JavaPlugin {
         getCommand("clan").setTabCompleter(clanCommand);
         getCommand("mmocd").setExecutor(new CooldownAdjustCommand());
         getCommand("mmomana").setExecutor(new ManaRestoreCommand());
+        PluginCommand reloadCommand = getCommand("reload");
+        if (reloadCommand != null) {
+            reloadCommand.setExecutor(new ReloadCommand(this));
+        } else {
+            getLogger().warning("reload command is not defined in plugin.yml");
+        }
 
         setupEconomy();
         if (economy != null) {

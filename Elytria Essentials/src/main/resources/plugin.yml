@@ -25,7 +25,16 @@ commands:
     usage: /mmomana <amount> <playerName>
     permission: elytria.cooldownAPI.use
     default: op
+  reload:
+    description: Reload Elytria Essentials configuration.
+    usage: /reload
+    permission: elytria.reload
+    default: op
+    permission-message: You do not have permission to reload Elytria Essentials.
 permissions:
   elytria.classchange.bypass:
     description: Allows the player to bypass the class change cooldown.
+    default: op
+  elytria.reload:
+    description: Allows reloading Elytria Essentials without restarting the server.
     default: op
