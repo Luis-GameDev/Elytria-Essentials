@@ -4,6 +4,8 @@ import me.luisgamedev.elytriaEssentials.ElytriaEssentials;
 import net.Indyuce.mmocore.api.player.PlayerData;
 import net.Indyuce.mmocore.party.AbstractParty;
 import net.milkbowl.vault.economy.Economy;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
@@ -23,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.ThreadLocalRandom;
 
 public class CoinPickupListener implements Listener {
 
@@ -73,6 +76,8 @@ public class CoinPickupListener implements Listener {
 
         int amount = itemStack.getAmount();
         double totalValue = moneyPerItem * amount;
+        double spread = ThreadLocalRandom.current().nextDouble(0.9, 1.1);
+        totalValue *= spread;
         if (totalValue <= 0) {
             return;
         }
@@ -173,6 +178,6 @@ public class CoinPickupListener implements Listener {
 
     private void sendPickupMessage(Player player, double amount) {
         String formatted = DECIMAL_FORMAT.format(amount);
-        player.sendMessage(ChatColor.GOLD + "+ " + formatted);
+        player.sendActionBar(Component.text("+ " + formatted, NamedTextColor.GOLD));
     }
 }
