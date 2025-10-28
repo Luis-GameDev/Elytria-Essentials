@@ -59,6 +59,17 @@ singularitySound:
   regions:
     - "singularity"
 
+# Fall Damage Protection
+fall-damage-protection:
+  spawnProtection:
+    duration-seconds: 15
+    regions:
+      - "spawn_desert"
+      - "spawn_feyforest"
+      - "spawn_frostlands"
+      - "spawn_oaklands"
+      - "skyisland"
+
 # Custom Repair
 custom-repair:
   enabled: true
