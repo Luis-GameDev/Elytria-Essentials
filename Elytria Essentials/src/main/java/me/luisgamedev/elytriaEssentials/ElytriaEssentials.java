@@ -11,6 +11,7 @@ import me.luisgamedev.elytriaEssentials.ClanSystem.ClanManager;
 import me.luisgamedev.elytriaEssentials.ClanSystem.Commands.ClanCommand;
 import me.luisgamedev.elytriaEssentials.ClanSystem.Placeholders.RegisterPlaceholders;
 import me.luisgamedev.elytriaEssentials.Music.CustomMusicManager;
+import me.luisgamedev.elytriaEssentials.Protection.FallDamageProtectionManager;
 import me.luisgamedev.elytriaEssentials.HUD.HudManager;
 import me.luisgamedev.elytriaEssentials.ShopSystem.ShopCommand;
 import me.luisgamedev.elytriaEssentials.ShopSystem.ShopListener;
@@ -47,6 +48,7 @@ public final class ElytriaEssentials extends JavaPlugin {
     private RandomInformationManager randomInformationManager;
     private ShopManager shopManager;
     private PersistentDataTransferListener persistentDataTransferListener;
+    private FallDamageProtectionManager fallDamageProtectionManager;
 
     @Override
     public void onEnable() {
@@ -105,6 +107,12 @@ public final class ElytriaEssentials extends JavaPlugin {
                 pm.registerEvents(manager, this);
                 musicManager = manager;
             }
+
+            FallDamageProtectionManager protectionManager = new FallDamageProtectionManager(this);
+            if (protectionManager.hasRegions()) {
+                pm.registerEvents(protectionManager, this);
+                fallDamageProtectionManager = protectionManager;
+            }
         } else {
             getLogger().warning("WGRegionEvents plugin not found. Custom music will be disabled.");
         }
@@ -149,6 +157,7 @@ public final class ElytriaEssentials extends JavaPlugin {
             musicManager.shutdown();
             musicManager = null;
         }
+        fallDamageProtectionManager = null;
         if (randomInformationManager != null) {
             randomInformationManager.stop();
             randomInformationManager = null;
