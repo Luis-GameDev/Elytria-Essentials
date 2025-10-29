@@ -1,5 +1,6 @@
 package me.luisgamedev.elytriaEssentials;
 
+import me.luisgamedev.elytriaEssentials.ClassLimiter.ClassArmorModelListener;
 import me.luisgamedev.elytriaEssentials.ClassLimiter.ClassChangeManager;
 import me.luisgamedev.elytriaEssentials.CooldownAPI.CooldownAdjustCommand;
 import me.luisgamedev.elytriaEssentials.CooldownAPI.CooldownApplyCommand;
@@ -145,6 +146,9 @@ public final class ElytriaEssentials extends JavaPlugin {
 
         if (mmocoreEnabled) {
             classChangeManager = new ClassChangeManager(this);
+            ClassArmorModelListener armorModelListener = new ClassArmorModelListener(this);
+            pm.registerEvents(armorModelListener, this);
+            armorModelListener.refreshOnlinePlayers();
         } else {
             getLogger().info("MMOCore not detected. Class change limitations will be disabled.");
         }
