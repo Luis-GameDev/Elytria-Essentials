@@ -71,7 +71,7 @@ public final class ClassArmorModelListener implements Listener {
             }
 
             ItemStack updated = newItem.clone();
-            if (applyModel(updated, modelKey)) {
+            if (applyModel(updated, modelKey, slot)) {
                 Bukkit.getScheduler().runTask(plugin, () -> inventory.setItem(slot, updated));
             }
         }
@@ -108,13 +108,13 @@ public final class ClassArmorModelListener implements Listener {
                 continue;
             }
 
-            if (applyModel(item, modelKey)) {
+            if (applyModel(item, modelKey, slot)) {
                 inventory.setItem(slot, item);
             }
         }
     }
 
-    private boolean applyModel(ItemStack item, NamespacedKey modelKey) {
+    private boolean applyModel(ItemStack item, NamespacedKey modelKey, EquipmentSlot slot) {
         ItemMeta meta = item.getItemMeta();
         if (meta == null) {
             return false;
@@ -125,12 +125,24 @@ public final class ClassArmorModelListener implements Listener {
             return false;
         }
 
-        NamespacedKey current = equippable.getModel();
-        if (modelKey.equals(current)) {
+        boolean changed = false;
+
+        NamespacedKey currentModel = equippable.getModel();
+        if (!modelKey.equals(currentModel)) {
+            equippable.setModel(modelKey);
+            changed = true;
+        }
+
+        EquipmentSlot currentSlot = equippable.getSlot();
+        if (currentSlot != slot) {
+            equippable.setSlot(slot);
+            changed = true;
+        }
+
+        if (!changed) {
             return false;
         }
 
-        equippable.setModel(modelKey);
         meta.setEquippable(equippable);
         item.setItemMeta(meta);
         return true;
