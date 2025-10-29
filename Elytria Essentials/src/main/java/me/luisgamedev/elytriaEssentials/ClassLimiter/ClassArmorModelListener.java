@@ -151,6 +151,10 @@ public final class ClassArmorModelListener implements Listener {
     private NamespacedKey resolveModelKey(Player player) {
         String identifier = "standard";
 
+        if (!PlayerData.has(player)) {
+            return NamespacedKey.minecraft("standard");
+        }
+
         PlayerData data = PlayerData.get(player);
         if (data != null) {
             PlayerClass playerClass = data.getProfess();
