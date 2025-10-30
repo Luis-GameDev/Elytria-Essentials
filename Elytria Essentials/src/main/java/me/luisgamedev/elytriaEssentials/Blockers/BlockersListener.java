@@ -57,6 +57,13 @@ public class BlockersListener implements Listener {
             Material.MACE
     );
 
+    @EventHandler
+    public void arrowShoot(ProjectileLaunchEvent event) {
+        if (event.getEntity().getType() == EntityType.ARROW) {
+            event.getEntity().setVelocity(event.getEntity().getVelocity().multiply(0.5));
+        }
+    }
+
     private static final Set<Material> BANNED_FISH_LOOT = EnumSet.of(
             Material.ENCHANTED_BOOK
     );
