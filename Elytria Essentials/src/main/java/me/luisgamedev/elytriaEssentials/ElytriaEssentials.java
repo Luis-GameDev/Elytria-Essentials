@@ -46,6 +46,7 @@ import me.luisgamedev.elytriaEssentials.RandomInformation.RandomInformationManag
 import me.luisgamedev.elytriaEssentials.ChestLimiter.ChestLimiterManager;
 import me.luisgamedev.elytriaEssentials.MMOItemsListener.PersistentDataTransferListener;
 import me.luisgamedev.elytriaEssentials.MMOCore.ProfessionMilestonePermissionListener;
+import me.luisgamedev.elytriaEssentials.ArrowSkillHandler.ArrowSkillHandler;
 
 public final class ElytriaEssentials extends JavaPlugin {
 
@@ -74,6 +75,16 @@ public final class ElytriaEssentials extends JavaPlugin {
         }
         languageConfig = YamlConfiguration.loadConfiguration(langFile);
         PluginManager pm = Bukkit.getPluginManager();
+        ArrowSkillHandler arrowSkillHandler = new ArrowSkillHandler(this);
+        pm.registerEvents(arrowSkillHandler, this);
+        PluginCommand arrowSkillCommand = getCommand("arrowskill");
+        if (arrowSkillCommand != null) {
+            arrowSkillCommand.setExecutor(arrowSkillHandler);
+            arrowSkillCommand.setTabCompleter(arrowSkillHandler);
+        } else {
+            getLogger().warning("arrowskill command is not defined in plugin.yml");
+        }
+
         pm.registerEvents(new TeleportListener(this), this);
         pm.registerEvents(new BlockersListener(), this);
         pm.registerEvents(new ChestLimiterManager(this), this);

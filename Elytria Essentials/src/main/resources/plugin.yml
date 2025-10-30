@@ -14,6 +14,13 @@ commands:
     permission: elytria.npcshop.manage
     default: op
     permission-message: You do not have permission to manage NPC shops.
+  arrowskill:
+    description: Apply temporary arrow abilities.
+    usage: |-
+      /arrowskill <ability>
+      /arrowskill <player> <ability>
+    permission: elytria.arrowskill.use
+    default: op
   mmocd:
     description: Reduce a player's MMOCore/MythicLib skill cooldown (console-only).
     usage: /mmocd <abilityId> <percent(1-100)> <playerName>
@@ -41,4 +48,7 @@ permissions:
     default: op
   elytria.reload:
     description: Allows reloading Elytria Essentials without restarting the server.
+    default: op
+  elytria.arrowskill.use:
+    description: Allows the player to apply temporary arrow abilities.
     default: op
