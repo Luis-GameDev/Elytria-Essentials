@@ -45,6 +45,7 @@ import me.luisgamedev.elytriaEssentials.RuneController.RuneController;
 import me.luisgamedev.elytriaEssentials.RandomInformation.RandomInformationManager;
 import me.luisgamedev.elytriaEssentials.ChestLimiter.ChestLimiterManager;
 import me.luisgamedev.elytriaEssentials.MMOItemsListener.PersistentDataTransferListener;
+import me.luisgamedev.elytriaEssentials.MMOCore.ProfessionMilestonePermissionListener;
 
 public final class ElytriaEssentials extends JavaPlugin {
 
@@ -60,6 +61,7 @@ public final class ElytriaEssentials extends JavaPlugin {
     private ShopManager shopManager;
     private PersistentDataTransferListener persistentDataTransferListener;
     private FallDamageProtectionManager fallDamageProtectionManager;
+    private ProfessionMilestonePermissionListener professionMilestonePermissionListener;
 
     @Override
     public void onEnable() {
@@ -149,6 +151,8 @@ public final class ElytriaEssentials extends JavaPlugin {
             ClassArmorModelListener armorModelListener = new ClassArmorModelListener(this);
             pm.registerEvents(armorModelListener, this);
             armorModelListener.refreshOnlinePlayers();
+            professionMilestonePermissionListener = new ProfessionMilestonePermissionListener(this);
+            pm.registerEvents(professionMilestonePermissionListener, this);
         } else {
             getLogger().info("MMOCore not detected. Class change limitations will be disabled.");
         }
@@ -249,6 +253,10 @@ public final class ElytriaEssentials extends JavaPlugin {
         runeController = null;
         shopManager = null;
         persistentDataTransferListener = null;
+        if (professionMilestonePermissionListener != null) {
+            professionMilestonePermissionListener.cleanup();
+            professionMilestonePermissionListener = null;
+        }
     }
 
     public FileConfiguration getLanguageConfig() {
