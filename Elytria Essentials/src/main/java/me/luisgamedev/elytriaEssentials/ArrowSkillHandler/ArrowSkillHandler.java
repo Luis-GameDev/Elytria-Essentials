@@ -1,5 +1,6 @@
 package me.luisgamedev.elytriaEssentials.ArrowSkillHandler;
 
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Particle;
@@ -16,6 +17,11 @@ import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityShootBowEvent;
 import org.bukkit.event.entity.ProjectileHitEvent;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandExecutor;
+import org.bukkit.command.CommandSender;
+import org.bukkit.command.ConsoleCommandSender;
+import org.bukkit.command.TabCompleter;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
@@ -29,8 +35,9 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
-public class ArrowSkillHandler implements Listener {
+public class ArrowSkillHandler implements Listener, CommandExecutor, TabCompleter {
 
     private static final long SINGLE_ARROW_DURATION_MS = 3_000L;
     private static final long MULTI_ARROW_DURATION_MS = 5_000L;
@@ -46,18 +53,91 @@ public class ArrowSkillHandler implements Listener {
         this.plugin = plugin;
     }
 
-    public void onCommand(Player player, String[] args) {
+    @Override
+    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        if (sender instanceof ConsoleCommandSender || !(sender instanceof Player)) {
+            return handleConsoleCommand(sender, command.getName(), args);
+        }
+
+        Player player = (Player) sender;
         if (args.length == 0) {
-            return;
+            sender.sendMessage("Usage: /" + label + " <ability>");
+            return true;
         }
 
         Ability ability = Ability.fromKey(args[0]);
         if (ability == null) {
-            return;
+            sender.sendMessage("Unknown ability: " + args[0]);
+            return true;
         }
 
+        applyAbility(player, ability);
+        sender.sendMessage("Applied arrow ability " + ability.key + ".");
+        return true;
+    }
+
+    private boolean handleConsoleCommand(CommandSender sender, String label, String[] args) {
+        if (args.length < 2) {
+            sender.sendMessage("Usage: /" + label + " <player> <ability>");
+            return true;
+        }
+
+        Player target = Bukkit.getPlayerExact(args[0]);
+        if (target == null) {
+            sender.sendMessage("Player not found: " + args[0]);
+            return true;
+        }
+
+        Ability ability = Ability.fromKey(args[1]);
+        if (ability == null) {
+            sender.sendMessage("Unknown ability: " + args[1]);
+            return true;
+        }
+
+        applyAbility(target, ability);
+        sender.sendMessage("Applied arrow ability " + ability.key + " to " + target.getName() + ".");
+        if (!(sender instanceof Player player && player.getUniqueId().equals(target.getUniqueId()))) {
+            target.sendMessage("Applied arrow ability " + ability.key + ".");
+        }
+        return true;
+    }
+
+    private void applyAbility(Player player, Ability ability) {
         long duration = ability.appliesToAllArrows ? MULTI_ARROW_DURATION_MS : SINGLE_ARROW_DURATION_MS;
         activeAbilities.put(player.getUniqueId(), new ActiveAbility(ability, System.currentTimeMillis() + duration));
+    }
+
+    @Override
+    public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
+        if (args.length == 0) {
+            return List.of();
+        }
+
+        if (sender instanceof ConsoleCommandSender || !(sender instanceof Player)) {
+            if (args.length == 1) {
+                return Bukkit.getOnlinePlayers().stream()
+                        .map(Player::getName)
+                        .filter(name -> name.regionMatches(true, 0, args[0], 0, args[0].length()))
+                        .collect(Collectors.toList());
+            }
+
+            if (args.length == 2) {
+                return filterAbilityKeys(args[1]);
+            }
+            return List.of();
+        }
+
+        if (args.length == 1) {
+            return filterAbilityKeys(args[0]);
+        }
+
+        return List.of();
+    }
+
+    private List<String> filterAbilityKeys(String prefix) {
+        return Ability.keys()
+                .filter(key -> key.regionMatches(true, 0, prefix, 0, prefix.length()))
+                .collect(Collectors.toList());
     }
 
     @EventHandler
@@ -305,6 +385,10 @@ public class ArrowSkillHandler implements Listener {
                 }
             }
             return null;
+        }
+
+        private static java.util.stream.Stream<String> keys() {
+            return java.util.Arrays.stream(values()).map(ability -> ability.key);
         }
     }
 }
