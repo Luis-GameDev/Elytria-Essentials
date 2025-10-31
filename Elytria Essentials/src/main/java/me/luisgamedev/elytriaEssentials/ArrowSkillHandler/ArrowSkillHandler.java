@@ -38,6 +38,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
 public class ArrowSkillHandler implements Listener, CommandExecutor, TabCompleter {
@@ -287,29 +288,60 @@ public class ArrowSkillHandler implements Listener, CommandExecutor, TabComplete
     }
 
     private void applyArcaneShotEffect(Arrow arrow, Entity hitEntity) {
-        if (!(hitEntity instanceof LivingEntity living)) {
+        if (!(hitEntity instanceof LivingEntity target)) {
             return;
         }
 
-        if (!(arrow.getShooter() instanceof Entity shooter)) {
+        if (!(arrow.getShooter() instanceof LivingEntity shooter)) {
             return;
         }
 
         AbilitySettings settings = abilitySettings.get(Ability.ARCANE_SHOT);
-        double distance = settings != null ? settings.arcaneTeleportDistance() : 1.5D;
+        double maxDistance = settings != null ? Math.max(0.5D, settings.arcaneTeleportDistance()) : 1.5D;
 
         Location shooterLocation = shooter.getLocation();
-        Vector direction = shooterLocation.getDirection();
+        Location destination = findArcaneTeleportDestination(target, maxDistance);
+        destination.setYaw(shooterLocation.getYaw());
+        destination.setPitch(shooterLocation.getPitch());
+
+        shooter.teleport(destination);
+    }
+
+    private Location findArcaneTeleportDestination(LivingEntity target, double maxDistance) {
+        Location targetLocation = target.getLocation();
+        Vector direction = targetLocation.getDirection();
+        if (direction.lengthSquared() == 0) {
+            direction = target.getEyeLocation().getDirection();
+        }
         if (direction.lengthSquared() == 0) {
             direction = new Vector(0, 0, 1);
         }
 
-        Location targetLocation = shooterLocation.clone().add(direction.normalize().multiply(distance));
-        targetLocation.setPitch(living.getLocation().getPitch());
-        targetLocation.setYaw(shooterLocation.getYaw());
+        direction = direction.normalize();
+        Location best = null;
+        double step = 0.25D;
+        for (double distance = 0.5D; distance <= maxDistance + 1e-6; distance += step) {
+            Location ahead = targetLocation.clone().add(direction.clone().multiply(distance));
+            Location safe = findSafeTeleportLocation(ahead);
+            if (safe != null) {
+                best = safe;
+                break;
+            }
+        }
 
-        Location safeLocation = findSafeTeleportLocation(targetLocation);
-        living.teleport(safeLocation);
+        if (best == null) {
+            best = findSafeTeleportLocation(targetLocation.clone().add(direction.clone().multiply(maxDistance)));
+        }
+
+        if (best == null) {
+            best = findSafeTeleportLocation(targetLocation);
+        }
+
+        if (best != null) {
+            return best;
+        }
+
+        return targetLocation.clone().add(direction.clone().multiply(0.5D)).add(0, 0.1D, 0);
     }
 
     private Location findSafeTeleportLocation(Location baseLocation) {
@@ -319,14 +351,16 @@ public class ArrowSkillHandler implements Listener, CommandExecutor, TabComplete
         }
 
         Location candidate = baseLocation.clone();
-        for (int yOffset = 0; yOffset <= 2; yOffset++) {
+        for (int yOffset = -1; yOffset <= 2; yOffset++) {
             Location check = candidate.clone().add(0, yOffset, 0);
             if (isPassable(world, check)) {
-                return check;
+                Location blockLocation = check.getBlock().getLocation().toCenterLocation();
+                blockLocation.setY(check.getY());
+                return blockLocation;
             }
         }
 
-        return candidate;
+        return null;
     }
 
     private boolean isPassable(World world, Location location) {
@@ -356,7 +390,6 @@ public class ArrowSkillHandler implements Listener, CommandExecutor, TabComplete
     private void triggerDoomshotImpact(Arrow arrow) {
         AbilitySettings settings = abilitySettings.get(Ability.DOOMSHOT);
         double radius = settings != null ? settings.doomshotRadius() : 3.0D;
-        double playerVelocity = settings != null ? settings.doomshotPlayerVelocity() : 1.2D;
         double blockVelocity = settings != null ? settings.doomshotBlockVelocity() : 0.8D;
 
         Location impactLocation = arrow.getLocation();
@@ -371,8 +404,10 @@ public class ArrowSkillHandler implements Listener, CommandExecutor, TabComplete
         world.getNearbyEntities(impactLocation, radius, radius, radius, entity -> entity instanceof LivingEntity)
                 .forEach(entity -> {
                     Vector current = entity.getVelocity();
-                    double upward = Math.max(playerVelocity, current.getY());
-                    entity.setVelocity(current.setY(Math.max(0.1D, upward)));
+                    double desiredHeight = 8.0D + ThreadLocalRandom.current().nextDouble(2.0D);
+                    double requiredVelocity = Math.sqrt(0.16D * desiredHeight);
+                    double upward = Math.max(requiredVelocity, current.getY());
+                    entity.setVelocity(current.setY(upward));
                 });
 
         int radiusInt = (int) Math.ceil(radius);
@@ -395,6 +430,19 @@ public class ArrowSkillHandler implements Listener, CommandExecutor, TabComplete
                     fallingBlock.setHurtEntities(false);
                     Vector launch = new Vector(x * 0.1D, Math.max(0.1D, blockVelocity), z * 0.1D);
                     fallingBlock.setVelocity(launch);
+                    new BukkitRunnable() {
+                        @Override
+                        public void run() {
+                            if (!fallingBlock.isValid()) {
+                                cancel();
+                                return;
+                            }
+                            if (fallingBlock.isOnGround() || fallingBlock.getTicksLived() > 20) {
+                                fallingBlock.remove();
+                                cancel();
+                            }
+                        }
+                    }.runTaskTimer(plugin, 1L, 1L);
                 } catch (IllegalArgumentException ignored) {
                     // Some blocks cannot be represented as falling blocks; skip them silently.
                 }
@@ -434,9 +482,15 @@ public class ArrowSkillHandler implements Listener, CommandExecutor, TabComplete
                 return;
             }
 
-            double newHealth = Math.max(0.0D, living.getHealth() - trueDamage);
-            living.setHealth(newHealth);
+            double newHealth = living.getHealth() - trueDamage;
+            setHp(living, newHealth);
         });
+    }
+
+    private void setHp(LivingEntity living, double health) {
+        double maxHealth = living.getMaxHealth();
+        double clamped = Math.max(0.0D, Math.min(health, maxHealth));
+        living.setHealth(clamped);
     }
 
     private void applyStunningThornEffects(Entity hitEntity) {

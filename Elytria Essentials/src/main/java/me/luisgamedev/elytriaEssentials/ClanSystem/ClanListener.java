@@ -68,6 +68,10 @@ public class ClanListener implements Listener {
         if (attacker == null) {
             return;
         }
+        if (attacker.getUniqueId().equals(victim.getUniqueId())) {
+            event.setCancelled(true);
+            return;
+        }
         Clan attackerClan = manager.getClan(attacker.getUniqueId());
         if (attackerClan != null && attackerClan == manager.getClan(victim.getUniqueId())) {
             event.setCancelled(true);
