@@ -259,9 +259,8 @@ public class ArrowSkillHandler implements Listener, CommandExecutor, TabComplete
 
     private void assignAbilityToArrow(Arrow arrow, Ability ability) {
         arrowAbilities.put(arrow.getUniqueId(), ability);
-        if (ability != Ability.BLOODARROW) {
-            startParticleTrail(arrow, ability.particle);
-        }
+        removeDefaultArrowParticles(arrow);
+        startParticleTrail(arrow, ability.particle);
     }
 
     private void startParticleTrail(Arrow arrow, Particle particle) {
@@ -278,6 +277,12 @@ public class ArrowSkillHandler implements Listener, CommandExecutor, TabComplete
         }.runTaskTimer(plugin, 0L, 1L);
 
         particleTasks.put(arrow.getUniqueId(), task);
+    }
+
+    private void removeDefaultArrowParticles(Arrow arrow) {
+        if (arrow.isCritical()) {
+            arrow.setCritical(false);
+        }
     }
 
     private void stopParticle(UUID arrowId) {
