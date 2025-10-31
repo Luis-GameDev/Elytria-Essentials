@@ -57,6 +57,7 @@ public class ClanListener implements Listener {
         }
         if(event.getDamager() == victim) {
             event.setCancelled(true);
+            return;
         }
         Player attacker = null;
         if (event.getDamager() instanceof Player p) {
