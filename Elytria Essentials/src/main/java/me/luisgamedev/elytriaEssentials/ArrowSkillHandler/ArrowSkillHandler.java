@@ -8,6 +8,7 @@ import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
+import org.bukkit.block.BlockFace;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Arrow;
 import org.bukkit.entity.Entity;
@@ -51,6 +52,7 @@ public class ArrowSkillHandler implements Listener, CommandExecutor, TabComplete
     private final Map<UUID, BukkitTask> particleTasks = new HashMap<>();
     private final Map<Location, Long> protectedWebBlocks = new HashMap<>();
     private final Map<Ability, AbilitySettings> abilitySettings = new HashMap<>();
+    private final Map<UUID, Vector> arrowLastVelocities = new HashMap<>();
 
     public ArrowSkillHandler(JavaPlugin plugin) {
         this.plugin = plugin;
@@ -190,7 +192,10 @@ public class ArrowSkillHandler implements Listener, CommandExecutor, TabComplete
         if (hitEntity == null) {
             switch (ability) {
                 case WEBTRAP -> spawnWebTrap(event, arrow);
-                case DOOMSHOT -> triggerDoomshotImpact(arrow);
+                case DOOMSHOT -> {
+                    Vector impactDirection = computeImpactDirection(arrow, event.getHitBlockFace());
+                    triggerDoomshotImpact(arrow, impactDirection);
+                }
                 default -> {
                 }
             }
@@ -227,7 +232,10 @@ public class ArrowSkillHandler implements Listener, CommandExecutor, TabComplete
                     living.addPotionEffect(new PotionEffect(PotionEffectType.POISON, 100, 0));
                 }
             }
-            case DOOMSHOT -> triggerDoomshotImpact(arrow);
+            case DOOMSHOT -> {
+                Vector impactDirection = computeImpactDirection(arrow, null);
+                triggerDoomshotImpact(arrow, impactDirection);
+            }
             case BLOODARROW -> applyBloodArrowBonusDamage(event);
             case THUNDERSHOT -> spawnThunderImpact(arrow, hitEntity);
             case FOREST_THORN -> {
@@ -259,6 +267,7 @@ public class ArrowSkillHandler implements Listener, CommandExecutor, TabComplete
 
     private void assignAbilityToArrow(Arrow arrow, Ability ability) {
         arrowAbilities.put(arrow.getUniqueId(), ability);
+        arrowLastVelocities.remove(arrow.getUniqueId());
         removeDefaultArrowParticles(arrow);
         startParticleTrail(arrow, ability.particle);
     }
@@ -271,6 +280,10 @@ public class ArrowSkillHandler implements Listener, CommandExecutor, TabComplete
                     cancel();
                     particleTasks.remove(arrow.getUniqueId());
                     return;
+                }
+                Vector velocity = arrow.getVelocity();
+                if (velocity != null && velocity.lengthSquared() > 1.0E-4) {
+                    arrowLastVelocities.put(arrow.getUniqueId(), velocity.clone());
                 }
                 arrow.getWorld().spawnParticle(particle, arrow.getLocation(), 3, 0.05, 0.05, 0.05, 0.01);
             }
@@ -290,6 +303,7 @@ public class ArrowSkillHandler implements Listener, CommandExecutor, TabComplete
         if (task != null) {
             task.cancel();
         }
+        arrowLastVelocities.remove(arrowId);
     }
 
     private void applyArcaneShotEffect(Arrow arrow, Entity hitEntity) {
@@ -375,9 +389,47 @@ public class ArrowSkillHandler implements Listener, CommandExecutor, TabComplete
         return lower.isPassable() && upper.isPassable() && below.getType() != Material.AIR;
     }
 
+    private Vector computeImpactDirection(Arrow arrow, BlockFace blockFace) {
+        UUID arrowId = arrow.getUniqueId();
+        Vector incoming = arrowLastVelocities.getOrDefault(arrowId, arrow.getVelocity());
+        if (incoming == null || incoming.lengthSquared() < 1.0E-4) {
+            incoming = arrow.getLocation().getDirection();
+        }
+
+        if (incoming == null || incoming.lengthSquared() < 1.0E-4) {
+            incoming = new Vector(0, 1, 0);
+        } else {
+            incoming = incoming.clone().normalize();
+        }
+
+        Vector direction = incoming.clone();
+        if (blockFace != null) {
+            Vector normal = new Vector(blockFace.getModX(), blockFace.getModY(), blockFace.getModZ());
+            if (normal.lengthSquared() > 0) {
+                normal.normalize().multiply(-1);
+                double dot = direction.dot(normal);
+                direction.subtract(normal.clone().multiply(2 * dot));
+            }
+        }
+
+        if (direction.lengthSquared() < 1.0E-4) {
+            direction = new Vector(0, 1, 0);
+        } else {
+            direction.normalize();
+        }
+
+        return direction;
+    }
+
     private void spawnThunderImpact(Arrow arrow, Entity hitEntity) {
-        World world = arrow.getWorld();
-        Location location = arrow.getLocation();
+        Location location = hitEntity != null
+                ? hitEntity.getLocation().clone().add(0, hitEntity.getHeight() * 0.5, 0)
+                : arrow.getLocation();
+        World world = location.getWorld();
+        if (world == null) {
+            return;
+        }
+
         for (int i = 0; i < 3; i++) {
             world.strikeLightningEffect(location);
         }
@@ -392,10 +444,18 @@ public class ArrowSkillHandler implements Listener, CommandExecutor, TabComplete
         }
     }
 
-    private void triggerDoomshotImpact(Arrow arrow) {
+    private void triggerDoomshotImpact(Arrow arrow, Vector impactDirection) {
         AbilitySettings settings = abilitySettings.get(Ability.DOOMSHOT);
         double radius = settings != null ? settings.doomshotRadius() : 3.0D;
         double blockVelocity = settings != null ? settings.doomshotBlockVelocity() : 0.8D;
+        double playerVelocity = settings != null ? settings.doomshotPlayerVelocity() : 1.2D;
+
+        Vector direction = impactDirection != null ? impactDirection.clone() : new Vector(0, 1, 0);
+        if (direction.lengthSquared() < 1.0E-4) {
+            direction = new Vector(0, 1, 0);
+        } else {
+            direction.normalize();
+        }
 
         Location impactLocation = arrow.getLocation();
         World world = impactLocation.getWorld();
@@ -403,16 +463,18 @@ public class ArrowSkillHandler implements Listener, CommandExecutor, TabComplete
             return;
         }
 
+        arrowLastVelocities.remove(arrow.getUniqueId());
+
         world.spawnParticle(Particle.EXPLOSION_EMITTER, impactLocation, 1);
         world.playSound(impactLocation, Sound.ENTITY_GENERIC_EXPLODE, 1.0F, 1.0F);
 
+        Vector launchDirection = direction.clone();
+
         world.getNearbyEntities(impactLocation, radius, radius, radius, entity -> entity instanceof LivingEntity)
                 .forEach(entity -> {
-                    Vector current = entity.getVelocity();
-                    double desiredHeight = 8.0D + ThreadLocalRandom.current().nextDouble(2.0D);
-                    double requiredVelocity = Math.sqrt(0.16D * desiredHeight);
-                    double upward = Math.max(requiredVelocity, current.getY());
-                    entity.setVelocity(current.setY(upward));
+                    double randomBoost = 0.8D + ThreadLocalRandom.current().nextDouble(0.6D);
+                    Vector launch = launchDirection.clone().multiply(playerVelocity * randomBoost);
+                    entity.setVelocity(launch);
                 });
 
         int radiusInt = (int) Math.ceil(radius);
@@ -433,7 +495,13 @@ public class ArrowSkillHandler implements Listener, CommandExecutor, TabComplete
                     FallingBlock fallingBlock = world.spawnFallingBlock(block.getLocation().toCenterLocation(), block.getBlockData());
                     fallingBlock.setDropItem(false);
                     fallingBlock.setHurtEntities(false);
-                    Vector launch = new Vector(x * 0.1D, Math.max(0.1D, blockVelocity), z * 0.1D);
+                    ThreadLocalRandom random = ThreadLocalRandom.current();
+                    Vector randomOffset = new Vector(
+                            random.nextDouble(-0.6D, 0.6D),
+                            random.nextDouble(-0.4D, 0.4D),
+                            random.nextDouble(-0.6D, 0.6D));
+                    double velocityMultiplier = 1.5D + random.nextDouble(1.0D);
+                    Vector launch = launchDirection.clone().multiply(blockVelocity * velocityMultiplier).add(randomOffset);
                     fallingBlock.setVelocity(launch);
                     new BukkitRunnable() {
                         @Override
