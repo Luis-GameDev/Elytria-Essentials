@@ -113,9 +113,9 @@ arrow-skills:
     bonus-damage: 8.0
   doomshot:
     selection-duration-seconds: 3
-    impact-radius: 3.0
-    player-knockup-velocity: 1.2
-    block-knockup-velocity: 0.8
+    impact-radius: 4.0
+    player-knockup-velocity: 1.5
+    block-knockup-velocity: 1.2
   forest_thorn:
     selection-duration-seconds: 10
     true-damage: 1.0

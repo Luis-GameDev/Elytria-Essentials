@@ -78,7 +78,6 @@ public class ArrowSkillHandler implements Listener, CommandExecutor, TabComplete
         }
 
         applyAbility(player, ability);
-        sender.sendMessage("Applied arrow ability " + ability.key + ".");
         return true;
     }
 
