@@ -129,6 +129,8 @@ arrow-skills:
     selection-duration-seconds: 6
     wither-duration-ticks: 120
     wither-amplifier: 1
+  natures_grasp:
+    selection-duration-seconds: 3
 
 
 

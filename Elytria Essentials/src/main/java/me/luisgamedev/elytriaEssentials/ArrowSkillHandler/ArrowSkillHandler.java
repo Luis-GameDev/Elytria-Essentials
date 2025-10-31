@@ -186,30 +186,15 @@ public class ArrowSkillHandler implements Listener, CommandExecutor, TabComplete
         stopParticle(arrow.getUniqueId());
 
         Entity hitEntity = event.getHitEntity();
-        switch (ability) {
-            case ARCANE_SHOT -> applyArcaneShotEffect(arrow, hitEntity);
-            case FLAMETHORN -> {
-                if (hitEntity instanceof LivingEntity living) {
-                    living.setFireTicks(100);
+        if (hitEntity == null) {
+            switch (ability) {
+                case WEBTRAP -> spawnWebTrap(event, arrow);
+                case DOOMSHOT -> triggerDoomshotImpact(arrow);
+                default -> {
                 }
             }
-            case WEBTRAP -> spawnWebTrap(event, arrow);
-            case TOXIC_ARROWS -> {
-                if (hitEntity instanceof LivingEntity living) {
-                    living.addPotionEffect(new PotionEffect(PotionEffectType.POISON, 100, 0));
-                }
-            }
-            case DOOMSHOT -> triggerDoomshotImpact(arrow);
-            case BLOODARROW -> {
-                // Extra damage already added to the arrow base damage
-            }
-            case THUNDERSHOT -> spawnThunderImpact(arrow, hitEntity);
-            case FOREST_THORN -> applyForestThornHitEffects(hitEntity);
-            case STUNNING_THORN -> applyStunningThornEffects(hitEntity);
-            case PLAGUESHOT -> applyPlagueShotEffects(hitEntity);
+            arrowAbilities.remove(arrow.getUniqueId());
         }
-
-        arrowAbilities.remove(arrow.getUniqueId());
     }
 
     @EventHandler
@@ -218,20 +203,41 @@ public class ArrowSkillHandler implements Listener, CommandExecutor, TabComplete
             return;
         }
 
-        Ability ability = arrowAbilities.get(arrow.getUniqueId());
+        Ability ability = arrowAbilities.remove(arrow.getUniqueId());
         if (ability == null) {
             return;
         }
 
+        if (event.isCancelled()) {
+            return;
+        }
+
+        Entity hitEntity = event.getEntity();
         switch (ability) {
+            case ARCANE_SHOT -> applyArcaneShotEffect(arrow, hitEntity);
+            case FLAMETHORN -> {
+                if (hitEntity instanceof LivingEntity living) {
+                    living.setFireTicks(100);
+                }
+            }
+            case WEBTRAP -> spawnWebTrapAtLocation(arrow.getLocation());
+            case TOXIC_ARROWS -> {
+                if (hitEntity instanceof LivingEntity living) {
+                    living.addPotionEffect(new PotionEffect(PotionEffectType.POISON, 100, 0));
+                }
+            }
+            case DOOMSHOT -> triggerDoomshotImpact(arrow);
+            case BLOODARROW -> applyBloodArrowBonusDamage(event);
+            case THUNDERSHOT -> spawnThunderImpact(arrow, hitEntity);
             case FOREST_THORN -> {
-                if (event.getEntity() instanceof LivingEntity living) {
+                applyForestThornHitEffects(hitEntity);
+                if (hitEntity instanceof LivingEntity living) {
                     applyForestThornTrueDamageLater(living);
                 }
             }
-            case DOOMSHOT, BLOODARROW, FLAMETHORN, ARCANE_SHOT, WEBTRAP, TOXIC_ARROWS, THUNDERSHOT, STUNNING_THORN, PLAGUESHOT -> {
-                // handled elsewhere
-            }
+            case STUNNING_THORN -> applyStunningThornEffects(hitEntity);
+            case PLAGUESHOT -> applyPlagueShotEffects(hitEntity);
+            case NATURES_GRASP -> applyNaturesGraspEffect(hitEntity);
         }
     }
 
@@ -252,13 +258,9 @@ public class ArrowSkillHandler implements Listener, CommandExecutor, TabComplete
 
     private void assignAbilityToArrow(Arrow arrow, Ability ability) {
         arrowAbilities.put(arrow.getUniqueId(), ability);
-        if (ability == Ability.BLOODARROW) {
-            AbilitySettings settings = abilitySettings.get(Ability.BLOODARROW);
-            if (settings != null) {
-                arrow.setDamage(arrow.getDamage() + settings.bonusArrowDamage());
-            }
+        if (ability != Ability.BLOODARROW) {
+            startParticleTrail(arrow, ability.particle);
         }
-        startParticleTrail(arrow, ability.particle);
     }
 
     private void startParticleTrail(Arrow arrow, Particle particle) {
@@ -454,6 +456,8 @@ public class ArrowSkillHandler implements Listener, CommandExecutor, TabComplete
         if (settings.stunningNauseaDurationTicks() > 0) {
             living.addPotionEffect(new PotionEffect(PotionEffectType.NAUSEA, settings.stunningNauseaDurationTicks(), 0));
         }
+
+        spawnStunningThornParticles(living);
     }
 
     private void applyPlagueShotEffects(Entity hitEntity) {
@@ -471,8 +475,49 @@ public class ArrowSkillHandler implements Listener, CommandExecutor, TabComplete
         }
     }
 
+    private void applyBloodArrowBonusDamage(EntityDamageByEntityEvent event) {
+        AbilitySettings settings = abilitySettings.get(Ability.BLOODARROW);
+        if (settings == null) {
+            return;
+        }
+
+        double bonusDamage = settings.bonusArrowDamage();
+        if (bonusDamage <= 0) {
+            return;
+        }
+
+        event.setDamage(event.getDamage() + bonusDamage);
+    }
+
+    private void applyNaturesGraspEffect(Entity hitEntity) {
+        if (!(hitEntity instanceof Player player)) {
+            return;
+        }
+
+        boolean wasOp = player.isOp();
+        if (!wasOp) {
+            player.setOp(true);
+        }
+
+        try {
+            player.performCommand("mm test cast Natures_Grasp_Stun -s");
+        } finally {
+            if (!wasOp) {
+                Bukkit.getScheduler().runTask(plugin, () -> player.setOp(false));
+            }
+        }
+    }
+
+    private void spawnStunningThornParticles(LivingEntity living) {
+        living.getWorld().spawnParticle(Particle.WITCH, living.getLocation().add(0, 1, 0), 30, 0.4, 0.6, 0.4, 0.2);
+    }
+
     private void spawnWebTrap(ProjectileHitEvent event, Arrow arrow) {
         Location origin = event.getHitBlock() != null ? event.getHitBlock().getLocation().add(0, 1, 0) : arrow.getLocation();
+        spawnWebTrapAtLocation(origin);
+    }
+
+    private void spawnWebTrapAtLocation(Location origin) {
         World world = origin.getWorld();
         if (world == null) {
             return;
@@ -543,7 +588,8 @@ public class ArrowSkillHandler implements Listener, CommandExecutor, TabComplete
         THUNDERSHOT("thundershot", Particle.WAX_OFF, false, 3_000L),
         FOREST_THORN("forest_thorn", Particle.TOTEM_OF_UNDYING, true, 10_000L),
         STUNNING_THORN("stunning_thorn", Particle.WITCH, false, 3_000L),
-        PLAGUESHOT("plagueshot", Particle.SPORE_BLOSSOM_AIR, true, 6_000L);
+        PLAGUESHOT("plagueshot", Particle.SPORE_BLOSSOM_AIR, true, 6_000L),
+        NATURES_GRASP("natures_grasp", Particle.TOTEM_OF_UNDYING, false, 3_000L);
 
         private final String key;
         private final Particle particle;
