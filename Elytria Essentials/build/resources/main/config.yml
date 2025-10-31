@@ -103,5 +103,34 @@ npc-shops:
     title: "&5Decoration Shop"
     size: 54 # Number of slots in the shop GUI (must be a multiple of 9, max 54)
 
+# Arrow Skill Settings
+arrow-skills:
+  arcaneshot:
+    selection-duration-seconds: 3
+    teleport-distance: 1.5
+  bloodarrow:
+    selection-duration-seconds: 3
+    bonus-damage: 8.0
+  doomshot:
+    selection-duration-seconds: 3
+    impact-radius: 3.0
+    player-knockup-velocity: 1.2
+    block-knockup-velocity: 0.8
+  forest_thorn:
+    selection-duration-seconds: 10
+    true-damage: 1.0
+    slowness-duration-ticks: 40
+    slowness-amplifier: 2
+  stunning_thorn:
+    selection-duration-seconds: 3
+    blindness-duration-ticks: 100
+    nausea-duration-ticks: 180
+  plagueshot:
+    selection-duration-seconds: 6
+    wither-duration-ticks: 120
+    wither-amplifier: 1
+  natures_grasp:
+    selection-duration-seconds: 3
+
 
 

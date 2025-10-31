@@ -101,10 +101,6 @@ public class ArrowSkillHandler implements Listener, CommandExecutor, TabComplete
         }
 
         applyAbility(target, ability);
-        sender.sendMessage("Applied arrow ability " + ability.key + " to " + target.getName() + ".");
-        if (!(sender instanceof Player player && player.getUniqueId().equals(target.getUniqueId()))) {
-            target.sendMessage("Applied arrow ability " + ability.key + ".");
-        }
         return true;
     }
 
