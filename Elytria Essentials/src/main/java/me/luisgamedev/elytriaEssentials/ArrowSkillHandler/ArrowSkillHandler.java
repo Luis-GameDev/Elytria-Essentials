@@ -18,6 +18,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.entity.EntityChangeBlockEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityShootBowEvent;
 import org.bukkit.event.entity.ProjectileHitEvent;
@@ -26,6 +27,7 @@ import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.command.TabCompleter;
+import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
@@ -45,6 +47,8 @@ import java.util.stream.Collectors;
 public class ArrowSkillHandler implements Listener, CommandExecutor, TabCompleter {
 
     private static final long WEB_DURATION_TICKS = 100L;
+
+    private static final String DOOMSHOT_GHOST_METADATA = "elytria-essentials-doomshot-ghost";
 
     private final JavaPlugin plugin;
     private final Map<UUID, ActiveAbility> activeAbilities = new HashMap<>();
@@ -191,6 +195,7 @@ public class ArrowSkillHandler implements Listener, CommandExecutor, TabComplete
                     Vector impactDirection = computeImpactDirection(arrow, event.getHitBlockFace());
                     triggerDoomshotImpact(arrow, impactDirection);
                 }
+                case THUNDERSHOT -> spawnThunderImpact(arrow, null, event.getHitBlock());
                 default -> {
                 }
             }
@@ -232,7 +237,7 @@ public class ArrowSkillHandler implements Listener, CommandExecutor, TabComplete
                 triggerDoomshotImpact(arrow, impactDirection);
             }
             case BLOODARROW -> applyBloodArrowBonusDamage(event);
-            case THUNDERSHOT -> spawnThunderImpact(arrow, hitEntity);
+            case THUNDERSHOT -> spawnThunderImpact(arrow, hitEntity, null);
             case FOREST_THORN -> {
                 applyForestThornHitEffects(hitEntity);
                 if (hitEntity instanceof LivingEntity living) {
@@ -257,6 +262,29 @@ public class ArrowSkillHandler implements Listener, CommandExecutor, TabComplete
             event.setCancelled(true);
         } else {
             protectedWebBlocks.remove(location);
+        }
+    }
+
+    @EventHandler
+    public void onDoomshotGhostBlock(EntityChangeBlockEvent event) {
+        if (!(event.getEntity() instanceof FallingBlock fallingBlock)) {
+            return;
+        }
+
+        if (!fallingBlock.hasMetadata(DOOMSHOT_GHOST_METADATA)) {
+            return;
+        }
+
+        event.setCancelled(true);
+        fallingBlock.remove();
+
+        Block block = event.getBlock();
+        if (block.getType() != Material.AIR) {
+            Bukkit.getScheduler().runTask(plugin, () -> {
+                if (block.getType() != Material.AIR) {
+                    block.setType(Material.AIR, false);
+                }
+            });
         }
     }
 
@@ -416,10 +444,8 @@ public class ArrowSkillHandler implements Listener, CommandExecutor, TabComplete
         return direction;
     }
 
-    private void spawnThunderImpact(Arrow arrow, Entity hitEntity) {
-        Location location = hitEntity != null
-                ? hitEntity.getLocation().clone().add(0, hitEntity.getHeight() * 0.5, 0)
-                : arrow.getLocation();
+    private void spawnThunderImpact(Arrow arrow, Entity hitEntity, Block hitBlock) {
+        Location location = resolveThunderStrikeLocation(arrow, hitEntity, hitBlock);
         World world = location.getWorld();
         if (world == null) {
             return;
@@ -437,6 +463,36 @@ public class ArrowSkillHandler implements Listener, CommandExecutor, TabComplete
                 living.damage(6.0);
             }
         }
+    }
+
+    private Location resolveThunderStrikeLocation(Arrow arrow, Entity hitEntity, Block hitBlock) {
+        if (hitEntity != null) {
+            return hitEntity.getLocation().clone().add(0, hitEntity.getHeight() * 0.5, 0);
+        }
+
+        Location baseLocation = arrow.getLocation();
+        World world = baseLocation.getWorld();
+        if (world == null) {
+            return baseLocation;
+        }
+
+        if (hitBlock != null) {
+            return hitBlock.getLocation().add(0.5, 1.0, 0.5);
+        }
+
+        Location search = baseLocation.clone();
+        int minY = world.getMinHeight();
+        Block currentBlock = world.getBlockAt(search);
+        while (search.getY() > minY && currentBlock.getType() == Material.AIR) {
+            search.add(0, -1, 0);
+            currentBlock = world.getBlockAt(search);
+        }
+
+        if (currentBlock.getType() == Material.AIR) {
+            return baseLocation;
+        }
+
+        return currentBlock.getLocation().add(0.5, 1.0, 0.5);
     }
 
     private void triggerDoomshotImpact(Arrow arrow, Vector impactDirection) {
@@ -490,6 +546,7 @@ public class ArrowSkillHandler implements Listener, CommandExecutor, TabComplete
                     FallingBlock fallingBlock = world.spawnFallingBlock(block.getLocation().toCenterLocation(), block.getBlockData());
                     fallingBlock.setDropItem(false);
                     fallingBlock.setHurtEntities(false);
+                    fallingBlock.setMetadata(DOOMSHOT_GHOST_METADATA, new FixedMetadataValue(plugin, true));
                     ThreadLocalRandom random = ThreadLocalRandom.current();
                     Vector randomOffset = new Vector(
                             random.nextDouble(-0.6D, 0.6D),
