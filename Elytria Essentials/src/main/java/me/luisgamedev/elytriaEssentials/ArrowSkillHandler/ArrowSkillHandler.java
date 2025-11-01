@@ -193,7 +193,7 @@ public class ArrowSkillHandler implements Listener, CommandExecutor, TabComplete
                 case WEBTRAP -> spawnWebTrap(event, arrow);
                 case DOOMSHOT -> {
                     Vector impactDirection = computeImpactDirection(arrow, event.getHitBlockFace());
-                    triggerDoomshotImpact(arrow, impactDirection);
+                    triggerDoomshotImpact(arrow, impactDirection, true);
                 }
                 case THUNDERSHOT -> spawnThunderImpact(arrow, null, event.getHitBlock());
                 default -> {
@@ -214,11 +214,11 @@ public class ArrowSkillHandler implements Listener, CommandExecutor, TabComplete
             return;
         }
 
-        if (event.isCancelled()) {
+        Entity hitEntity = event.getEntity();
+        if (event.isCancelled() && ability != Ability.DOOMSHOT) {
             return;
         }
 
-        Entity hitEntity = event.getEntity();
         switch (ability) {
             case ARCANE_SHOT -> applyArcaneShotEffect(arrow, hitEntity);
             case FLAMETHORN -> {
@@ -234,7 +234,7 @@ public class ArrowSkillHandler implements Listener, CommandExecutor, TabComplete
             }
             case DOOMSHOT -> {
                 Vector impactDirection = computeImpactDirection(arrow, null);
-                triggerDoomshotImpact(arrow, impactDirection);
+                triggerDoomshotImpact(arrow, impactDirection, !event.isCancelled());
             }
             case BLOODARROW -> applyBloodArrowBonusDamage(event);
             case THUNDERSHOT -> spawnThunderImpact(arrow, hitEntity, null);
@@ -495,7 +495,7 @@ public class ArrowSkillHandler implements Listener, CommandExecutor, TabComplete
         return currentBlock.getLocation().add(0.5, 1.0, 0.5);
     }
 
-    private void triggerDoomshotImpact(Arrow arrow, Vector impactDirection) {
+    private void triggerDoomshotImpact(Arrow arrow, Vector impactDirection, boolean knockEntitiesAway) {
         AbilitySettings settings = abilitySettings.get(Ability.DOOMSHOT);
         double radius = settings != null ? settings.doomshotRadius() : 3.0D;
         double blockVelocity = settings != null ? settings.doomshotBlockVelocity() : 0.8D;
@@ -521,12 +521,14 @@ public class ArrowSkillHandler implements Listener, CommandExecutor, TabComplete
 
         Vector launchDirection = direction.clone();
 
-        world.getNearbyEntities(impactLocation, radius, radius, radius, entity -> entity instanceof LivingEntity)
-                .forEach(entity -> {
-                    double randomBoost = 0.8D + ThreadLocalRandom.current().nextDouble(0.6D);
-                    Vector launch = launchDirection.clone().multiply(playerVelocity * randomBoost);
-                    entity.setVelocity(launch);
-                });
+        if (knockEntitiesAway) {
+            world.getNearbyEntities(impactLocation, radius, radius, radius, entity -> entity instanceof LivingEntity)
+                    .forEach(entity -> {
+                        double randomBoost = 0.8D + ThreadLocalRandom.current().nextDouble(0.6D);
+                        Vector launch = launchDirection.clone().multiply(playerVelocity * randomBoost);
+                        entity.setVelocity(launch);
+                    });
+        }
 
         int radiusInt = (int) Math.ceil(radius);
         for (int x = -radiusInt; x <= radiusInt; x++) {
