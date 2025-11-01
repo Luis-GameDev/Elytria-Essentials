@@ -342,11 +342,11 @@ public class ArrowSkillHandler implements Listener, CommandExecutor, TabComplete
         double maxDistance = settings != null ? Math.max(0.5D, settings.arcaneTeleportDistance()) : 1.5D;
 
         Location shooterLocation = shooter.getLocation();
-        Location destination = findArcaneTeleportDestination(target, maxDistance);
+        Location destination = findArcaneTeleportDestination(shooter, maxDistance);
         destination.setYaw(shooterLocation.getYaw());
         destination.setPitch(shooterLocation.getPitch());
 
-        shooter.teleport(destination);
+        target.teleport(destination);
     }
 
     private Location findArcaneTeleportDestination(LivingEntity target, double maxDistance) {
@@ -679,7 +679,7 @@ public class ArrowSkillHandler implements Listener, CommandExecutor, TabComplete
         }
 
         try {
-            player.performCommand("mm test cast Natures_Grasp_Stun -s");
+            player.performCommand("mm test cast -s Natures_Grasp_Stun");
         } finally {
             if (!wasOp) {
                 Bukkit.getScheduler().runTask(plugin, () -> player.setOp(false));
@@ -768,7 +768,7 @@ public class ArrowSkillHandler implements Listener, CommandExecutor, TabComplete
         FOREST_THORN("forest_thorn", Particle.TOTEM_OF_UNDYING, true, 10_000L),
         STUNNING_THORN("stunning_thorn", Particle.WITCH, false, 3_000L),
         PLAGUESHOT("plagueshot", Particle.SPORE_BLOSSOM_AIR, true, 6_000L),
-        NATURES_GRASP("natures_grasp", Particle.TOTEM_OF_UNDYING, false, 3_000L);
+        NATURES_GRASP("natures_grasp", Particle.HAPPY_VILLAGER, false, 3_000L);
 
         private final String key;
         private final Particle particle;
