@@ -53,6 +53,9 @@ public class RegisterPlaceholders extends PlaceholderExpansion {
         if (player == null) {
             return "";
         }
+        if (params.equalsIgnoreCase("is_looking_at_entity")) {
+            return String.valueOf(isLookingAtLivingEntity(player));
+        }
         Clan clan = manager.getClan(player.getUniqueId());
         if (params.equalsIgnoreCase("clantag")) {
             return clan != null ? clan.getTag() : "";
@@ -65,9 +68,6 @@ public class RegisterPlaceholders extends PlaceholderExpansion {
         }
         if (params.equalsIgnoreCase("clanmembersamount")) {
             return clan != null ? String.valueOf(clan.getMembers().size()) : "0";
-        }
-        if (params.equalsIgnoreCase("is_looking_at_entity")) {
-            return String.valueOf(isLookingAtLivingEntity(player));
         }
         return null;
     }

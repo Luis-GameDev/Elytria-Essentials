@@ -1,5 +1,6 @@
 package me.luisgamedev.elytriaEssentials;
 
+import me.luisgamedev.elytriaEssentials.BossHandler.BossScheduler;
 import me.luisgamedev.elytriaEssentials.ClassLimiter.ClassArmorModelListener;
 import me.luisgamedev.elytriaEssentials.ClassLimiter.ClassChangeManager;
 import me.luisgamedev.elytriaEssentials.CooldownAPI.CooldownAdjustCommand;
@@ -63,6 +64,7 @@ public final class ElytriaEssentials extends JavaPlugin {
     private PersistentDataTransferListener persistentDataTransferListener;
     private FallDamageProtectionManager fallDamageProtectionManager;
     private ProfessionMilestonePermissionListener professionMilestonePermissionListener;
+    private BossScheduler bs;
 
     @Override
     public void onEnable() {
@@ -84,6 +86,10 @@ public final class ElytriaEssentials extends JavaPlugin {
         } else {
             getLogger().warning("arrowskill command is not defined in plugin.yml");
         }
+
+        bs = new BossScheduler(this);
+        Bukkit.getPluginManager().registerEvents(bs, this);
+        bs.loadAndScheduleAll();
 
         pm.registerEvents(new TeleportListener(this), this);
         pm.registerEvents(new BlockersListener(), this);
@@ -250,6 +256,9 @@ public final class ElytriaEssentials extends JavaPlugin {
         if (musicManager != null) {
             musicManager.shutdown();
             musicManager = null;
+        }
+        if (bs != null) {
+            bs.onDisable();
         }
         fallDamageProtectionManager = null;
         if (randomInformationManager != null) {
