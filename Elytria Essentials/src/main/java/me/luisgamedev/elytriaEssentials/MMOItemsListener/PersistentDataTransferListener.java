@@ -45,8 +45,10 @@ public final class PersistentDataTransferListener implements Listener {
 
     static {
         Set<String> keys = new HashSet<>();
+        keys.add("elytriaessentials:repairs_done");
         keys.add("repairs_done");
         keys.add("soulbinding");
+        keys.add("elytriaessentials:soulbinding");
         TARGET_KEYS = Collections.unmodifiableSet(keys);
     }
 

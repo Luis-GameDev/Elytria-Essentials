@@ -103,6 +103,16 @@ npc-shops:
     title: "&5Decoration Shop"
     size: 54 # Number of slots in the shop GUI (must be a multiple of 9, max 54)
 
+boss:
+  EMBER_CLAW:
+    time: "8pm"               # E.g: "20:00", "8pm", "8:00pm", "08:00"
+    location: [0, 100, 900]  # x,y,z
+    world: world
+    lootCommand: "mi give %player% ember_claw_fragment 1"
+    lootKey: "ember_claw_fragment"
+    fallbackMaterial: "GOLD_INGOT"
+    lifetimeTicks: 72000
+
 # Arrow Skill Settings
 arrow-skills:
   arcaneshot:
