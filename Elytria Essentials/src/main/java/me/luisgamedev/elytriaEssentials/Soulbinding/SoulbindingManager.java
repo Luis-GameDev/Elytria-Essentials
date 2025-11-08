@@ -175,7 +175,14 @@ public class SoulbindingManager implements Listener {
         List<String> updatedLore = originalLore == null ? new ArrayList<>() : new ArrayList<>(originalLore);
         boolean removed = updatedLore.removeIf(SoulbindingManager::isSoulboundLoreLine);
         if (count > 0) {
-            updatedLore.add(SOULBOUND_LORE_PREFIX + count);
+            int insertIndex = updatedLore.size();
+            if (!updatedLore.isEmpty()) {
+                String lastLine = updatedLore.get(updatedLore.size() - 1);
+                if (isMmoItemsRarityLine(lastLine)) {
+                    insertIndex = Math.max(0, updatedLore.size() - 1);
+                }
+            }
+            updatedLore.add(insertIndex, SOULBOUND_LORE_PREFIX + count);
         }
         if (!Objects.equals(originalLore, updatedLore)) {
             meta.setLore(updatedLore);
@@ -485,6 +492,7 @@ public class SoulbindingManager implements Listener {
             }
             iterator.remove();
             ItemStack clone = drop.clone();
+            consumeSoulbindingOnDeath(clone);
             applyDeathDurabilityPenalty(clone);
             toReturn.add(clone);
         }
@@ -497,6 +505,7 @@ public class SoulbindingManager implements Listener {
                 if (!isSoulbound(stack)) {
                     continue;
                 }
+                consumeSoulbindingOnDeath(stack);
                 applyDeathDurabilityPenalty(stack);
                 contents[i] = stack;
             }
@@ -506,6 +515,7 @@ public class SoulbindingManager implements Listener {
             for (int i = 0; i < armorContents.length; i++) {
                 ItemStack stack = armorContents[i];
                 if (isSoulbound(stack)) {
+                    consumeSoulbindingOnDeath(stack);
                     applyDeathDurabilityPenalty(stack);
                     armorContents[i] = stack;
                 }
@@ -516,6 +526,7 @@ public class SoulbindingManager implements Listener {
             for (int i = 0; i < extraContents.length; i++) {
                 ItemStack stack = extraContents[i];
                 if (isSoulbound(stack)) {
+                    consumeSoulbindingOnDeath(stack);
                     applyDeathDurabilityPenalty(stack);
                     extraContents[i] = stack;
                 }
@@ -614,6 +625,28 @@ public class SoulbindingManager implements Listener {
             return false;
         }
         return stripped.trim().toLowerCase(Locale.ROOT).startsWith("soulbound:");
+    }
+
+    private boolean consumeSoulbindingOnDeath(ItemStack item) {
+        if (item == null || item.getType().isAir()) {
+            return false;
+        }
+        int current = getSoulbindingCount(item);
+        if (current <= 0) {
+            return false;
+        }
+        return setSoulbindingCount(item, current - 1);
+    }
+
+    private static boolean isMmoItemsRarityLine(String line) {
+        if (line == null) {
+            return false;
+        }
+        String stripped = ChatColor.stripColor(line);
+        if (stripped == null) {
+            return false;
+        }
+        return stripped.trim().toLowerCase(Locale.ROOT).contains("rarity");
     }
 
     private static final class SoulbindingSession {
