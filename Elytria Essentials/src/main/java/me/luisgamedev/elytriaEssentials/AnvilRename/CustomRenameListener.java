@@ -19,8 +19,10 @@ import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.inventory.PrepareAnvilEvent;
 import org.bukkit.inventory.AnvilInventory;
+import org.bukkit.entity.HumanEntity;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryView;
+import org.bukkit.inventory.view.AnvilView;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataContainer;
@@ -69,7 +71,9 @@ public class CustomRenameListener implements Listener {
         }
 
         AnvilInventory inventory = event.getInventory();
-        inventory.setRepairCost(0);
+        AnvilView view = (AnvilView) event.getView();
+        view.setRepairCost(0);
+        view.setRepairItemCountCost(0);
         schedulePlaceholderRefresh(inventory);
         inventory.setItem(2, null);
 
@@ -79,7 +83,7 @@ public class CustomRenameListener implements Listener {
             return;
         }
 
-        String renameText = inventory.getRenameText();
+        String renameText = view.getRenameText();
         if (renameText == null || renameText.isBlank()) {
             event.setResult(null);
             return;
@@ -172,7 +176,8 @@ public class CustomRenameListener implements Listener {
             return;
         }
 
-        String renameText = inventory.getRenameText();
+        InventoryView view = event.getView();
+        String renameText = view instanceof AnvilView anvilView ? anvilView.getRenameText() : null;
         if (renameText == null || renameText.isBlank()) {
             event.setCancelled(true);
             return;
@@ -213,7 +218,7 @@ public class CustomRenameListener implements Listener {
 
         consumeLeftInput(inventory);
         inventory.setItem(2, null);
-        inventory.setRepairCost(0);
+        resetRepairCost(inventory);
         player.updateInventory();
 
         if (withdrew && cost > 0D) {
@@ -279,7 +284,7 @@ public class CustomRenameListener implements Listener {
         } else if (!isPriceDisplay(inventory.getItem(1))) {
             inventory.setItem(1, createPriceDisplay());
         }
-        inventory.setRepairCost(0);
+        resetRepairCost(inventory);
     }
 
     private void clearPlaceholder(AnvilInventory inventory) {
@@ -314,6 +319,16 @@ public class CustomRenameListener implements Listener {
         meta.getPersistentDataContainer().set(priceMarkerKey, PersistentDataType.BYTE, (byte) 1);
         item.setItemMeta(meta);
         return item;
+    }
+
+    private void resetRepairCost(AnvilInventory inventory) {
+        for (HumanEntity viewer : inventory.getViewers()) {
+            InventoryView view = viewer.getOpenInventory();
+            if (view instanceof AnvilView anvilView && anvilView.getTopInventory() == inventory) {
+                anvilView.setRepairCost(0);
+                anvilView.setRepairItemCountCost(0);
+            }
+        }
     }
 
     private String formatCurrency(double amount) {

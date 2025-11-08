@@ -11,6 +11,7 @@ import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -24,6 +25,8 @@ import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.inventory.AnvilInventory;
 import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.InventoryView;
+import org.bukkit.inventory.view.AnvilView;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
@@ -198,18 +201,49 @@ public class SoulbindingManager implements Listener {
             return;
         }
 
-        Inventory inventory = Bukkit.createInventory(null, InventoryType.ANVIL,
-                Component.text("Soulbinding", NamedTextColor.DARK_PURPLE));
-        if (!(inventory instanceof AnvilInventory anvilInventory)) {
+        AnvilInventory anvilInventory = createSoulbindingInventory(player);
+        if (anvilInventory == null) {
             plugin.getLogger().warning("Failed to create anvil inventory for soulbinding.");
             return;
         }
-        anvilInventory.setRepairCost(0);
 
         SoulbindingSession session = new SoulbindingSession(player, anvilInventory);
         sessions.put(player.getUniqueId(), session);
         updateSession(session);
-        player.openInventory(anvilInventory);
+
+        if (player.getOpenInventory().getTopInventory() != anvilInventory) {
+            player.openInventory(anvilInventory);
+        } else {
+            player.updateInventory();
+        }
+        resetRepairCost(anvilInventory);
+    }
+
+    private AnvilInventory createSoulbindingInventory(Player player) {
+        Inventory inventory = Bukkit.createInventory(player, InventoryType.ANVIL,
+                Component.text("Soulbinding", NamedTextColor.DARK_PURPLE));
+        if (inventory instanceof AnvilInventory anvilInventory) {
+            resetRepairCost(anvilInventory);
+            return anvilInventory;
+        }
+
+        InventoryView view = player.openAnvil(player.getLocation(), true);
+        if (view == null) {
+            return null;
+        }
+
+        view.setTitle(ChatColor.DARK_PURPLE + "Soulbinding");
+        Inventory topInventory = view.getTopInventory();
+        if (topInventory instanceof AnvilInventory anvilInventory) {
+            if (view instanceof AnvilView anvilView) {
+                anvilView.setRepairCost(0);
+                anvilView.setRepairItemCountCost(0);
+            }
+            return anvilInventory;
+        }
+
+        player.closeInventory();
+        return null;
     }
 
     @EventHandler
@@ -367,7 +401,7 @@ public class SoulbindingManager implements Listener {
 
     private void updateSession(SoulbindingSession session) {
         ItemStack input = session.inventory.getItem(0);
-        session.inventory.setRepairCost(0);
+        resetRepairCost(session.inventory);
         if (input == null || input.getType().isAir()) {
             session.pendingResult = null;
             session.ready = false;
@@ -605,6 +639,16 @@ public class SoulbindingManager implements Listener {
         private SoulbindingSession(Player player, AnvilInventory inventory) {
             this.player = player;
             this.inventory = inventory;
+        }
+    }
+
+    private void resetRepairCost(AnvilInventory inventory) {
+        for (HumanEntity viewer : inventory.getViewers()) {
+            InventoryView view = viewer.getOpenInventory();
+            if (view instanceof AnvilView anvilView && anvilView.getTopInventory() == inventory) {
+                anvilView.setRepairCost(0);
+                anvilView.setRepairItemCountCost(0);
+            }
         }
     }
 }
