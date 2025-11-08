@@ -1,7 +1,7 @@
 package me.luisgamedev.elytriaEssentials.MMOItemsListener;
 
 import me.luisgamedev.elytriaEssentials.ElytriaEssentials;
-import net.Indyuce.mmoitems.api.ConfigFile;
+import me.luisgamedev.elytriaEssentials.Soulbinding.SoulbindingManager;
 import net.Indyuce.mmoitems.api.event.item.ApplyGemStoneEvent;
 import net.Indyuce.mmoitems.api.interaction.GemStone;
 import net.Indyuce.mmoitems.api.item.build.ItemStackBuilder;
@@ -39,6 +39,10 @@ public class PersistentDataTransferListener implements Listener {
         this.plugin = plugin;
         this.debug = plugin.getConfig().getBoolean("debug-mode", false);
         this.keysToTransfer = loadKeysFromConfig();
+        SoulbindingManager soulbindingManager = plugin.getSoulbindingManager();
+        if (soulbindingManager != null && soulbindingManager.isActive()) {
+            keysToTransfer.add(soulbindingManager.getSoulbindingKey());
+        }
         Bukkit.getPluginManager().registerEvents(this, plugin);
         plugin.getLogger().fine("MMOItems persistent data bridge initialised.");
     }
@@ -221,6 +225,13 @@ public class PersistentDataTransferListener implements Listener {
 
         if (changed) {
             target.setItemMeta(tgtMeta);
+        }
+
+        SoulbindingManager soulbindingManager = plugin.getSoulbindingManager();
+        if (soulbindingManager != null && soulbindingManager.isActive()) {
+            if (soulbindingManager.refreshSoulboundLore(target)) {
+                changed = true;
+            }
         }
 
         return changed;
