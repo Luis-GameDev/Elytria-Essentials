@@ -90,6 +90,7 @@ soulbinding:
   enabled: true
   npc-id: 0
   price-per-binding: 500.0
+  npcs: [0]
   max-bindings: 3
 
 # Random Information
