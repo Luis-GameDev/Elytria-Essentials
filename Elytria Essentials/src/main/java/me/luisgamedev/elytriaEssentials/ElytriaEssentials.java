@@ -21,6 +21,7 @@ import me.luisgamedev.elytriaEssentials.ShopSystem.ShopListener;
 import me.luisgamedev.elytriaEssentials.ShopSystem.ShopManager;
 import me.luisgamedev.elytriaEssentials.Money.CoinPickupListener;
 import me.luisgamedev.elytriaEssentials.commands.ReloadCommand;
+import me.luisgamedev.elytriaEssentials.Soulbinding.SoulbindingManager;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
@@ -65,6 +66,7 @@ public final class ElytriaEssentials extends JavaPlugin {
     private FallDamageProtectionManager fallDamageProtectionManager;
     private ProfessionMilestonePermissionListener professionMilestonePermissionListener;
     private BossScheduler bs;
+    private SoulbindingManager soulbindingManager;
 
     @Override
     public void onEnable() {
@@ -123,6 +125,8 @@ public final class ElytriaEssentials extends JavaPlugin {
 
             pm.registerEvents(new CoinPickupListener(this), this);
         }
+
+        soulbindingManager = new SoulbindingManager(this);
 
         if (Bukkit.getPluginManager().isPluginEnabled("MMOItems")) {
             runeController = new RuneController(this);
@@ -308,5 +312,9 @@ public final class ElytriaEssentials extends JavaPlugin {
 
     public ShopManager getShopManager() {
         return shopManager;
+    }
+
+    public SoulbindingManager getSoulbindingManager() {
+        return soulbindingManager;
     }
 }
