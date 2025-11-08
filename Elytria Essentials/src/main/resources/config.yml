@@ -88,7 +88,7 @@ custom-rename:
 # Soulbinding
 soulbinding:
   enabled: true
-  npc-id: 0
+  npcs: [0]
   price-per-binding: 0.0
   max-bindings: 3
 

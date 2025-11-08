@@ -47,7 +47,7 @@ public class SoulbindingManager implements Listener {
     private final NamespacedKey soulbindingKey;
     private final Economy economy;
     private final boolean active;
-    private final int npcId;
+    private final Set<Integer> npcIds;
     private final double pricePerBinding;
     private final int maxSoulbindings;
 
@@ -63,13 +63,20 @@ public class SoulbindingManager implements Listener {
         if (section == null) {
             plugin.getLogger().warning("Missing soulbinding section in config.yml. Soulbinding feature disabled.");
             this.active = false;
-            this.npcId = -1;
+            this.npcIds = Collections.emptySet();
             this.pricePerBinding = 0D;
             this.maxSoulbindings = 3;
             return;
         }
 
-        this.npcId = section.getInt("npc-id", -1);
+        Set<Integer> configuredNpcIds = new HashSet<>(section.getIntegerList("npcs"));
+        if (configuredNpcIds.isEmpty()) {
+            int legacyNpcId = section.getInt("npc-id", -1);
+            if (legacyNpcId >= 0) {
+                configuredNpcIds.add(legacyNpcId);
+            }
+        }
+        this.npcIds = Collections.unmodifiableSet(configuredNpcIds);
         this.pricePerBinding = Math.max(0D, section.getDouble("price-per-binding", 0D));
         this.maxSoulbindings = Math.max(1, section.getInt("max-bindings", 3));
 
@@ -80,8 +87,8 @@ public class SoulbindingManager implements Listener {
             return;
         }
 
-        if (npcId < 0) {
-            plugin.getLogger().warning("Soulbinding NPC id is not configured correctly. Soulbinding feature disabled.");
+        if (npcIds.isEmpty()) {
+            plugin.getLogger().warning("Soulbinding NPC ids are not configured. Soulbinding feature disabled.");
             this.active = false;
             return;
         }
@@ -92,11 +99,13 @@ public class SoulbindingManager implements Listener {
             return;
         }
 
-        this.active = section.getBoolean("enabled", true);
-
-        if (!active) {
+        boolean enabled = section.getBoolean("enabled", true);
+        if (!enabled) {
+            this.active = false;
             return;
         }
+
+        this.active = true;
 
         PluginManager pluginManager = Bukkit.getPluginManager();
         pluginManager.registerEvents(this, plugin);
@@ -208,7 +217,7 @@ public class SoulbindingManager implements Listener {
         if (!active) {
             return;
         }
-        if (event.getNPC().getId() != npcId) {
+        if (!npcIds.contains(event.getNPC().getId())) {
             return;
         }
         event.setCancelled(true);
