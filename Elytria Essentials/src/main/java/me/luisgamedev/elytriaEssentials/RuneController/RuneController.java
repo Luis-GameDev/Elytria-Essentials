@@ -72,7 +72,7 @@ public final class RuneController {
                 "io.lumine.mmoitems.api.event.item.GemstoneExtractEvent",
                 "io.lumine.mmoitems.api.event.GemStoneRemoveEvent",
                 "io.lumine.mmoitems.api.event.GemStoneExtractEvent",
-                "io.lumine.mmoitems.api.event.UnsocketGemStoneEvent",
+                "io.lumine.mmoitems.api.event.item.UnsocketGemStoneEvent",
                 "net.Indyuce.mmoitems.api.event.item.GemStoneRemoveEvent",
                 "net.Indyuce.mmoitems.api.event.item.GemStoneExtractEvent",
                 "net.Indyuce.mmoitems.api.event.item.GemstoneRemoveEvent",
