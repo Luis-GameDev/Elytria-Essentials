@@ -53,6 +53,7 @@ public class SoulbindingManager implements Listener {
     private final Set<Integer> npcIds;
     private final double pricePerBinding;
     private final int maxSoulbindings;
+    private final NamespacedKey MODEL_KEY = NamespacedKey.fromString("elytria:coin");
 
     private final Map<UUID, SoulbindingSession> sessions = new HashMap<>();
     private final Map<UUID, List<ItemStack>> pendingReturns = new HashMap<>();
@@ -451,9 +452,10 @@ public class SoulbindingManager implements Listener {
     }
 
     private ItemStack createInfoItem(int currentCount, boolean ready, String statusLine) {
-        ItemStack item = new ItemStack(Material.NETHER_STAR);
+        ItemStack item = new ItemStack(Material.EMERALD);
         ItemMeta meta = item.getItemMeta();
-        meta.setDisplayName(ChatColor.GOLD + "Soulbinding Service");
+        meta.setItemModel(MODEL_KEY);
+        meta.setDisplayName(ChatColor.GOLD + "Add Soulbinding");
         List<String> lore = new ArrayList<>();
         lore.add(ChatColor.GRAY + "Place a weapon in the left slot.");
         lore.add(ChatColor.GRAY + "Adds one soulbinding (max " + maxSoulbindings + ").");
