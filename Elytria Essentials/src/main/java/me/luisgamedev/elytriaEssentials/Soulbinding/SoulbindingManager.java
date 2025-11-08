@@ -46,6 +46,25 @@ public class SoulbindingManager implements Listener {
     private static final int RESULT_SLOT = 16;
     private static final Component MENU_TITLE = Component.text("Soulbinding", NamedTextColor.DARK_PURPLE);
 
+    private static final Set<Material> SOULBINDABLE_WEAPONS = EnumSet.of(
+            Material.WOODEN_SWORD,
+            Material.STONE_SWORD,
+            Material.IRON_SWORD,
+            Material.GOLDEN_SWORD,
+            Material.DIAMOND_SWORD,
+            Material.NETHERITE_SWORD,
+            Material.WOODEN_AXE,
+            Material.STONE_AXE,
+            Material.IRON_AXE,
+            Material.GOLDEN_AXE,
+            Material.DIAMOND_AXE,
+            Material.NETHERITE_AXE,
+            Material.BOW,
+            Material.CROSSBOW,
+            Material.TRIDENT,
+            Material.MACE
+    );
+
     private final ElytriaEssentials plugin;
     private final NamespacedKey soulbindingKey;
     private final Economy economy;
@@ -395,6 +414,15 @@ public class SoulbindingManager implements Listener {
             return;
         }
 
+        if (!isSoulbindableWeapon(input.getType())) {
+            session.pendingResult = null;
+            session.ready = false;
+            session.targetSoulbindingCount = 0;
+            session.inventory.setItem(INFO_SLOT, createInfoItem(0, false, ChatColor.RED + "Only weapons can be soulbound."));
+            session.inventory.setItem(RESULT_SLOT, null);
+            return;
+        }
+
         ItemMeta meta = input.getItemMeta();
         if (!(meta instanceof Damageable) || input.getType().getMaxDurability() <= 0) {
             session.pendingResult = null;
@@ -647,6 +675,10 @@ public class SoulbindingManager implements Listener {
             return false;
         }
         return stripped.trim().toLowerCase(Locale.ROOT).contains("rarity");
+    }
+
+    private boolean isSoulbindableWeapon(Material material) {
+        return material != null && SOULBINDABLE_WEAPONS.contains(material);
     }
 
     private static final class SoulbindingSession {
