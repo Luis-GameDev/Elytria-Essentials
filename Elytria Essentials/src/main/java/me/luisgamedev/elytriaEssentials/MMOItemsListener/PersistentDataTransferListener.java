@@ -3,81 +3,79 @@ package me.luisgamedev.elytriaEssentials.MMOItemsListener;
 import io.lumine.mythic.lib.api.item.NBTItem;
 import me.luisgamedev.elytriaEssentials.ElytriaEssentials;
 import net.Indyuce.mmoitems.api.ConfigFile;
-import net.Indyuce.mmoitems.api.event.MMOItemReforgeFinishEvent;
+import net.Indyuce.mmoitems.api.event.item.ApplyGemStoneEvent;
 import net.Indyuce.mmoitems.api.item.build.ItemStackBuilder;
 import net.Indyuce.mmoitems.api.item.mmoitem.LiveMMOItem;
 import net.Indyuce.mmoitems.api.item.mmoitem.MMOItem;
 import org.bukkit.Bukkit;
 import org.bukkit.NamespacedKey;
 import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.persistence.PersistentDataContainer;
-import org.bukkit.persistence.PersistentDataType;
 
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
+import java.util.logging.Level;
 
 /**
- * Transfers important persistent data (repair count, soulbinding, …) between
- * MMOItems whenever the plugin rebuilds an item. MMOItems 6 exposes stable APIs
- * for the required events and data containers which are used directly here.
+ * Listener that copies persistent data container keys from externally-added PDCs
+ * when MMOItems rebuilds/replaces an item. Originally listened to
+ * MMOItemReforgeFinishEvent. Now listens to ApplyGemStoneEvent so PDCs are
+ * preserved when gemstones are applied.
+ *
+ * Note: ApplyGemStoneEvent does not expose a finished ItemStack setter like
+ * MMOItemReforgeFinishEvent. This listener attempts to rebuild the target MMOItem
+ * and then write the copied PDCs back into the player's hand item.
  */
-public final class PersistentDataTransferListener implements Listener {
-
-    private static final Set<String> TARGET_KEYS;
-    private static final PersistentDataType<?, ?>[] SUPPORTED_TYPES = new PersistentDataType<?, ?>[]{
-            PersistentDataType.BYTE,
-            PersistentDataType.SHORT,
-            PersistentDataType.INTEGER,
-            PersistentDataType.LONG,
-            PersistentDataType.FLOAT,
-            PersistentDataType.DOUBLE,
-            PersistentDataType.STRING,
-            PersistentDataType.BYTE_ARRAY,
-            PersistentDataType.INTEGER_ARRAY,
-            PersistentDataType.LONG_ARRAY,
-            PersistentDataType.TAG_CONTAINER,
-            PersistentDataType.TAG_CONTAINER_ARRAY
-    };
-
-    static {
-        Set<String> keys = new HashSet<>();
-        keys.add("elytriaessentials:repairs_done");
-        keys.add("repairs_done");
-        keys.add("soulbinding");
-        keys.add("elytriaessentials:soulbinding");
-        TARGET_KEYS = Collections.unmodifiableSet(keys);
-    }
-
+public class PersistentDataTransferListener implements Listener {
     private final ElytriaEssentials plugin;
-
-    boolean debug;
+    private final boolean debug;
+    private final ConfigFile mmoConfig;
+    private final NamespacedKey keyNamespace;
+    private final Set<String> keysToTransfer;
 
     public PersistentDataTransferListener(ElytriaEssentials plugin) {
         this.plugin = plugin;
         this.debug = plugin.getConfig().getBoolean("debug-mode", false);
+        this.mmoConfig = new ConfigFile(); // keep as-is if needed by other logic
+        this.keyNamespace = new NamespacedKey(plugin, "elytria_pdc");
+        this.keysToTransfer = loadKeysFromConfig();
         Bukkit.getPluginManager().registerEvents(this, plugin);
         plugin.getLogger().fine("MMOItems persistent data bridge initialised using direct MMOItems API integration.");
     }
 
+    private Set<String> loadKeysFromConfig() {
+        try {
+            FileConfiguration cfg = plugin.getConfig();
+            List<String> keys = cfg.getStringList("mmoitems.transfer-keys");
+            if (keys == null) return new HashSet<>();
+            return new HashSet<>(keys);
+        } catch (Exception ex) {
+            plugin.getLogger().log(Level.WARNING, "Failed to load transfer keys from config", ex);
+            return new HashSet<>();
+        }
+    }
+
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-    public void onReforgeFinish(MMOItemReforgeFinishEvent event) {
-        ItemStack previous = extract(event.getOldMMOItem());
-        ItemStack finished = event.getFinishedItem();
-
+    public void onApplyGemStone(ApplyGemStoneEvent event) {
         if (debug) {
-            plugin.getLogger().info("MMOItems item reforge finished.");
+            plugin.getLogger().info("MMOItems ApplyGemStoneEvent triggered.");
         }
 
-        if (finished == null) {
-            finished = extract(event.getNewMMOItem());
+        MMOItem targetItem = event.getTargetItem();
+        if (targetItem == null) {
+            return;
         }
 
+        // Try to extract the item before and after the change.
+        // ApplyGemStoneEvent does not provide explicit old/new item stacks in this API,
+        // so we attempt to build the MMOItem representation and use that as both
+        // source and target for PDC transfer. This is the best effort approach
+        // to preserve externally-added PDCs when MMOItems rebuilds the ItemStack.
+        ItemStack previous = extract(targetItem);
+        ItemStack finished = extract(targetItem);
 
         if (previous == null || finished == null) {
             return;
@@ -85,10 +83,28 @@ public final class PersistentDataTransferListener implements Listener {
 
         ItemStack clone = finished.clone();
         if (transferPersistentData(previous, clone)) {
-            event.setFinishedItem(clone);
-
-            if (debug) {
-                plugin.getLogger().info("Transferred all matching PDCs successfully!");
+            // Place the updated item back into the player's hand so the transferred PDCs persist.
+            Player player = event.getPlayerData() != null ? event.getPlayerData().getPlayer() : null;
+            if (player != null) {
+                try {
+                    // Prefer main hand if something is there, otherwise off-hand.
+                    ItemStack main = player.getInventory().getItemInMainHand();
+                    if (main != null && !main.getType().isAir()) {
+                        player.getInventory().setItemInMainHand(clone);
+                    } else {
+                        player.getInventory().setItemInOffHand(clone);
+                    }
+                    player.updateInventory();
+                    if (debug) {
+                        plugin.getLogger().info("Transferred all matching PDCs successfully (ApplyGemStoneEvent).");
+                    }
+                } catch (Exception ex) {
+                    plugin.getLogger().warning("Failed to set finished item after ApplyGemStoneEvent: " + ex.getMessage());
+                }
+            } else {
+                if (debug) {
+                    plugin.getLogger().info("Player is null, cannot place finished item.");
+                }
             }
         }
     }
@@ -129,52 +145,47 @@ public final class PersistentDataTransferListener implements Listener {
             return false;
         }
 
-        ItemMeta originalMeta = original.getItemMeta();
-        ItemMeta updatedMeta = updated.getItemMeta();
-        if (originalMeta == null || updatedMeta == null) {
-            return false;
+        NamespacedKey namespace = keyNamespace;
+        boolean changed = false;
+
+        // read all keys from original's item meta PDC and selectively copy to updated
+        org.bukkit.inventory.meta.ItemMeta origMeta = original.getItemMeta();
+        org.bukkit.inventory.meta.ItemMeta updMeta = updated.getItemMeta();
+        if (origMeta == null || updMeta == null) return false;
+
+        org.bukkit.persistence.PersistentDataContainer source = origMeta.getPersistentDataContainer();
+        org.bukkit.persistence.PersistentDataContainer target = updMeta.getPersistentDataContainer();
+
+        // iterate known keys from config, try to copy if present
+        for (String key : keysToTransfer) {
+            if (key == null || key.trim().isEmpty()) continue;
+            NamespacedKey nk = new NamespacedKey(plugin, key);
+            // attempt many types: string, boolean, integer, double, long, byte, byte[], int[]
+            // check for existence using get with various types.
+            if (copyIfPresent(source, target, nk, org.bukkit.persistence.PersistentDataType.STRING)) changed = true;
+            if (copyIfPresent(source, target, nk, org.bukkit.persistence.PersistentDataType.INTEGER)) changed = true;
+            if (copyIfPresent(source, target, nk, org.bukkit.persistence.PersistentDataType.DOUBLE)) changed = true;
+            if (copyIfPresent(source, target, nk, org.bukkit.persistence.PersistentDataType.LONG)) changed = true;
+            if (copyIfPresent(source, target, nk, org.bukkit.persistence.PersistentDataType.BYTE)) changed = true;
+            if (copyIfPresent(source, target, nk, org.bukkit.persistence.PersistentDataType.BYTE_ARRAY)) changed = true;
+            if (copyIfPresent(source, target, nk, org.bukkit.persistence.PersistentDataType.INTEGER_ARRAY)) changed = true;
+            if (copyIfPresent(source, target, nk, org.bukkit.persistence.PersistentDataType.FLOAT)) changed = true;
+            // add other types as needed
         }
 
-        PersistentDataContainer sourceContainer = originalMeta.getPersistentDataContainer();
-        PersistentDataContainer targetContainer = updatedMeta.getPersistentDataContainer();
-
-        boolean modified = false;
-        for (NamespacedKey key : sourceContainer.getKeys()) {
-
-            if (!TARGET_KEYS.contains(key.getKey())) {
-                if (debug) {
-                    plugin.getLogger().info("Found non-matching key: " + key);
-                }
-                continue;
-            }
-
-            if (debug) {
-                plugin.getLogger().info("Found matching key: " + key);
-            }
-
-            if (copyValue(sourceContainer, targetContainer, key)) {
-                modified = true;
-            }
+        if (changed) {
+            updated.setItemMeta(updMeta);
         }
 
-        if (modified) {
-            updated.setItemMeta(updatedMeta);
-        }
-        return modified;
+        return changed;
     }
 
-    private boolean copyValue(PersistentDataContainer source, PersistentDataContainer target, NamespacedKey key) {
-        if (debug) {
-            plugin.getLogger().info("Attempting to copy over key: " + key);
-        }
-        for (PersistentDataType<?, ?> type : SUPPORTED_TYPES) {
-            if (!source.has(key, type)) {
-                continue;
-            }
-
-            @SuppressWarnings("unchecked")
-            PersistentDataType<?, Object> casted = (PersistentDataType<?, Object>) type;
-            Object value = source.get(key, casted);
+    private <T, Z> boolean copyIfPresent(org.bukkit.persistence.PersistentDataContainer source,
+                                         org.bukkit.persistence.PersistentDataContainer target,
+                                         NamespacedKey key,
+                                         org.bukkit.persistence.PersistentDataType<T, Z> casted) {
+        if (source.has(key, casted)) {
+            Z value = source.get(key, casted);
             if (value != null) {
                 target.set(key, casted, value);
                 if (debug) {
@@ -188,4 +199,3 @@ public final class PersistentDataTransferListener implements Listener {
         return false;
     }
 }
-
