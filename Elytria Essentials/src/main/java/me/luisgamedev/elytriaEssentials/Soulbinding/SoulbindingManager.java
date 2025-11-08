@@ -11,7 +11,6 @@ import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -23,11 +22,7 @@ import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
-import org.bukkit.inventory.AnvilInventory;
 import org.bukkit.inventory.Inventory;
-import org.bukkit.inventory.InventoryView;
-import org.bukkit.inventory.view.AnvilView;
-import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.inventory.meta.Damageable;
@@ -45,6 +40,11 @@ import java.util.*;
 public class SoulbindingManager implements Listener {
     private static final String SOULBOUND_LORE_PREFIX = ChatColor.RED + "Soulbound: ";
     private static final DecimalFormat DECIMAL_FORMAT = new DecimalFormat("#,##0.##");
+    private static final int INVENTORY_SIZE = 27;
+    private static final int INPUT_SLOT = 10;
+    private static final int INFO_SLOT = 13;
+    private static final int RESULT_SLOT = 16;
+    private static final Component MENU_TITLE = Component.text("Soulbinding", NamedTextColor.DARK_PURPLE);
 
     private final ElytriaEssentials plugin;
     private final NamespacedKey soulbindingKey;
@@ -57,11 +57,13 @@ public class SoulbindingManager implements Listener {
 
     private final Map<UUID, SoulbindingSession> sessions = new HashMap<>();
     private final Map<UUID, List<ItemStack>> pendingReturns = new HashMap<>();
+    private final ItemStack fillerItem;
 
     public SoulbindingManager(ElytriaEssentials plugin) {
         this.plugin = plugin;
         this.soulbindingKey = new NamespacedKey(plugin, "soulbinding_count");
         this.economy = plugin.getEconomy();
+        this.fillerItem = createFillerItem();
 
         ConfigurationSection section = plugin.getConfig().getConfigurationSection("soulbinding");
         if (section == null) {
@@ -202,49 +204,13 @@ public class SoulbindingManager implements Listener {
             return;
         }
 
-        AnvilInventory anvilInventory = createSoulbindingInventory(player);
-        if (anvilInventory == null) {
-            plugin.getLogger().warning("Failed to create anvil inventory for soulbinding.");
-            return;
-        }
+        Inventory inventory = Bukkit.createInventory(player, INVENTORY_SIZE, MENU_TITLE);
+        fillMenuLayout(inventory);
 
-        SoulbindingSession session = new SoulbindingSession(player, anvilInventory);
+        SoulbindingSession session = new SoulbindingSession(player, inventory);
         sessions.put(player.getUniqueId(), session);
         updateSession(session);
-
-        if (player.getOpenInventory().getTopInventory() != anvilInventory) {
-            player.openInventory(anvilInventory);
-        } else {
-            player.updateInventory();
-        }
-        resetRepairCost(anvilInventory);
-    }
-
-    private AnvilInventory createSoulbindingInventory(Player player) {
-        Inventory inventory = Bukkit.createInventory(player, InventoryType.ANVIL,
-                Component.text("Soulbinding", NamedTextColor.DARK_PURPLE));
-        if (inventory instanceof AnvilInventory anvilInventory) {
-            resetRepairCost(anvilInventory);
-            return anvilInventory;
-        }
-
-        InventoryView view = player.openAnvil(player.getLocation(), true);
-        if (view == null) {
-            return null;
-        }
-
-        view.setTitle(ChatColor.DARK_PURPLE + "Soulbinding");
-        Inventory topInventory = view.getTopInventory();
-        if (topInventory instanceof AnvilInventory anvilInventory) {
-            if (view instanceof AnvilView anvilView) {
-                anvilView.setRepairCost(0);
-                anvilView.setRepairItemCountCost(0);
-            }
-            return anvilInventory;
-        }
-
-        player.closeInventory();
-        return null;
+        player.openInventory(inventory);
     }
 
     @EventHandler
@@ -275,25 +241,23 @@ public class SoulbindingManager implements Listener {
         }
 
         int rawSlot = event.getRawSlot();
-        if (rawSlot == 1) {
+        if (rawSlot < top.getSize()) {
+            if (rawSlot == RESULT_SLOT) {
+                event.setCancelled(true);
+                handleResultClick(session, event.isShiftClick());
+                return;
+            }
+
+            if (rawSlot == INPUT_SLOT) {
+                Bukkit.getScheduler().runTask(plugin, () -> updateSession(session));
+                return;
+            }
+
             event.setCancelled(true);
             return;
         }
 
-        if (rawSlot == 2) {
-            event.setCancelled(true);
-            handleResultClick(session, event.isShiftClick());
-            return;
-        }
-
-        if (rawSlot == 0) {
-            Bukkit.getScheduler().runTask(plugin, () -> updateSession(session));
-            return;
-        }
-
-        if (event.getClickedInventory() != null && event.getClickedInventory() != top) {
-            Bukkit.getScheduler().runTask(plugin, () -> updateSession(session));
-        }
+        Bukkit.getScheduler().runTask(plugin, () -> updateSession(session));
     }
 
     @EventHandler
@@ -309,11 +273,15 @@ public class SoulbindingManager implements Listener {
         if (top != session.inventory) {
             return;
         }
-        if (event.getRawSlots().contains(1) || event.getRawSlots().contains(2)) {
-            event.setCancelled(true);
-            return;
+        for (int slot : event.getRawSlots()) {
+            if (slot < top.getSize() && slot != INPUT_SLOT) {
+                event.setCancelled(true);
+                return;
+            }
         }
-        Bukkit.getScheduler().runTask(plugin, () -> updateSession(session));
+        if (event.getRawSlots().contains(INPUT_SLOT)) {
+            Bukkit.getScheduler().runTask(plugin, () -> updateSession(session));
+        }
     }
 
     @EventHandler
@@ -329,11 +297,11 @@ public class SoulbindingManager implements Listener {
         if (top != session.inventory) {
             return;
         }
-        ItemStack input = session.inventory.getItem(0);
+        ItemStack input = session.inventory.getItem(INPUT_SLOT);
         if (input != null && !input.getType().isAir()) {
             giveOrDrop(player, input);
         }
-        ItemStack result = session.inventory.getItem(2);
+        ItemStack result = session.inventory.getItem(RESULT_SLOT);
         if (result != null && !result.getType().isAir()) {
             giveOrDrop(player, result);
         }
@@ -345,7 +313,7 @@ public class SoulbindingManager implements Listener {
             session.player.sendMessage(ChatColor.RED + "Unable to apply soulbinding.");
             return;
         }
-        ItemStack base = session.inventory.getItem(0);
+        ItemStack base = session.inventory.getItem(INPUT_SLOT);
         if (base == null || base.getType().isAir()) {
             session.player.sendMessage(ChatColor.RED + "Insert a valid weapon to soulbind.");
             updateSession(session);
@@ -376,8 +344,8 @@ public class SoulbindingManager implements Listener {
             }
         }
 
-        session.inventory.setItem(0, null);
-        session.inventory.setItem(2, null);
+        session.inventory.setItem(INPUT_SLOT, null);
+        session.inventory.setItem(RESULT_SLOT, null);
         session.pendingResult = null;
         session.ready = false;
 
@@ -401,14 +369,13 @@ public class SoulbindingManager implements Listener {
     }
 
     private void updateSession(SoulbindingSession session) {
-        ItemStack input = session.inventory.getItem(0);
-        resetRepairCost(session.inventory);
+        ItemStack input = session.inventory.getItem(INPUT_SLOT);
         if (input == null || input.getType().isAir()) {
             session.pendingResult = null;
             session.ready = false;
             session.targetSoulbindingCount = 0;
-            session.inventory.setItem(1, createInfoItem(0, false, ChatColor.YELLOW + "Insert a weapon."));
-            session.inventory.setItem(2, null);
+            session.inventory.setItem(INFO_SLOT, createInfoItem(0, false, ChatColor.YELLOW + "Insert a weapon."));
+            session.inventory.setItem(RESULT_SLOT, null);
             return;
         }
 
@@ -416,8 +383,8 @@ public class SoulbindingManager implements Listener {
             session.pendingResult = null;
             session.ready = false;
             session.targetSoulbindingCount = 0;
-            session.inventory.setItem(1, createInfoItem(0, false, ChatColor.RED + "Soulbinding requires a single item."));
-            session.inventory.setItem(2, null);
+            session.inventory.setItem(INFO_SLOT, createInfoItem(0, false, ChatColor.RED + "Soulbinding requires a single item."));
+            session.inventory.setItem(RESULT_SLOT, null);
             return;
         }
 
@@ -426,8 +393,8 @@ public class SoulbindingManager implements Listener {
             session.pendingResult = null;
             session.ready = false;
             session.targetSoulbindingCount = 0;
-            session.inventory.setItem(1, createInfoItem(0, false, ChatColor.RED + "Only damageable weapons can be soulbound."));
-            session.inventory.setItem(2, null);
+            session.inventory.setItem(INFO_SLOT, createInfoItem(0, false, ChatColor.RED + "Only damageable weapons can be soulbound."));
+            session.inventory.setItem(RESULT_SLOT, null);
             return;
         }
 
@@ -436,8 +403,8 @@ public class SoulbindingManager implements Listener {
             session.pendingResult = null;
             session.ready = false;
             session.targetSoulbindingCount = currentCount;
-            session.inventory.setItem(1, createInfoItem(currentCount, false, ChatColor.RED + "Maximum soulbindings reached."));
-            session.inventory.setItem(2, null);
+            session.inventory.setItem(INFO_SLOT, createInfoItem(currentCount, false, ChatColor.RED + "Maximum soulbindings reached."));
+            session.inventory.setItem(RESULT_SLOT, null);
             return;
         }
 
@@ -446,9 +413,9 @@ public class SoulbindingManager implements Listener {
         session.pendingResult = result;
         session.ready = true;
         session.targetSoulbindingCount = targetCount;
-        session.inventory.setItem(1, createInfoItem(currentCount, true,
+        session.inventory.setItem(INFO_SLOT, createInfoItem(currentCount, true,
                 ChatColor.GREEN + "Result: Soulbound " + targetCount));
-        session.inventory.setItem(2, result);
+        session.inventory.setItem(RESULT_SLOT, result);
     }
 
     private ItemStack createInfoItem(int currentCount, boolean ready, String statusLine) {
@@ -472,6 +439,24 @@ public class SoulbindingManager implements Listener {
         meta.setLore(lore);
         item.setItemMeta(meta);
         return item;
+    }
+
+    private ItemStack createFillerItem() {
+        ItemStack item = new ItemStack(Material.GRAY_STAINED_GLASS_PANE);
+        ItemMeta meta = item.getItemMeta();
+        meta.setDisplayName(ChatColor.GRAY + " ");
+        meta.setLore(null);
+        item.setItemMeta(meta);
+        return item;
+    }
+
+    private void fillMenuLayout(Inventory inventory) {
+        for (int i = 0; i < inventory.getSize(); i++) {
+            if (i == INPUT_SLOT || i == INFO_SLOT || i == RESULT_SLOT) {
+                continue;
+            }
+            inventory.setItem(i, fillerItem.clone());
+        }
     }
 
     private String formatCurrency(double amount) {
@@ -633,24 +618,14 @@ public class SoulbindingManager implements Listener {
 
     private static final class SoulbindingSession {
         private final Player player;
-        private final AnvilInventory inventory;
+        private final Inventory inventory;
         private ItemStack pendingResult;
         private boolean ready;
         private int targetSoulbindingCount;
 
-        private SoulbindingSession(Player player, AnvilInventory inventory) {
+        private SoulbindingSession(Player player, Inventory inventory) {
             this.player = player;
             this.inventory = inventory;
-        }
-    }
-
-    private void resetRepairCost(AnvilInventory inventory) {
-        for (HumanEntity viewer : inventory.getViewers()) {
-            InventoryView view = viewer.getOpenInventory();
-            if (view instanceof AnvilView anvilView && anvilView.getTopInventory() == inventory) {
-                anvilView.setRepairCost(0);
-                anvilView.setRepairItemCountCost(0);
-            }
         }
     }
 }
