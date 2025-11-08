@@ -605,7 +605,7 @@ public class SoulbindingManager implements Listener {
             return;
         }
         int currentDurability = maxDurability - damageable.getDamage();
-        int loss = (int) Math.round(0.2 * maxDurability + 0.3 * currentDurability);
+        int loss = (int) Math.round(0.1 * maxDurability + 0.4 * currentDurability);
         int newDurability = Math.max(1, currentDurability - loss);
         int newDamage = Math.max(0, maxDurability - newDurability);
         if (newDamage >= maxDurability) {
