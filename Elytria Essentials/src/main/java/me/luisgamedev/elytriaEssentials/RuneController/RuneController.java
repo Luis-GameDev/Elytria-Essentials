@@ -63,6 +63,7 @@ public final class RuneController {
                 "io.lumine.mmoitems.api.event.GemStoneApplyEvent",
                 "io.lumine.mmoitems.api.event.GemstoneApplyEvent",
                 "net.Indyuce.mmoitems.api.event.item.GemStoneApplyEvent",
+                "net.Indyuce.mmoitems.api.event.item.ApplyGemStoneEvent",
                 "net.Indyuce.mmoitems.api.event.item.GemstoneApplyEvent");
         gemExtractEventClass = locateEventClass(loader,
                 "io.lumine.mmoitems.api.event.item.GemStoneRemoveEvent",
@@ -71,6 +72,7 @@ public final class RuneController {
                 "io.lumine.mmoitems.api.event.item.GemstoneExtractEvent",
                 "io.lumine.mmoitems.api.event.GemStoneRemoveEvent",
                 "io.lumine.mmoitems.api.event.GemStoneExtractEvent",
+                "io.lumine.mmoitems.api.event.UnsocketGemStoneEvent",
                 "net.Indyuce.mmoitems.api.event.item.GemStoneRemoveEvent",
                 "net.Indyuce.mmoitems.api.event.item.GemStoneExtractEvent",
                 "net.Indyuce.mmoitems.api.event.item.GemstoneRemoveEvent",

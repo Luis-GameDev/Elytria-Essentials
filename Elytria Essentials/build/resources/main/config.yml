@@ -30,6 +30,9 @@ password: sXF4FLNx
 port: 3306
 name: ni12126628_1_DB
 
+# Debug
+debug-mode: true
+
 # Clan System
 max-clan-tag-length: 3
 max-clan-name-length: 25
@@ -105,11 +108,11 @@ npc-shops:
 
 boss:
   EMBER_CLAW:
-    time: "8pm"               # E.g: "20:00", "8pm", "8:00pm", "08:00"
-    location: [0, 100, 900]  # x,y,z
+    time: "10pm"               # E.g: "20:00", "8pm", "8:00pm", "08:00"
+    location: [-40, -27, 923]  # x,y,z
     world: world
-    lootCommand: "mi give %player% ember_claw_fragment 1"
-    lootKey: "ember_claw_fragment"
+    lootCommand: "mi give BOOSTER XP_BOOSTER_1 %player% 1"
+    lootKey: "XP_BOOSTER_1"
     fallbackMaterial: "GOLD_INGOT"
     lifetimeTicks: 72000
 

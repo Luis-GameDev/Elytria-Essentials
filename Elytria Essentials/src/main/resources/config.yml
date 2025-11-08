@@ -30,6 +30,9 @@ password: sXF4FLNx
 port: 3306
 name: ni12126628_1_DB
 
+# Debug
+debug-mode: true
+
 # Clan System
 max-clan-tag-length: 3
 max-clan-name-length: 25
