@@ -89,7 +89,7 @@ custom-rename:
 soulbinding:
   enabled: true
   npc-id: 0
-  price-per-binding: 0.0
+  price-per-binding: 500.0
   max-bindings: 3
 
 # Random Information
@@ -100,6 +100,9 @@ random-information:
 mmoitems:
   transfer-keys:
     - elytriaessentials:soulbinding_count
+    - elytriaessentials:repairs_done
+    - repairs_done
+    - soulbinding_count
 
 # Class Limiter
 class-limiter:
