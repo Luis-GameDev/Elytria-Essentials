@@ -122,7 +122,7 @@ npc-shops:
     size: 54 # Number of slots in the shop GUI (must be a multiple of 9, max 54)
 
 boss:
-  EMBER_CLAW:
+  mf_ember_claw:
     time: "10pm"               # E.g: "20:00", "8pm", "8:00pm", "08:00"
     location: [-40, -27, 923]  # x,y,z
     world: world

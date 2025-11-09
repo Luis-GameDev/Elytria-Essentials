@@ -123,7 +123,7 @@ public class BossScheduler implements Listener {
         plugin.getLogger().info("Spawning boss " + bossKey + " at " + locStr(spawnLocation));
 
         // Primary attempt: dispatch MythicMobs spawn command; change if your server uses other syntax.
-        String cmd = String.format("mm spawn %s %d %d %d %s",
+        String cmd = String.format("mm m spawn %s %d %d %d %s",
                 bossKey,
                 spawnLocation.getBlockX(),
                 spawnLocation.getBlockY(),

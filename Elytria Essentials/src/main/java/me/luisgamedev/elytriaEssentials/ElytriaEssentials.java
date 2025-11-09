@@ -90,7 +90,7 @@ public final class ElytriaEssentials extends JavaPlugin {
         }
 
         bs = new BossScheduler(this);
-        Bukkit.getPluginManager().registerEvents(bs, this);
+        pm.registerEvents(bs, this);
         bs.loadAndScheduleAll();
 
         pm.registerEvents(new TeleportListener(this), this);
