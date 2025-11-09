@@ -46,6 +46,7 @@ public class BossScheduler implements Listener {
 
         for (String bossKey : plugin.getConfig().getConfigurationSection("boss").getKeys(false)) {
             try {
+                debug("Attempting to schedule boss '" + bossKey + "'.");
                 scheduleBoss(bossKey);
             } catch (Exception e) {
                 plugin.getLogger().log(Level.SEVERE, "Failed to schedule boss " + bossKey, e);
@@ -74,6 +75,7 @@ public class BossScheduler implements Listener {
             plugin.getLogger().warning("Could not parse time '" + timeStr + "' for boss " + bossKey + ". Skipping.");
             return;
         }
+        debug("Parsed spawn time for '" + bossKey + "' as " + spawnTime + " (config value '" + timeStr + "').");
 
         // determine world
         World world = null;
@@ -81,12 +83,15 @@ public class BossScheduler implements Listener {
         if (world == null) {
             // try default world (first world)
             world = Bukkit.getWorlds().get(0);
+            debug("World '" + worldName + "' not found. Falling back to default world '" + world.getName() + "'.");
         }
 
         final Location spawnLocation = new Location(world, loc.get(0), loc.get(1), loc.get(2));
+        debug("Boss '" + bossKey + "' spawn location set to " + locStr(spawnLocation) + ".");
 
         // schedule first run at next occurrence of spawnTime
         long initialDelayTicks = computeTicksUntilNext(spawnTime);
+        debug("Initial delay for boss '" + bossKey + "' is " + initialDelayTicks + " ticks.");
         // schedule a repeating task that triggers every 24h after first run
         BukkitTask task = Bukkit.getScheduler().runTaskLater(plugin, () -> {
             runSpawnAndRescheduleDaily(bossKey, spawnLocation, lootCommand, lootKey, fallbackMaterial);
@@ -99,6 +104,7 @@ public class BossScheduler implements Listener {
 
     private void runSpawnAndRescheduleDaily(String bossKey, Location spawnLocation, String lootCommandTemplate, String lootKey, String fallbackMaterial) {
 
+        debug("Running daily spawn task for boss '" + bossKey + "'.");
         spawnBossAndMark(bossKey, spawnLocation);
 
         int lifetimeTicks = plugin.getConfig().getInt("boss." + bossKey + ".lifetimeTicks", -1);
@@ -107,6 +113,7 @@ public class BossScheduler implements Listener {
             Bukkit.getScheduler().runTaskLater(plugin, () -> {
                 // try MythicMobs kill command
                 String killCmd = "mm m kill " + bossKey; // adapt if needed
+                debug("Dispatching kill command for boss '" + bossKey + "': " + killCmd);
                 Bukkit.dispatchCommand(console, killCmd);
             }, lifetimeTicks);
         }
@@ -117,10 +124,12 @@ public class BossScheduler implements Listener {
             runSpawnAndRescheduleDaily(bossKey, spawnLocation, lootCommandTemplate, lootKey, fallbackMaterial);
         }, ticksPerDay);
         scheduledTasks.add(next);
+        debug("Scheduled next daily spawn for boss '" + bossKey + "' in " + ticksPerDay + " ticks.");
     }
 
     private void spawnBossAndMark(String bossKey, Location spawnLocation) {
         plugin.getLogger().info("Spawning boss " + bossKey + " at " + locStr(spawnLocation));
+        debug("Executing MythicMobs spawn command for boss '" + bossKey + "'.");
 
         // Primary attempt: dispatch MythicMobs spawn command; change if your server uses other syntax.
         String cmd = String.format("mm m spawn %s %d %d %d %s",
@@ -130,6 +139,7 @@ public class BossScheduler implements Listener {
                 spawnLocation.getBlockZ(),
                 spawnLocation.getWorld().getName()
         );
+        debug("Dispatching command: " + cmd);
         Bukkit.dispatchCommand(console, cmd);
 
         // After a short delay search for newly spawned entity(s) nearby and mark them.
@@ -137,6 +147,7 @@ public class BossScheduler implements Listener {
             // search in radius 6 for a living entity whose custom name contains the bossKey or whose type matches typical boss entity
             double radius = 6.0;
             Collection<Entity> nearby = spawnLocation.getWorld().getNearbyEntities(spawnLocation, radius, radius, radius);
+            debug("Found " + nearby.size() + " entities near spawn location for boss '" + bossKey + "'.");
             for (Entity e : nearby) {
                 if (e.isDead()) continue;
                 // heuristic: if custom name contains bossKey or persistent data contains MythicMob metadata
@@ -146,6 +157,7 @@ public class BossScheduler implements Listener {
                     // mark entity so our death listener recognizes it
                     e.setMetadata("customBoss", new FixedMetadataValue(plugin, bossKey));
                     plugin.getLogger().info("Marked entity " + e.getType() + " UUID=" + e.getUniqueId() + " as boss " + bossKey);
+                    debug("Entity " + e.getUniqueId() + " metadata after marking: " + e.getMetadata("customBoss"));
                 }
             }
         }, 10L); // 10 ticks delay to let MythicMobs create the entity
@@ -157,6 +169,7 @@ public class BossScheduler implements Listener {
         if (ev.getEntity() == null) return;
         Entity target = ev.getEntity();
         if (!target.hasMetadata("customBoss")) return;
+        debug("Recorded damage on boss entity " + target.getUniqueId());
         // get damager player (direct or projectile shooter)
         Player p = null;
         if (ev.getDamager() instanceof Player) {
@@ -174,6 +187,7 @@ public class BossScheduler implements Listener {
     public void onEntityDeath(EntityDeathEvent ev) {
         Entity dead = ev.getEntity();
         if (!dead.hasMetadata("customBoss")) return;
+        debug("Boss entity " + dead.getUniqueId() + " died. Processing loot.");
         String bossKey = null;
         try {
             bossKey = dead.getMetadata("customBoss").get(0).asString();
@@ -183,6 +197,7 @@ public class BossScheduler implements Listener {
         Set<UUID> damagers = damageMap.remove(dead.getUniqueId());
         if (damagers == null || damagers.isEmpty()) {
             plugin.getLogger().info("Boss " + bossKey + " died but no damagers recorded.");
+            debug("No damagers found for boss '" + bossKey + "'.");
             return;
         }
 
@@ -198,6 +213,7 @@ public class BossScheduler implements Listener {
             String finalCmd = lootCommand.replace("%player%", p.getName()).replace("%lootKey%", lootKey).replace("%boss%", bossKey);
             // run command as console
             boolean dispatched = Bukkit.dispatchCommand(console, finalCmd);
+            debug("Dispatching loot command for player '" + p.getName() + "': " + finalCmd + " (dispatched=" + dispatched + ")");
             // if command failed (dispatched returns boolean but not success), we still try fallback give/drop
             // check inventory space
             boolean hasSpace = hasInventorySpace(p);
@@ -208,8 +224,10 @@ public class BossScheduler implements Listener {
                 ItemStack item = new ItemStack(mat, 1);
                 if (hasSpace) {
                     p.getInventory().addItem(item);
+                    debug("Gave fallback item " + fallbackMatName + " to player '" + p.getName() + "'.");
                 } else {
                     p.getWorld().dropItemNaturally(p.getLocation(), item);
+                    debug("Dropped fallback item " + fallbackMatName + " for player '" + p.getName() + "'.");
                 }
             }
         }
@@ -226,7 +244,9 @@ public class BossScheduler implements Listener {
 
     // compute ticks until next given local time (server default timezone used)
     private long computeTicksUntilNext(LocalTime targetTime) {
-        ZoneId zone = ZoneId.systemDefault(); // server timezone
+        // Force Europe/Berlin timezone because production server runs in UTC, causing
+        // spawns to be offset by the server default timezone.
+        ZoneId zone = ZoneId.of("Europe/Berlin");
         ZonedDateTime now = ZonedDateTime.now(zone);
         ZonedDateTime next = now.withHour(targetTime.getHour()).withMinute(targetTime.getMinute()).withSecond(0).withNano(0);
         if (!next.isAfter(now)) next = next.plusDays(1);
@@ -234,6 +254,7 @@ public class BossScheduler implements Listener {
         long seconds = dur.getSeconds();
         long ticks = seconds * 20L;
         // cap minimal 1 tick
+        debug("Current time in " + zone + " is " + now + ". Next spawn at " + next + " (" + seconds + " seconds).");
         return Math.max(1L, ticks);
     }
 
@@ -289,7 +310,14 @@ public class BossScheduler implements Listener {
                         Bukkit.getConsoleSender(),
                         "mm m kill " + bossKey
                 );
+                debug("Plugin disable: dispatched kill for boss '" + bossKey + "'.");
             }
+        }
+    }
+
+    private void debug(String message) {
+        if (plugin.getConfig().getBoolean("debug-mode", false)) {
+            plugin.getLogger().info("[BossScheduler][DEBUG] " + message);
         }
     }
 }
