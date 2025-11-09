@@ -132,12 +132,12 @@ public class BossScheduler implements Listener {
         debug("Executing MythicMobs spawn command for boss '" + bossKey + "'.");
 
         // Primary attempt: dispatch MythicMobs spawn command; change if your server uses other syntax.
-        String cmd = String.format("mm m spawn %s %d %d %d %s",
+        String cmd = String.format("mm m spawn %s %s,%d,%d,%d",
                 bossKey,
+                spawnLocation.getWorld().getName(),
                 spawnLocation.getBlockX(),
                 spawnLocation.getBlockY(),
-                spawnLocation.getBlockZ(),
-                spawnLocation.getWorld().getName()
+                spawnLocation.getBlockZ()
         );
         debug("Dispatching command: " + cmd);
         Bukkit.dispatchCommand(console, cmd);
