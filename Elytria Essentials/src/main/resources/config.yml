@@ -126,6 +126,7 @@ boss:
     time: "10pm"               # E.g: "20:00", "8pm", "8:00pm", "08:00"
     location: [-40, -27, 923]  # x,y,z
     world: world
+    spawnCommand: "/mm m spawn %boss% %world%,%x%,%y%,%z%" # %boss%, %world%, %x%, %y%, %z%
     lootCommand: "mi give BOOSTER XP_BOOSTER_1 %player% 1"
     lootKey: "XP_BOOSTER_1"
     fallbackMaterial: "GOLD_INGOT"
