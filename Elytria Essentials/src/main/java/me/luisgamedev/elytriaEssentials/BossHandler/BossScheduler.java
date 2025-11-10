@@ -63,6 +63,8 @@ public class BossScheduler implements Listener {
                 "mi give %player% %lootKey% 1");
         String lootKey = plugin.getConfig().getString(path + "lootKey", "default_item_key");
         String fallbackMaterial = plugin.getConfig().getString(path + "fallbackMaterial", "DIAMOND");
+        String spawnCommandTemplate = plugin.getConfig().getString(path + "spawnCommand",
+                "/mm m spawn %boss% %world%,%x%,%y%,%z%");
 
         if (timeStr == null || loc.size() < 3) {
             plugin.getLogger().warning("boss." + bossKey + " missing time or location (needs [x,y,z]). Skipping.");
@@ -94,7 +96,8 @@ public class BossScheduler implements Listener {
         debug("Initial delay for boss '" + bossKey + "' is " + initialDelayTicks + " ticks.");
         // schedule a repeating task that triggers every 24h after first run
         BukkitTask task = Bukkit.getScheduler().runTaskLater(plugin, () -> {
-            runSpawnAndRescheduleDaily(bossKey, spawnLocation, lootCommand, lootKey, fallbackMaterial);
+            runSpawnAndRescheduleDaily(bossKey, spawnLocation, lootCommand, lootKey, fallbackMaterial,
+                    spawnCommandTemplate);
         }, initialDelayTicks);
         scheduledTasks.add(task);
 
@@ -102,10 +105,11 @@ public class BossScheduler implements Listener {
                 (initialDelayTicks / 20) + "s).");
     }
 
-    private void runSpawnAndRescheduleDaily(String bossKey, Location spawnLocation, String lootCommandTemplate, String lootKey, String fallbackMaterial) {
+    private void runSpawnAndRescheduleDaily(String bossKey, Location spawnLocation, String lootCommandTemplate, String lootKey,
+            String fallbackMaterial, String spawnCommandTemplate) {
 
         debug("Running daily spawn task for boss '" + bossKey + "'.");
-        spawnBossAndMark(bossKey, spawnLocation);
+        spawnBossAndMark(bossKey, spawnLocation, spawnCommandTemplate);
 
         int lifetimeTicks = plugin.getConfig().getInt("boss." + bossKey + ".lifetimeTicks", -1);
         if (lifetimeTicks > 0) {
@@ -121,26 +125,27 @@ public class BossScheduler implements Listener {
         // schedule next daily run at same time (24h -> 24*3600*20 ticks)
         long ticksPerDay = 24L * 3600L * 20L;
         BukkitTask next = Bukkit.getScheduler().runTaskLater(plugin, () -> {
-            runSpawnAndRescheduleDaily(bossKey, spawnLocation, lootCommandTemplate, lootKey, fallbackMaterial);
+            runSpawnAndRescheduleDaily(bossKey, spawnLocation, lootCommandTemplate, lootKey, fallbackMaterial,
+                    spawnCommandTemplate);
         }, ticksPerDay);
         scheduledTasks.add(next);
         debug("Scheduled next daily spawn for boss '" + bossKey + "' in " + ticksPerDay + " ticks.");
     }
 
-    private void spawnBossAndMark(String bossKey, Location spawnLocation) {
+    private void spawnBossAndMark(String bossKey, Location spawnLocation, String spawnCommandTemplate) {
         plugin.getLogger().info("Spawning boss " + bossKey + " at " + locStr(spawnLocation));
         debug("Executing MythicMobs spawn command for boss '" + bossKey + "'.");
 
-        // Primary attempt: dispatch MythicMobs spawn command; change if your server uses other syntax.
-        String cmd = String.format("mm m spawn %s %s,%d,%d,%d",
-                bossKey,
-                spawnLocation.getWorld().getName(),
-                spawnLocation.getBlockX(),
-                spawnLocation.getBlockY(),
-                spawnLocation.getBlockZ()
-        );
-        debug("Dispatching command: " + cmd);
-        Bukkit.dispatchCommand(console, cmd);
+        // Primary attempt: dispatch MythicMobs spawn command using configurable template.
+        String formattedCommand = spawnCommandTemplate
+                .replace("%boss%", bossKey)
+                .replace("%world%", spawnLocation.getWorld().getName())
+                .replace("%x%", String.valueOf(spawnLocation.getBlockX()))
+                .replace("%y%", String.valueOf(spawnLocation.getBlockY()))
+                .replace("%z%", String.valueOf(spawnLocation.getBlockZ()));
+        String dispatchCommand = formattedCommand.startsWith("/") ? formattedCommand.substring(1) : formattedCommand;
+        debug("Dispatching command: " + formattedCommand);
+        Bukkit.dispatchCommand(console, dispatchCommand);
 
         // After a short delay search for newly spawned entity(s) nearby and mark them.
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
