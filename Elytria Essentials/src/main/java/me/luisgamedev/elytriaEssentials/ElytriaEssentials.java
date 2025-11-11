@@ -21,16 +21,18 @@ import me.luisgamedev.elytriaEssentials.ShopSystem.ShopListener;
 import me.luisgamedev.elytriaEssentials.ShopSystem.ShopManager;
 import me.luisgamedev.elytriaEssentials.Money.CoinPickupListener;
 import me.luisgamedev.elytriaEssentials.commands.ReloadCommand;
+import me.luisgamedev.elytriaEssentials.commands.PartyCommand;
 import me.luisgamedev.elytriaEssentials.Soulbinding.SoulbindingManager;
+import me.luisgamedev.elytriaEssentials.MMOCore.PartyIntegrationManager;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandMap;
 import org.bukkit.command.PluginCommand;
+import org.bukkit.command.PluginIdentifiableCommand;
 import org.bukkit.command.SimpleCommandMap;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
-import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -67,6 +69,7 @@ public final class ElytriaEssentials extends JavaPlugin {
     private ProfessionMilestonePermissionListener professionMilestonePermissionListener;
     private BossScheduler bs;
     private SoulbindingManager soulbindingManager;
+    private PartyIntegrationManager partyIntegrationManager;
 
     @Override
     public void onEnable() {
@@ -101,6 +104,14 @@ public final class ElytriaEssentials extends JavaPlugin {
         ClanCommand clanCommand = new ClanCommand(this, clanManager);
         getCommand("clan").setExecutor(clanCommand);
         getCommand("clan").setTabCompleter(clanCommand);
+        PluginCommand partyCommand = getCommand("party");
+        if (partyCommand != null) {
+            PartyCommand partyExecutor = new PartyCommand(this);
+            partyCommand.setExecutor(partyExecutor);
+            partyCommand.setTabCompleter(partyExecutor);
+        } else {
+            getLogger().warning("party command is not defined in plugin.yml");
+        }
         getCommand("mmocd").setExecutor(new CooldownAdjustCommand());
         getCommand("mmocdadd").setExecutor(new CooldownApplyCommand());
         getCommand("mmomana").setExecutor(new ManaRestoreCommand());
@@ -174,6 +185,8 @@ public final class ElytriaEssentials extends JavaPlugin {
             armorModelListener.refreshOnlinePlayers();
             professionMilestonePermissionListener = new ProfessionMilestonePermissionListener(this);
             pm.registerEvents(professionMilestonePermissionListener, this);
+            partyIntegrationManager = new PartyIntegrationManager(this);
+            partyIntegrationManager.initialize();
         } else {
             getLogger().info("MMOCore not detected. Class change limitations will be disabled.");
         }
@@ -201,11 +214,6 @@ public final class ElytriaEssentials extends JavaPlugin {
 
     private void scheduleVentureChatPartyCommandRemoval() {
         Bukkit.getScheduler().runTaskLater(this, () -> {
-            Plugin ventureChat = Bukkit.getPluginManager().getPlugin("VentureChat");
-            if (ventureChat == null || !ventureChat.isEnabled()) {
-                return;
-            }
-
             CommandMap commandMap = getCommandMap();
             if (!(commandMap instanceof SimpleCommandMap)) {
                 return;
@@ -221,6 +229,7 @@ public final class ElytriaEssentials extends JavaPlugin {
             removeCommand(simpleCommandMap, knownCommands, "party");
             removeCommand(simpleCommandMap, knownCommands, "venturechat:party");
             removeCommand(simpleCommandMap, knownCommands, "vchat:party");
+            removeCommand(simpleCommandMap, knownCommands, "mmocore:party");
         }, 1L);
     }
 
@@ -249,7 +258,11 @@ public final class ElytriaEssentials extends JavaPlugin {
     }
 
     private void removeCommand(SimpleCommandMap commandMap, Map<String, Command> knownCommands, String label) {
-        Command command = knownCommands.remove(label);
+        Command command = knownCommands.get(label);
+        if (command instanceof PluginIdentifiableCommand identifiableCommand && identifiableCommand.getPlugin() == this) {
+            return;
+        }
+        command = knownCommands.remove(label);
         if (command != null) {
             command.unregister(commandMap);
         }
@@ -280,6 +293,10 @@ public final class ElytriaEssentials extends JavaPlugin {
         if (professionMilestonePermissionListener != null) {
             professionMilestonePermissionListener.cleanup();
             professionMilestonePermissionListener = null;
+        }
+        if (partyIntegrationManager != null) {
+            partyIntegrationManager.shutdown();
+            partyIntegrationManager = null;
         }
     }
 
