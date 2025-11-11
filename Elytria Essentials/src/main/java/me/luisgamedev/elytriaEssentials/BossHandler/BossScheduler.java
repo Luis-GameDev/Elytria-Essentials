@@ -134,18 +134,21 @@ public class BossScheduler implements Listener {
 
     private void spawnBossAndMark(String bossKey, Location spawnLocation, String spawnCommandTemplate) {
         plugin.getLogger().info("Spawning boss " + bossKey + " at " + locStr(spawnLocation));
-        debug("Executing MythicMobs spawn command for boss '" + bossKey + "'.");
 
-        // Primary attempt: dispatch MythicMobs spawn command using configurable template.
-        String formattedCommand = spawnCommandTemplate
-                .replace("%boss%", bossKey)
-                .replace("%world%", spawnLocation.getWorld().getName())
-                .replace("%x%", String.valueOf(spawnLocation.getBlockX()))
-                .replace("%y%", String.valueOf(spawnLocation.getBlockY()))
-                .replace("%z%", String.valueOf(spawnLocation.getBlockZ()));
-        String dispatchCommand = formattedCommand.startsWith("/") ? formattedCommand.substring(1) : formattedCommand;
-        debug("Dispatching command: " + formattedCommand);
-        Bukkit.dispatchCommand(console, dispatchCommand);
+        boolean spawned = spawnUsingMythicAPI(bossKey, spawnLocation);
+        if (!spawned) {
+            debug("Executing MythicMobs spawn command for boss '" + bossKey + "'.");
+            // Fallback: dispatch MythicMobs spawn command using configurable template.
+            String formattedCommand = spawnCommandTemplate
+                    .replace("%boss%", bossKey)
+                    .replace("%world%", spawnLocation.getWorld().getName())
+                    .replace("%x%", String.valueOf(spawnLocation.getBlockX()))
+                    .replace("%y%", String.valueOf(spawnLocation.getBlockY()))
+                    .replace("%z%", String.valueOf(spawnLocation.getBlockZ()));
+            String dispatchCommand = formattedCommand.startsWith("/") ? formattedCommand.substring(1) : formattedCommand;
+            debug("Dispatching command: " + formattedCommand);
+            Bukkit.dispatchCommand(console, dispatchCommand);
+        }
 
         // After a short delay search for newly spawned entity(s) nearby and mark them.
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
@@ -302,6 +305,49 @@ public class BossScheduler implements Listener {
 
     private String locStr(Location loc) {
         return String.format("%s@%d,%d,%d", loc.getWorld().getName(), loc.getBlockX(), loc.getBlockY(), loc.getBlockZ());
+    }
+
+    private boolean spawnUsingMythicAPI(String bossKey, Location spawnLocation) {
+        try {
+            Class<?> mythicBukkitClass = Class.forName("io.lumine.mythic.bukkit.MythicBukkit");
+            Object mythicBukkit = mythicBukkitClass.getMethod("inst").invoke(null);
+            if (mythicBukkit == null) {
+                debug("MythicBukkit not present, cannot use API to spawn boss '" + bossKey + "'.");
+                return false;
+            }
+
+            Object mobManager = mythicBukkitClass.getMethod("getMobManager").invoke(mythicBukkit);
+            if (mobManager == null) {
+                debug("MythicMobs mob manager unavailable. Falling back to command dispatcher.");
+                return false;
+            }
+
+            Optional<?> mobOptional = (Optional<?>) mobManager.getClass()
+                    .getMethod("getMythicMob", String.class)
+                    .invoke(mobManager, bossKey);
+            if (mobOptional == null || mobOptional.isEmpty()) {
+                debug("MythicMobs API could not find mob '" + bossKey + "'. Falling back to command dispatcher.");
+                return false;
+            }
+
+            Object mythicMob = mobOptional.get();
+            Class<?> bukkitAdapterClass = Class.forName("io.lumine.mythic.bukkit.BukkitAdapter");
+            Object abstractLocation = bukkitAdapterClass.getMethod("adapt", Location.class).invoke(null, spawnLocation);
+            Class<?> abstractLocationClass = Class.forName("io.lumine.mythic.api.adapters.AbstractLocation");
+
+            mythicMob.getClass()
+                    .getMethod("spawn", abstractLocationClass, int.class)
+                    .invoke(mythicMob, abstractLocation, 1);
+
+            debug("Spawned boss '" + bossKey + "' using MythicMobs API at " + locStr(spawnLocation) + ".");
+            return true;
+        } catch (ClassNotFoundException ignored) {
+            debug("MythicMobs classes not found on classpath. Falling back to command dispatcher.");
+            return false;
+        } catch (Throwable throwable) {
+            debug("Failed to spawn boss '" + bossKey + "' using MythicMobs API: " + throwable.getMessage());
+            return false;
+        }
     }
 
     public void onDisable() {
