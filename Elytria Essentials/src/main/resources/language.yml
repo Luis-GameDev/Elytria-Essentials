@@ -1,4 +1,14 @@
 prefix: "&7[&bElytria&7] "
+party:
+  only-players: "&cOnly players may use this command."
+  invite:
+    message: "&6{player} &ehas invited you to their party!"
+    buttons-prefix: "&7"
+    accept-text: "&8[&a&lACCEPT&8]"
+    accept-hover: "&eClick to join the party."
+    deny-text: "&8[&c&lDENY&8]"
+    deny-hover: "&eClick to decline the invite."
+    separator: "&r   "
 clan:
   only-players: "&cOnly players may use this command."
   help: "&e/clan <create|invite|accept|disband|kick|leave|promote|demote|sethome|home|info>"

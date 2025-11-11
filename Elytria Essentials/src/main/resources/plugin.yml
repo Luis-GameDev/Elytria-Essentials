@@ -8,6 +8,9 @@ commands:
   clan:
     description: Clan management command
     usage: /clan
+  party:
+    description: Open the MMOCore party menu
+    usage: /party
   npcshop:
     description: Manage NPC buy shops
     usage: /npcshop additem <shopId> <price>
