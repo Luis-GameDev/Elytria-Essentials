@@ -75,7 +75,6 @@ public final class ElytriaEssentials extends JavaPlugin {
     public void onEnable() {
         saveDefaultConfig();
         reloadConfig();
-        scheduleVentureChatPartyCommandRemoval();
         File langFile = new File(getDataFolder(), "language.yml");
         if (!langFile.exists()) {
             saveResource("language.yml", false);
@@ -210,27 +209,6 @@ public final class ElytriaEssentials extends JavaPlugin {
         } else {
             getLogger().warning("npcshop command is not defined in plugin.yml");
         }
-    }
-
-    private void scheduleVentureChatPartyCommandRemoval() {
-        Bukkit.getScheduler().runTaskLater(this, () -> {
-            CommandMap commandMap = getCommandMap();
-            if (!(commandMap instanceof SimpleCommandMap)) {
-                return;
-            }
-
-            SimpleCommandMap simpleCommandMap = (SimpleCommandMap) commandMap;
-
-            Map<String, Command> knownCommands = getKnownCommands(simpleCommandMap);
-            if (knownCommands == null) {
-                return;
-            }
-
-            removeCommand(simpleCommandMap, knownCommands, "party");
-            removeCommand(simpleCommandMap, knownCommands, "venturechat:party");
-            removeCommand(simpleCommandMap, knownCommands, "vchat:party");
-            removeCommand(simpleCommandMap, knownCommands, "mmocore:party");
-        }, 1L);
     }
 
     private CommandMap getCommandMap() {
