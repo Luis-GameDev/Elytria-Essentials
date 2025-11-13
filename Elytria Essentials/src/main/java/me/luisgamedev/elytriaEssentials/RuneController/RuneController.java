@@ -1,13 +1,20 @@
 package me.luisgamedev.elytriaEssentials.RuneController;
 
 import me.luisgamedev.elytriaEssentials.ElytriaEssentials;
+import net.Indyuce.mmoitems.api.event.item.ApplyGemStoneEvent;
+import net.Indyuce.mmoitems.api.interaction.GemStone;
+import net.Indyuce.mmoitems.api.item.build.ItemStackBuilder;
+import net.Indyuce.mmoitems.api.item.mmoitem.MMOItem;
+import net.Indyuce.mmoitems.api.item.mmoitem.ReadMMOItem;
+import net.Indyuce.mmoitems.api.item.mmoitem.VolatileMMOItem;
+import net.Indyuce.mmoitems.stat.data.GemstoneData;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
-import org.bukkit.event.Event;
+import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.inventory.ItemStack;
@@ -16,9 +23,6 @@ import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.Plugin;
 
-import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodHandles;
-import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -32,15 +36,12 @@ public final class RuneController {
             "RUNE_OF_UNBREAKING"
     ));
 
-    // TODO: Fix method finding
     private final ElytriaEssentials plugin;
-    private final Listener listener = new Listener() {};
     private final NamespacedKey baseUnbreakingKey;
     private final NamespacedKey baseProtectionKey;
     private final Map<String, NamespacedKey> runeKeys = new HashMap<>();
 
-    private Class<? extends Event> gemApplyEventClass;
-    private Class<? extends Event> gemExtractEventClass;
+    private final Listener listener = new GemstoneListener();
 
     public RuneController(ElytriaEssentials plugin) {
         this.plugin = plugin;
@@ -56,184 +57,74 @@ public final class RuneController {
             return;
         }
 
-        ClassLoader loader = mmoItems.getClass().getClassLoader();
-        gemApplyEventClass = locateEventClass(loader,
-                "io.lumine.mmoitems.api.event.item.GemStoneApplyEvent",
-                "io.lumine.mmoitems.api.event.item.GemstoneApplyEvent",
-                "io.lumine.mmoitems.api.event.GemStoneApplyEvent",
-                "io.lumine.mmoitems.api.event.GemstoneApplyEvent",
-                "net.Indyuce.mmoitems.api.event.item.GemStoneApplyEvent",
-                "net.Indyuce.mmoitems.api.event.item.ApplyGemStoneEvent",
-                "net.Indyuce.mmoitems.api.event.item.GemstoneApplyEvent");
-        gemExtractEventClass = locateEventClass(loader,
-                "io.lumine.mmoitems.api.event.item.GemStoneRemoveEvent",
-                "io.lumine.mmoitems.api.event.item.GemStoneExtractEvent",
-                "io.lumine.mmoitems.api.event.item.GemstoneRemoveEvent",
-                "io.lumine.mmoitems.api.event.item.GemstoneExtractEvent",
-                "io.lumine.mmoitems.api.event.GemStoneRemoveEvent",
-                "io.lumine.mmoitems.api.event.GemStoneExtractEvent",
-                "io.lumine.mmoitems.api.event.item.UnsocketGemStoneEvent",
-                "net.Indyuce.mmoitems.api.event.item.GemStoneRemoveEvent",
-                "net.Indyuce.mmoitems.api.event.item.GemStoneExtractEvent",
-                "net.Indyuce.mmoitems.api.event.item.GemstoneRemoveEvent",
-                "net.Indyuce.mmoitems.api.event.item.GemstoneExtractEvent");
-
-        if (gemApplyEventClass == null) {
-            plugin.getLogger().warning("Could not locate MMOItems gem apply event class. RuneController disabled.");
-            return;
-        }
         registerApplyHandlers();
-
-        if (gemExtractEventClass != null) {
-            registerExtractHandlers();
-        } else {
-            plugin.getLogger().warning("Could not locate MMOItems gem extract event class. Extraction support disabled.");
-        }
-    }
-
-    @SafeVarargs
-    private Class<? extends Event> locateEventClass(ClassLoader loader, String... candidates) {
-        for (String name : candidates) {
-            try {
-                Class<?> clazz = Class.forName(name, false, loader);
-                if (Event.class.isAssignableFrom(clazz)) {
-                    @SuppressWarnings("unchecked")
-                    Class<? extends Event> eventClass = (Class<? extends Event>) clazz;
-                    return eventClass;
-                }
-            } catch (ClassNotFoundException ignored) {
-            } catch (Exception ex) {
-                plugin.getLogger().log(Level.WARNING, "Failed to inspect MMOItems event class " + name, ex);
-            }
-        }
-        return null;
     }
 
     private void registerApplyHandlers() {
-        Bukkit.getPluginManager().registerEvent(
-                gemApplyEventClass,
-                listener,
-                EventPriority.HIGH,
-                (l, event) -> handleGemApplyCheck(event),
-                plugin,
-                false
-        );
-        Bukkit.getPluginManager().registerEvent(
-                gemApplyEventClass,
-                listener,
-                EventPriority.MONITOR,
-                (l, event) -> handleGemApplyUpdate(event),
-                plugin,
-                true
-        );
+        Bukkit.getPluginManager().registerEvents(listener, plugin);
     }
 
-    private void registerExtractHandlers() {
-        Bukkit.getPluginManager().registerEvent(
-                gemExtractEventClass,
-                listener,
-                EventPriority.MONITOR,
-                (l, event) -> handleGemExtract(event),
-                plugin,
-                true
-        );
-    }
-
-    private void handleGemApplyCheck(Object event) {
-        String runeId = extractRuneId(event);
+    private void handleGemApplyCheck(ApplyGemStoneEvent event) {
+        String runeId = extractRuneId(event.getGemStone());
         if (runeId == null) {
             return;
         }
-        ItemStack item = extractTargetItem(event);
+        ItemStack item = extractTargetItem(event.getTargetItem());
         if (item == null) {
             return;
         }
-        if (isWeapon(item) && !isRuneStackable(runeId) && getRuneCount(item, runeId) > 0) {
-            if (setCancelled(event, true)) {
-                Player player = extractPlayer(event);
-                if (player != null) {
-                    player.sendMessage(ChatColor.RED + "This item already contains that rune.");
+        int existingRunes = getExistingRuneCount(event.getTargetItem(), runeId);
+        if (isWeapon(item) && !isRuneStackable(runeId) && existingRunes > 0) {
+            event.setCancelled(true);
+            Player player = event.getPlayer();
+            if (player != null) {
+                player.sendMessage(ChatColor.RED + "This item already contains that rune.");
+            }
+        }
+    }
+
+    private void handleGemApplyUpdate(ApplyGemStoneEvent event) {
+        if (event.isCancelled() || event.getResult() != GemStone.ResultType.SUCCESS) {
+            return;
+        }
+        String runeId = extractRuneId(event.getGemStone());
+        if (runeId == null) {
+            return;
+        }
+        ItemStack item = extractTargetItem(event.getTargetItem());
+        if (item == null) {
+            return;
+        }
+        int currentRunes = getExistingRuneCount(event.getTargetItem(), runeId);
+        updateRuneCount(item, runeId, currentRunes + 1);
+    }
+
+    private int getExistingRuneCount(MMOItem targetItem, String runeId) {
+        if (targetItem == null || runeId == null) {
+            return 0;
+        }
+        int count = 0;
+        try {
+            for (GemstoneData data : targetItem.getGemstones()) {
+                String gemId = data.getMMOItemID();
+                if (gemId != null && gemId.equalsIgnoreCase(runeId)) {
+                    count++;
                 }
             }
+        } catch (Exception ex) {
+            plugin.getLogger().log(Level.WARNING, "Failed to inspect gemstones on MMOItem", ex);
         }
+        return count;
     }
 
-    private void handleGemApplyUpdate(Object event) {
-        if (isCancelled(event)) {
-            return;
-        }
-        String runeId = extractRuneId(event);
-        if (runeId == null) {
-            return;
-        }
-        ItemStack item = extractTargetItem(event);
-        if (item == null) {
-            return;
-        }
-        modifyRuneCount(item, runeId, 1);
-    }
-
-    private void handleGemExtract(Object event) {
-        if (isCancelled(event)) {
-            return;
-        }
-        String runeId = extractRuneId(event);
-        if (runeId == null) {
-            return;
-        }
-        ItemStack item = extractTargetItem(event);
-        if (item == null) {
-            return;
-        }
-        modifyRuneCount(item, runeId, -1);
-    }
-
-    private boolean setCancelled(Object event, boolean cancel) {
-        MethodHandle handle = resolveBooleanMethod(event, "setCancelled", boolean.class);
-        if (handle != null) {
-            try {
-                handle.invoke(event, cancel);
-                return true;
-            } catch (Throwable throwable) {
-                plugin.getLogger().log(Level.WARNING, "Failed to toggle cancellation on MMOItems event", throwable);
-            }
-        }
-        return false;
-    }
-
-    private boolean isCancelled(Object event) {
-        MethodHandle handle = resolveBooleanMethod(event, "isCancelled");
-        if (handle != null) {
-            try {
-                return (boolean) handle.invoke(event);
-            } catch (Throwable throwable) {
-                plugin.getLogger().log(Level.WARNING, "Failed to check cancellation state on MMOItems event", throwable);
-            }
-        }
-        return false;
-    }
-
-    private MethodHandle resolveBooleanMethod(Object event, String name, Class<?>... parameters) {
-        try {
-            Method method = event.getClass().getMethod(name, parameters);
-            method.setAccessible(true);
-            return MethodHandles.lookup().unreflect(method);
-        } catch (NoSuchMethodException ignored) {
-        } catch (IllegalAccessException ex) {
-            plugin.getLogger().log(Level.WARNING, "Unable to access MMOItems event method " + name, ex);
-        }
-        return null;
-    }
-
-    private void modifyRuneCount(ItemStack item, String runeId, int delta) {
+    private void updateRuneCount(ItemStack item, String runeId, int newCount) {
         ItemMeta meta = item.getItemMeta();
         if (meta == null) {
             return;
         }
         PersistentDataContainer container = meta.getPersistentDataContainer();
         NamespacedKey runeKey = runeKeyFor(runeId);
-        int current = container.getOrDefault(runeKey, PersistentDataType.INTEGER, 0);
-        int updated = Math.max(0, current + delta);
+        int updated = Math.max(0, newCount);
         if (updated == 0) {
             container.remove(runeKey);
         } else {
@@ -280,15 +171,6 @@ public final class RuneController {
         );
     }
 
-    private int getRuneCount(ItemStack item, String runeId) {
-        ItemMeta meta = item.getItemMeta();
-        if (meta == null) {
-            return 0;
-        }
-        return meta.getPersistentDataContainer()
-                .getOrDefault(runeKeyFor(runeId), PersistentDataType.INTEGER, 0);
-    }
-
     private boolean isRuneStackable(String runeId) {
         return STACKABLE_RUNES.contains(runeId.toUpperCase(Locale.ROOT));
     }
@@ -300,37 +182,6 @@ public final class RuneController {
         }
         String materialName = type.name();
         return materialName.endsWith("_SWORD") || materialName.endsWith("_AXE") || type == Material.BOW;
-    }
-
-    private String extractRuneId(Object event) {
-        Object gemObject = invokeAny(event, "getGemStone", "getGemstone", "getGem", "getRune", "getSocketGem", "getAppliedGem");
-        if (gemObject != null) {
-            String fromGem = resolveRuneId(gemObject);
-            if (fromGem != null) {
-                return fromGem;
-            }
-        }
-        Object id = invokeAny(event, "getGemId", "getRuneId", "getGemstoneId", "getAppliedGemId");
-        if (id instanceof String) {
-            return ((String) id).toUpperCase(Locale.ROOT);
-        }
-        return null;
-    }
-
-    private String resolveRuneId(Object gemObject) {
-        if (gemObject instanceof String string) {
-            return string.toUpperCase(Locale.ROOT);
-        }
-        if (gemObject instanceof ItemStack stack) {
-            return extractRuneIdFromItem(stack);
-        }
-        for (String methodName : Arrays.asList("getId", "getID", "getItemId", "getIdPath", "getInternalName", "getIdentifier")) {
-            Object value = invokeAny(gemObject, methodName);
-            if (value instanceof String string) {
-                return string.toUpperCase(Locale.ROOT);
-            }
-        }
-        return null;
     }
 
     private String extractRuneIdFromItem(ItemStack stack) {
@@ -350,77 +201,61 @@ public final class RuneController {
         return null;
     }
 
-    private ItemStack extractTargetItem(Object event) {
-        Object direct = invokeAny(event, "getTargetItem", "getItem", "getTarget", "getResult", "getUpdatedItem", "getModifiedItem", "getBaseItem");
-        if (direct instanceof ItemStack stack) {
-            return stack;
+    private String extractRuneId(VolatileMMOItem gemStone) {
+        if (gemStone == null) {
+            return null;
         }
-        if (direct != null) {
-            ItemStack fromGem = convertToItemStack(direct);
-            if (fromGem != null) {
-                return fromGem;
-            }
+        String id = gemStone.getId();
+        if (id != null) {
+            return id.toUpperCase(Locale.ROOT);
         }
-        for (Method method : event.getClass().getMethods()) {
-            if (method.getParameterCount() == 0 && ItemStack.class.isAssignableFrom(method.getReturnType())) {
-                try {
-                    Object result = method.invoke(event);
-                    if (result instanceof ItemStack stack) {
-                        return stack;
-                    }
-                } catch (Exception ignored) {
-                }
-            }
+        ItemStack stack = extractItemFromRead(gemStone);
+        if (stack != null) {
+            return extractRuneIdFromItem(stack);
         }
         return null;
     }
 
-    private ItemStack convertToItemStack(Object value) {
-        if (value instanceof ItemStack stack) {
-            return stack;
+    private ItemStack extractTargetItem(MMOItem targetItem) {
+        if (targetItem == null) {
+            return null;
+        }
+        if (targetItem instanceof ReadMMOItem read) {
+            ItemStack stack = extractItemFromRead(read);
+            if (stack != null) {
+                return stack;
+            }
         }
         try {
-            Method toBukkit = value.getClass().getMethod("toItem");
-            if (ItemStack.class.isAssignableFrom(toBukkit.getReturnType())) {
-                Object result = toBukkit.invoke(value);
-                if (result instanceof ItemStack stack) {
-                    return stack;
-                }
+            ItemStackBuilder builder = targetItem.newBuilder();
+            if (builder != null) {
+                return builder.build();
             }
-        } catch (Exception ignored) {
+        } catch (UnsupportedOperationException ignored) {
+        } catch (Exception ex) {
+            plugin.getLogger().log(Level.WARNING, "Failed to build item stack from MMOItem target", ex);
         }
+        return null;
+    }
+
+    private ItemStack extractItemFromRead(ReadMMOItem read) {
         try {
-            Method toBukkit = value.getClass().getMethod("toBukkit");
-            if (ItemStack.class.isAssignableFrom(toBukkit.getReturnType())) {
-                Object result = toBukkit.invoke(value);
-                if (result instanceof ItemStack stack) {
-                    return stack;
-                }
-            }
-        } catch (Exception ignored) {
+            return read.getNBT().getItem();
+        } catch (Exception ex) {
+            plugin.getLogger().log(Level.WARNING, "Unable to access backing item stack from MMOItem", ex);
+            return null;
         }
-        return null;
     }
 
-    private Player extractPlayer(Object event) {
-        Object direct = invokeAny(event, "getPlayer", "getUser", "getWho", "getWhoClicked", "getBukkitPlayer");
-        if (direct instanceof Player player) {
-            return player;
+    private final class GemstoneListener implements Listener {
+        @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+        public void onGemApplyCheck(ApplyGemStoneEvent event) {
+            handleGemApplyCheck(event);
         }
-        return null;
-    }
 
-    private Object invokeAny(Object target, String... methodNames) {
-        for (String methodName : methodNames) {
-            try {
-                Method method = target.getClass().getMethod(methodName);
-                method.setAccessible(true);
-                return method.invoke(target);
-            } catch (NoSuchMethodException ignored) {
-            } catch (Exception ex) {
-                plugin.getLogger().log(Level.WARNING, "Unable to access method " + methodName + " on " + target.getClass().getName(), ex);
-            }
+        @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+        public void onGemApplyUpdate(ApplyGemStoneEvent event) {
+            handleGemApplyUpdate(event);
         }
-        return null;
     }
 }
