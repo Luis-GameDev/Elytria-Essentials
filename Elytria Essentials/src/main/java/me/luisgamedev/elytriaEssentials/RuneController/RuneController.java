@@ -3,6 +3,7 @@ package me.luisgamedev.elytriaEssentials.RuneController;
 import me.luisgamedev.elytriaEssentials.ElytriaEssentials;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
@@ -28,8 +29,7 @@ import java.util.logging.Level;
 
 public final class RuneController {
     private static final Set<String> STACKABLE_RUNES = new HashSet<>(Arrays.asList(
-            "RUNE_OF_UNBREAKING",
-            "RUNE_OF_PROTECTION"
+            "RUNE_OF_UNBREAKING"
     ));
 
     // TODO: Fix method finding
@@ -148,7 +148,7 @@ public final class RuneController {
         if (item == null) {
             return;
         }
-        if (!isRuneStackable(runeId) && getRuneCount(item, runeId) > 0) {
+        if (isWeapon(item) && !isRuneStackable(runeId) && getRuneCount(item, runeId) > 0) {
             if (setCancelled(event, true)) {
                 Player player = extractPlayer(event);
                 if (player != null) {
@@ -291,6 +291,15 @@ public final class RuneController {
 
     private boolean isRuneStackable(String runeId) {
         return STACKABLE_RUNES.contains(runeId.toUpperCase(Locale.ROOT));
+    }
+
+    private boolean isWeapon(ItemStack item) {
+        Material type = item.getType();
+        if (type == null) {
+            return false;
+        }
+        String materialName = type.name();
+        return materialName.endsWith("_SWORD") || materialName.endsWith("_AXE") || type == Material.BOW;
     }
 
     private String extractRuneId(Object event) {
