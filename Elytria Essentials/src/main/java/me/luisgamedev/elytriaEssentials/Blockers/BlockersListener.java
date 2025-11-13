@@ -19,13 +19,17 @@ import org.bukkit.event.block.BlockDispenseEvent;
 import org.bukkit.event.block.BlockPistonRetractEvent;
 import org.bukkit.event.block.BlockRedstoneEvent;
 import org.bukkit.event.entity.*;
+import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryMoveItemEvent;
+import org.bukkit.event.inventory.InventoryOpenEvent;
 import org.bukkit.event.inventory.InventoryPickupItemEvent;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.inventory.PrepareItemCraftEvent;
 import org.bukkit.event.player.*;
 import org.bukkit.event.world.PortalCreateEvent;
+import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.inventory.Recipe;
 
 import java.util.EnumSet;
@@ -56,6 +60,23 @@ public class BlockersListener implements Listener {
             Material.WIND_CHARGE,
             Material.MACE
     );
+
+    private static boolean isBanned(ItemStack stack) {
+        return stack != null && BANNED_ITEMS.contains(stack.getType());
+    }
+
+    private static void removeBannedItems(Inventory inventory) {
+        if (inventory == null) {
+            return;
+        }
+
+        for (int slot = 0; slot < inventory.getSize(); slot++) {
+            ItemStack stack = inventory.getItem(slot);
+            if (isBanned(stack)) {
+                inventory.setItem(slot, null);
+            }
+        }
+    }
 
     @EventHandler
     public void arrowShoot(ProjectileLaunchEvent event) {
@@ -104,6 +125,15 @@ public class BlockersListener implements Listener {
         Material type = e.getClickedBlock().getType();
         if (type.name().endsWith("SHULKER_BOX")) {
             e.setCancelled(true);
+        }
+    }
+
+    @EventHandler(ignoreCancelled = true)
+    public void onInteractWithBannedItem(PlayerInteractEvent event) {
+        ItemStack item = event.getItem();
+        if (isBanned(item)) {
+            event.setCancelled(true);
+            sanitizePlayerInventories(event.getPlayer());
         }
     }
 
@@ -201,6 +231,66 @@ public class BlockersListener implements Listener {
     @EventHandler
     public void onPistonRetract(BlockPistonRetractEvent event) {
         event.setCancelled(true);
+    }
+
+    @EventHandler(ignoreCancelled = true)
+    public void onItemPickup(EntityPickupItemEvent event) {
+        ItemStack stack = event.getItem().getItemStack();
+        if (isBanned(stack)) {
+            event.setCancelled(true);
+            event.getItem().remove();
+        }
+    }
+
+    @EventHandler(ignoreCancelled = true)
+    public void onInventoryClick(InventoryClickEvent event) {
+        boolean bannedInteraction = false;
+
+        ItemStack current = event.getCurrentItem();
+        if (isBanned(current)) {
+            event.setCurrentItem(null);
+            bannedInteraction = true;
+        }
+
+        ItemStack cursor = event.getCursor();
+        if (isBanned(cursor)) {
+            event.getWhoClicked().setItemOnCursor(null);
+            bannedInteraction = true;
+        }
+
+        if (bannedInteraction) {
+            event.setCancelled(true);
+            if (event.getWhoClicked() instanceof Player player) {
+                sanitizePlayerInventories(player);
+            }
+        }
+    }
+
+    private static void sanitizePlayerInventories(Player player) {
+        PlayerInventory inventory = player.getInventory();
+        removeBannedItems(inventory);
+        removeBannedItems(player.getEnderChest());
+        player.updateInventory();
+    }
+
+    @EventHandler
+    public void onInventoryOpen(InventoryOpenEvent event) {
+        removeBannedItems(event.getInventory());
+        if (event.getPlayer() instanceof Player player) {
+            sanitizePlayerInventories(player);
+        }
+    }
+
+    @EventHandler
+    public void onPlayerJoin(PlayerJoinEvent event) {
+        sanitizePlayerInventories(event.getPlayer());
+    }
+
+    @EventHandler(ignoreCancelled = true)
+    public void onItemSpawn(ItemSpawnEvent event) {
+        if (isBanned(event.getEntity().getItemStack())) {
+            event.setCancelled(true);
+        }
     }
 
     @EventHandler
