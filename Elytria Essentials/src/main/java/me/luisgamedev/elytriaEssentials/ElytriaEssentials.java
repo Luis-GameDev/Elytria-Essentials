@@ -312,4 +312,8 @@ public final class ElytriaEssentials extends JavaPlugin {
     public SoulbindingManager getSoulbindingManager() {
         return soulbindingManager;
     }
+
+    public RuneController getRuneController() {
+        return runeController;
+    }
 }
