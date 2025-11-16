@@ -32,8 +32,10 @@ import java.util.Set;
 import java.util.logging.Level;
 
 public final class RuneController {
+    private static final String UNBREAKING_RUNE_ID = "RUNE_OF_UNBREAKING";
+    private static final String PROTECTION_RUNE_ID = "RUNE_OF_PROTECTION";
     private static final Set<String> STACKABLE_RUNES = new HashSet<>(Arrays.asList(
-            "RUNE_OF_UNBREAKING"
+            UNBREAKING_RUNE_ID
     ));
 
     private final ElytriaEssentials plugin;
@@ -130,10 +132,7 @@ public final class RuneController {
         } else {
             container.set(runeKey, PersistentDataType.INTEGER, updated);
         }
-        ensureBaseLevel(meta, Enchantment.UNBREAKING, baseUnbreakingKey);
-        ensureBaseLevel(meta, Enchantment.PROTECTION, baseProtectionKey);
-        applyRuneEnchantments(meta);
-        item.setItemMeta(meta);
+        applyRuneState(item, meta);
     }
 
     private void ensureBaseLevel(ItemMeta meta, Enchantment enchantment, NamespacedKey key) {
@@ -147,10 +146,10 @@ public final class RuneController {
         PersistentDataContainer container = meta.getPersistentDataContainer();
         int baseUnbreaking = container.getOrDefault(baseUnbreakingKey, PersistentDataType.INTEGER, 0);
         int baseProtection = container.getOrDefault(baseProtectionKey, PersistentDataType.INTEGER, 0);
-        int unbreakingStacks = container.getOrDefault(runeKeyFor("RUNE_OF_UNBREAKING"), PersistentDataType.INTEGER, 0);
-        int protectionStacks = container.getOrDefault(runeKeyFor("RUNE_OF_PROTECTION"), PersistentDataType.INTEGER, 0);
+        int unbreakingStacks = container.getOrDefault(runeKeyFor(UNBREAKING_RUNE_ID), PersistentDataType.INTEGER, 0);
+        int protectionStacks = container.getOrDefault(runeKeyFor(PROTECTION_RUNE_ID), PersistentDataType.INTEGER, 0);
 
-        int unbreakingLevel = baseUnbreaking + (unbreakingStacks * 2);
+        int unbreakingLevel = baseUnbreaking + unbreakingStacks;
         int protectionLevel = baseProtection + protectionStacks;
 
         if (unbreakingLevel > 0) {
@@ -169,6 +168,49 @@ public final class RuneController {
         return runeKeys.computeIfAbsent(runeId.toUpperCase(Locale.ROOT), id ->
                 new NamespacedKey(plugin, "rune_" + id.toLowerCase(Locale.ROOT))
         );
+    }
+
+    private boolean applyRuneState(ItemStack item, ItemMeta meta) {
+        ensureBaseLevel(meta, Enchantment.UNBREAKING, baseUnbreakingKey);
+        ensureBaseLevel(meta, Enchantment.PROTECTION, baseProtectionKey);
+
+        int beforeUnbreaking = meta.getEnchantLevel(Enchantment.UNBREAKING);
+        int beforeProtection = meta.getEnchantLevel(Enchantment.PROTECTION);
+        boolean hadUnbreaking = meta.hasEnchant(Enchantment.UNBREAKING);
+        boolean hadProtection = meta.hasEnchant(Enchantment.PROTECTION);
+
+        applyRuneEnchantments(meta);
+
+        int afterUnbreaking = meta.getEnchantLevel(Enchantment.UNBREAKING);
+        int afterProtection = meta.getEnchantLevel(Enchantment.PROTECTION);
+        boolean hasUnbreaking = meta.hasEnchant(Enchantment.UNBREAKING);
+        boolean hasProtection = meta.hasEnchant(Enchantment.PROTECTION);
+
+        item.setItemMeta(meta);
+        return beforeUnbreaking != afterUnbreaking
+                || beforeProtection != afterProtection
+                || hadUnbreaking != hasUnbreaking
+                || hadProtection != hasProtection;
+    }
+
+    public boolean refreshItemRunes(ItemStack item) {
+        if (item == null) {
+            return false;
+        }
+        ItemMeta meta = item.getItemMeta();
+        if (meta == null) {
+            return false;
+        }
+        return applyRuneState(item, meta);
+    }
+
+    public Set<NamespacedKey> getPersistentKeys() {
+        Set<NamespacedKey> keys = new HashSet<>();
+        keys.add(baseUnbreakingKey);
+        keys.add(baseProtectionKey);
+        keys.add(runeKeyFor(UNBREAKING_RUNE_ID));
+        keys.add(runeKeyFor(PROTECTION_RUNE_ID));
+        return keys;
     }
 
     private boolean isRuneStackable(String runeId) {

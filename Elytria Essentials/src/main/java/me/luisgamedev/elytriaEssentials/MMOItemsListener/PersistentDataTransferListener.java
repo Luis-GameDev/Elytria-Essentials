@@ -1,6 +1,7 @@
 package me.luisgamedev.elytriaEssentials.MMOItemsListener;
 
 import me.luisgamedev.elytriaEssentials.ElytriaEssentials;
+import me.luisgamedev.elytriaEssentials.RuneController.RuneController;
 import me.luisgamedev.elytriaEssentials.Soulbinding.SoulbindingManager;
 import net.Indyuce.mmoitems.api.event.item.ApplyGemStoneEvent;
 import net.Indyuce.mmoitems.api.interaction.GemStone;
@@ -34,14 +35,19 @@ public class PersistentDataTransferListener implements Listener {
     private final ElytriaEssentials plugin;
     private final boolean debug;
     private final Set<NamespacedKey> keysToTransfer;
+    private final RuneController runeController;
 
     public PersistentDataTransferListener(ElytriaEssentials plugin) {
         this.plugin = plugin;
         this.debug = plugin.getConfig().getBoolean("debug-mode", false);
         this.keysToTransfer = loadKeysFromConfig();
+        this.runeController = plugin.getRuneController();
         SoulbindingManager soulbindingManager = plugin.getSoulbindingManager();
         if (soulbindingManager != null && soulbindingManager.isActive()) {
             keysToTransfer.add(soulbindingManager.getSoulbindingKey());
+        }
+        if (runeController != null) {
+            keysToTransfer.addAll(runeController.getPersistentKeys());
         }
         Bukkit.getPluginManager().registerEvents(this, plugin);
         plugin.getLogger().fine("MMOItems persistent data bridge initialised.");
@@ -158,6 +164,9 @@ public class PersistentDataTransferListener implements Listener {
                     }
 
                     boolean changed = copyConfiguredPDCs(sourceClone, rebuilt);
+                    if (runeController != null && runeController.refreshItemRunes(rebuilt)) {
+                        changed = true;
+                    }
 
                     if (!changed) {
                         if (debug) plugin.getLogger().info("No matching PDCs found to transfer.");
