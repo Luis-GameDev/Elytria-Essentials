@@ -1,5 +1,10 @@
 package me.luisgamedev.elytriaEssentials.BossHandler;
 
+import io.lumine.mythic.api.adapters.AbstractLocation;
+import io.lumine.mythic.api.mobs.MythicMobManager;
+import io.lumine.mythic.bukkit.BukkitAdapter;
+import io.lumine.mythic.bukkit.MythicBukkit;
+import io.lumine.mythic.core.mobs.ActiveMob;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -308,42 +313,38 @@ public class BossScheduler implements Listener {
     }
 
     private boolean spawnUsingMythicAPI(String bossKey, Location spawnLocation) {
+        if (!Bukkit.getPluginManager().isPluginEnabled("MythicMobs")) {
+            debug("MythicMobs is not enabled. Cannot spawn boss '" + bossKey + "' via API.");
+            return false;
+        }
+
         try {
-            Class<?> mythicBukkitClass = Class.forName("io.lumine.mythic.bukkit.MythicBukkit");
-            Object mythicBukkit = mythicBukkitClass.getMethod("inst").invoke(null);
+            MythicBukkit mythicBukkit = MythicBukkit.inst();
             if (mythicBukkit == null) {
-                debug("MythicBukkit not present, cannot use API to spawn boss '" + bossKey + "'.");
+                debug("MythicBukkit inst() returned null. Falling back to command dispatcher.");
                 return false;
             }
 
-            Object mobManager = mythicBukkitClass.getMethod("getMobManager").invoke(mythicBukkit);
+            MythicMobManager mobManager = mythicBukkit.getMobManager();
             if (mobManager == null) {
                 debug("MythicMobs mob manager unavailable. Falling back to command dispatcher.");
                 return false;
             }
 
-            Optional<?> mobOptional = (Optional<?>) mobManager.getClass()
-                    .getMethod("getMythicMob", String.class)
-                    .invoke(mobManager, bossKey);
-            if (mobOptional == null || mobOptional.isEmpty()) {
+            if (mobManager.getMythicMob(bossKey).isEmpty()) {
                 debug("MythicMobs API could not find mob '" + bossKey + "'. Falling back to command dispatcher.");
                 return false;
             }
 
-            Object mythicMob = mobOptional.get();
-            Class<?> bukkitAdapterClass = Class.forName("io.lumine.mythic.bukkit.BukkitAdapter");
-            Object abstractLocation = bukkitAdapterClass.getMethod("adapt", Location.class).invoke(null, spawnLocation);
-            Class<?> abstractLocationClass = Class.forName("io.lumine.mythic.api.adapters.AbstractLocation");
-
-            mythicMob.getClass()
-                    .getMethod("spawn", abstractLocationClass, int.class)
-                    .invoke(mythicMob, abstractLocation, 1);
+            AbstractLocation abstractLocation = BukkitAdapter.adapt(spawnLocation);
+            Optional<ActiveMob> spawned = mobManager.spawnMob(bossKey, abstractLocation);
+            if (spawned.isEmpty()) {
+                debug("MythicMobs API did not return an ActiveMob for '" + bossKey + "'.");
+                return false;
+            }
 
             debug("Spawned boss '" + bossKey + "' using MythicMobs API at " + locStr(spawnLocation) + ".");
             return true;
-        } catch (ClassNotFoundException ignored) {
-            debug("MythicMobs classes not found on classpath. Falling back to command dispatcher.");
-            return false;
         } catch (Throwable throwable) {
             debug("Failed to spawn boss '" + bossKey + "' using MythicMobs API: " + throwable.getMessage());
             return false;
