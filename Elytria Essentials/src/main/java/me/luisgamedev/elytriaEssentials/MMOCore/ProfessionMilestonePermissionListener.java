@@ -4,6 +4,7 @@ import me.luisgamedev.elytriaEssentials.ElytriaEssentials;
 import net.Indyuce.mmocore.api.event.PlayerDataLoadEvent;
 import net.Indyuce.mmocore.api.event.PlayerLevelUpEvent;
 import net.Indyuce.mmocore.api.player.PlayerData;
+import net.Indyuce.mmocore.api.player.profess.PlayerClass;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -16,6 +17,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 public class ProfessionMilestonePermissionListener implements Listener {
@@ -24,6 +26,19 @@ public class ProfessionMilestonePermissionListener implements Listener {
             "woodcutting", List.of(1, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 40, 60, 80, 96, 100),
             "farming", List.of(1, 6, 12, 16, 20, 24, 28, 32, 34, 40, 50, 56, 60, 64, 70, 74, 88),
             "fishing", List.of(1, 10, 12, 20, 22, 28, 30, 34, 40, 50, 52, 58, 62, 66, 72, 74, 80, 86, 92, 96, 100)
+    );
+
+    private static final List<Integer> CLASS_MILESTONES = List.of(1, 10, 20, 40, 60, 80, 100);
+    private static final Set<String> TARGET_CLASSES = Set.of(
+            "scout",
+            "ranger",
+            "guardian",
+            "berserk",
+            "priest",
+            "shadowwalker",
+            "lykanthrop",
+            "archmage",
+            "mystic"
     );
 
     private final ElytriaEssentials plugin;
@@ -38,28 +53,30 @@ public class ProfessionMilestonePermissionListener implements Listener {
     public void onDataLoad(PlayerDataLoadEvent event) {
         Player player = event.getPlayer();
         if (player != null) {
-            updateAllProfessions(player, event.getData());
+            updateAllMilestones(player, event.getData());
         }
     }
 
     @EventHandler
     public void onProfessionLevelChange(PlayerLevelUpEvent event) {
-        if (!event.hasProfession()) {
-            return;
-        }
-
         Player player = event.getPlayer();
         if (player == null) {
             return;
         }
 
-        String professionId = event.getProfession().getId().toLowerCase(Locale.ROOT);
-        List<Integer> milestones = PROFESSION_MILESTONES.get(professionId);
-        if (milestones == null) {
+        if (event.hasProfession()) {
+            String professionId = event.getProfession().getId().toLowerCase(Locale.ROOT);
+            List<Integer> milestones = PROFESSION_MILESTONES.get(professionId);
+            if (milestones == null) {
+                return;
+            }
+
+            updateProfessionPermissions(player, professionId, event.getNewLevel());
+            player.recalculatePermissions();
             return;
         }
 
-        updateProfessionPermissions(player, professionId, event.getNewLevel());
+        updateClassPermissions(player, event.getData(), event.getNewLevel());
         player.recalculatePermissions();
     }
 
@@ -78,7 +95,13 @@ public class ProfessionMilestonePermissionListener implements Listener {
             return;
         }
 
-        updateAllProfessions(player, PlayerData.get(player));
+        updateAllMilestones(player, PlayerData.get(player));
+    }
+
+    private void updateAllMilestones(Player player, PlayerData data) {
+        updateAllProfessions(player, data);
+        updateClassPermissions(player, data);
+        player.recalculatePermissions();
     }
 
     private void updateAllProfessions(Player player, PlayerData data) {
@@ -86,11 +109,10 @@ public class ProfessionMilestonePermissionListener implements Listener {
             int level = data.getCollectionSkills().getLevel(professionId);
             updateProfessionPermissions(player, professionId, level);
         });
-        player.recalculatePermissions();
     }
 
     private void updateProfessionPermissions(Player player, String professionId, int level) {
-        PermissionAttachment attachment = attachments.computeIfAbsent(player.getUniqueId(), ignored -> player.addAttachment(plugin));
+        PermissionAttachment attachment = getOrCreateAttachment(player);
         List<Integer> milestones = PROFESSION_MILESTONES.get(professionId);
         if (milestones == null) {
             return;
@@ -102,8 +124,34 @@ public class ProfessionMilestonePermissionListener implements Listener {
         }
     }
 
+    private void updateClassPermissions(Player player, PlayerData data) {
+        updateClassPermissions(player, data, data.getLevel());
+    }
+
+    private void updateClassPermissions(Player player, PlayerData data, int level) {
+        PlayerClass playerClass = data.getProfess();
+        if (playerClass == null) {
+            return;
+        }
+
+        String classId = playerClass.getId().toLowerCase(Locale.ROOT);
+        if (!TARGET_CLASSES.contains(classId)) {
+            return;
+        }
+
+        PermissionAttachment attachment = getOrCreateAttachment(player);
+        for (Integer milestone : CLASS_MILESTONES) {
+            boolean hasReached = level >= milestone;
+            attachment.setPermission(buildPermission(classId, milestone), hasReached);
+        }
+    }
+
     private void removeAttachment(UUID uniqueId) {
         Optional.ofNullable(attachments.remove(uniqueId)).ifPresent(PermissionAttachment::remove);
+    }
+
+    private PermissionAttachment getOrCreateAttachment(Player player) {
+        return attachments.computeIfAbsent(player.getUniqueId(), ignored -> player.addAttachment(plugin));
     }
 
     private String buildPermission(String professionId, int milestone) {
