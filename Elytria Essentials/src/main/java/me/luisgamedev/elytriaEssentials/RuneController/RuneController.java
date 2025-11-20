@@ -34,8 +34,12 @@ import java.util.logging.Level;
 public final class RuneController {
     private static final String UNBREAKING_RUNE_ID = "RUNE_OF_UNBREAKING";
     private static final String PROTECTION_RUNE_ID = "RUNE_OF_PROTECTION";
+    private static final String VITALITY_RUNE_ID = "RUNE_OF_VITALITY";
+    private static final String BASTION_RUNE_ID = "RUNE_OF_BASTION";
     private static final Set<String> STACKABLE_RUNES = new HashSet<>(Arrays.asList(
-            UNBREAKING_RUNE_ID
+            UNBREAKING_RUNE_ID,
+            VITALITY_RUNE_ID,
+            BASTION_RUNE_ID
     ));
 
     private final ElytriaEssentials plugin;
