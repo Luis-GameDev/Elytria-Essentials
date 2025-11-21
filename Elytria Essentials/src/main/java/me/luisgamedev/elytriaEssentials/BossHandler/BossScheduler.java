@@ -1,7 +1,7 @@
 package me.luisgamedev.elytriaEssentials.BossHandler;
 
 import io.lumine.mythic.api.adapters.AbstractLocation;
-import io.lumine.mythic.api.mobs.MythicMobManager;
+import io.lumine.mythic.api.mobs.MobManager;
 import io.lumine.mythic.bukkit.BukkitAdapter;
 import io.lumine.mythic.bukkit.MythicBukkit;
 import io.lumine.mythic.core.mobs.ActiveMob;
@@ -325,7 +325,7 @@ public class BossScheduler implements Listener {
                 return false;
             }
 
-            MythicMobManager mobManager = mythicBukkit.getMobManager();
+            MobManager mobManager = mythicBukkit.getMobManager();
             if (mobManager == null) {
                 debug("MythicMobs mob manager unavailable. Falling back to command dispatcher.");
                 return false;

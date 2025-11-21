@@ -19,14 +19,19 @@ repositories {
     maven { url = "https://repo.extendedclip.com/content/repositories/placeholderapi/" }
     maven { url = 'https://jitpack.io' }
     maven { url = 'https://maven.enginehub.org/repo/' }
-    maven { url = "https://repo.mythiccraft.io/snapshots" }
+    //maven { url = "https://repo.mythiccraft.io/snapshots" }
     //maven { url = "https://mvn.lumine.io/repository/maven-snapshots/" }
+    //maven {
+    //    name = "lumine-snapshots"
+    //    url = "https://mvn.lumine.io/repository/maven-snapshots/"
+    //}
     flatDir { dirs 'libs' }
 }
 
 dependencies {
     compileOnly("io.papermc.paper:paper-api:1.21.4-R0.1-SNAPSHOT")
     compileOnly files("libs/Citizens-2.0.33-b3399.jar")
+    compileOnly files("libs/MythicMobsPremium-5.10.1-SNAPSHOT.jar")
     compileOnly("net.luckperms:api:5.4")
     compileOnly("me.clip:placeholderapi:2.11.5")
     compileOnly("com.mysql:mysql-connector-j:8.3.0")
@@ -34,7 +39,7 @@ dependencies {
     compileOnly 'com.sk89q.worldguard:worldguard-bukkit:7.0.9'
     compileOnly 'com.github.NetzkroneHD:WGRegionEvents:v1.7.4'
     compileOnly 'com.github.MilkBowl:VaultAPI:1.7.1'
-    compileOnly 'io.lumine:Mythic-Dist:5.6.1-SNAPSHOT'
+    //compileOnly 'io.lumine:Mythic-Dist:5.6.1-SNAPSHOT'
     //compileOnly 'io.lumine.mythichud:mythichud:api:1.2.4'
     compileOnly files("libs/MythicHUD-1.2.4-SNAPSHOT-all-61.jar")
     compileOnly files("libs/MythicLib-dist-1.7.1-20250911.223617-39.jar")
