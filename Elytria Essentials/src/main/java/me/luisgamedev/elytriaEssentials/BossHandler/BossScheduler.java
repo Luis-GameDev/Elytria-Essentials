@@ -1,10 +1,8 @@
 package me.luisgamedev.elytriaEssentials.BossHandler;
 
-import io.lumine.mythic.api.adapters.AbstractLocation;
-import io.lumine.mythic.api.mobs.MobManager;
-import io.lumine.mythic.bukkit.BukkitAdapter;
 import io.lumine.mythic.bukkit.MythicBukkit;
-import io.lumine.mythic.core.mobs.ActiveMob;
+import io.lumine.mythic.bukkit.BukkitAPIHelper;
+import io.lumine.mythic.api.exceptions.InvalidMobTypeException;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -325,28 +323,26 @@ public class BossScheduler implements Listener {
                 return false;
             }
 
-            MobManager mobManager = mythicBukkit.getMobManager();
-            if (mobManager == null) {
-                debug("MythicMobs mob manager unavailable. Falling back to command dispatcher.");
+            BukkitAPIHelper apiHelper = mythicBukkit.getAPIHelper();
+            if (apiHelper == null) {
+                debug("MythicMobs API helper unavailable. Falling back to command dispatcher.");
                 return false;
             }
 
-            if (mobManager.getMythicMob(bossKey).isEmpty()) {
+            if (apiHelper.getMythicMob(bossKey) == null) {
                 debug("MythicMobs API could not find mob '" + bossKey + "'. Falling back to command dispatcher.");
                 return false;
             }
 
-            AbstractLocation abstractLocation = BukkitAdapter.adapt(spawnLocation);
-            Optional<ActiveMob> spawned = mobManager.spawnMob(bossKey, abstractLocation);
-            if (spawned.isEmpty()) {
-                debug("MythicMobs API did not return an ActiveMob for '" + bossKey + "'.");
+            if (apiHelper.spawnMythicMob(bossKey, spawnLocation) == null) {
+                debug("MythicMobs API did not return an entity for '" + bossKey + "'.");
                 return false;
             }
 
             debug("Spawned boss '" + bossKey + "' using MythicMobs API at " + locStr(spawnLocation) + ".");
             return true;
-        } catch (Throwable throwable) {
-            debug("Failed to spawn boss '" + bossKey + "' using MythicMobs API: " + throwable.getMessage());
+        } catch (InvalidMobTypeException exception) {
+            debug("Failed to spawn boss '" + bossKey + "' using MythicMobs API: " + exception.getMessage());
             return false;
         }
     }
