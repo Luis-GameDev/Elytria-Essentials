@@ -196,6 +196,7 @@ public class ArrowSkillHandler implements Listener, CommandExecutor, TabComplete
                     triggerDoomshotImpact(arrow, impactDirection, true);
                 }
                 case THUNDERSHOT -> spawnThunderImpact(arrow, null, event.getHitBlock());
+                case PLAGUESHOT -> applyPlagueShotEffects(arrow.getLocation());
                 default -> {
                 }
             }
@@ -245,7 +246,7 @@ public class ArrowSkillHandler implements Listener, CommandExecutor, TabComplete
                 }
             }
             case STUNNING_THORN -> applyStunningThornEffects(hitEntity);
-            case PLAGUESHOT -> applyPlagueShotEffects(hitEntity);
+            case PLAGUESHOT -> applyPlagueShotEffects(hitEntity != null ? hitEntity.getLocation() : arrow.getLocation());
             case NATURES_GRASP -> applyNaturesGraspEffect(hitEntity);
         }
     }
@@ -641,8 +642,8 @@ public class ArrowSkillHandler implements Listener, CommandExecutor, TabComplete
         spawnStunningThornParticles(living);
     }
 
-    private void applyPlagueShotEffects(Entity hitEntity) {
-        if (!(hitEntity instanceof LivingEntity living)) {
+    private void applyPlagueShotEffects(Location impactLocation) {
+        if (impactLocation == null) {
             return;
         }
 
@@ -651,9 +652,27 @@ public class ArrowSkillHandler implements Listener, CommandExecutor, TabComplete
             return;
         }
 
-        if (settings.plagueWitherDurationTicks() > 0) {
-            living.addPotionEffect(new PotionEffect(PotionEffectType.WITHER, settings.plagueWitherDurationTicks(), Math.max(0, settings.plagueWitherAmplifier())));
+        World world = impactLocation.getWorld();
+        if (world == null) {
+            return;
         }
+
+        spawnPlagueImpactEffects(impactLocation, world);
+
+        double radius = 3.0D;
+        world.getNearbyLivingEntities(impactLocation, radius).forEach(living -> {
+            if (settings.plagueWitherDurationTicks() > 0) {
+                living.addPotionEffect(new PotionEffect(PotionEffectType.WITHER, settings.plagueWitherDurationTicks(), Math.max(0, settings.plagueWitherAmplifier())));
+            }
+        });
+    }
+
+    private void spawnPlagueImpactEffects(Location impactLocation, World world) {
+        world.spawnParticle(Particle.EXPLOSION_NORMAL, impactLocation, 12, 0.35, 0.35, 0.35, 0.05);
+        world.spawnParticle(Particle.SPORE_BLOSSOM_AIR, impactLocation, 45, 0.6, 0.75, 0.6, 0.05);
+        world.spawnParticle(Particle.ITEM_SLIME, impactLocation, 20, 0.4, 0.4, 0.4, 0.02);
+        world.playSound(impactLocation, Sound.ENTITY_SLIME_SQUISH, 1.0F, 0.8F);
+        world.playSound(impactLocation, Sound.ENTITY_GENERIC_EXPLODE, 0.6F, 0.5F);
     }
 
     private void applyBloodArrowBonusDamage(EntityDamageByEntityEvent event) {
