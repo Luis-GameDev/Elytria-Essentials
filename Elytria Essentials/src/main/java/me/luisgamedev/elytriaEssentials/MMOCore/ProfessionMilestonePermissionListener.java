@@ -64,20 +64,29 @@ public class ProfessionMilestonePermissionListener implements Listener {
             return;
         }
 
-        if (event.hasProfession()) {
-            String professionId = event.getProfession().getId().toLowerCase(Locale.ROOT);
-            List<Integer> milestones = PROFESSION_MILESTONES.get(professionId);
-            if (milestones == null) {
+        Runnable applyChange = () -> {
+            if (!player.isOnline()) {
                 return;
             }
 
-            updateProfessionPermissions(player, professionId, event.getNewLevel());
-            player.recalculatePermissions();
-            return;
-        }
+            if (event.hasProfession()) {
+                String professionId = event.getProfession().getId().toLowerCase(Locale.ROOT);
+                List<Integer> milestones = PROFESSION_MILESTONES.get(professionId);
+                if (milestones != null) {
+                    updateProfessionPermissions(player, professionId, event.getNewLevel());
+                }
+            } else {
+                updateClassPermissions(player, event.getData(), event.getNewLevel());
+            }
 
-        updateClassPermissions(player, event.getData(), event.getNewLevel());
-        player.recalculatePermissions();
+            player.recalculatePermissions();
+        };
+
+        if (Bukkit.isPrimaryThread()) {
+            applyChange.run();
+        } else {
+            Bukkit.getScheduler().runTask(plugin, applyChange);
+        }
     }
 
     @EventHandler
@@ -99,6 +108,19 @@ public class ProfessionMilestonePermissionListener implements Listener {
     }
 
     private void updateAllMilestones(Player player, PlayerData data) {
+        if (player == null || !player.isOnline()) {
+            return;
+        }
+
+        if (Bukkit.isPrimaryThread()) {
+            applyAllMilestones(player, data);
+            return;
+        }
+
+        Bukkit.getScheduler().runTask(plugin, () -> applyAllMilestones(player, data));
+    }
+
+    private void applyAllMilestones(Player player, PlayerData data) {
         updateAllProfessions(player, data);
         updateClassPermissions(player, data);
         player.recalculatePermissions();
