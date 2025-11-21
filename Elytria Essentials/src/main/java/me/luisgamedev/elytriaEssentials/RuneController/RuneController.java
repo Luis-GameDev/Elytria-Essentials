@@ -45,7 +45,8 @@ public final class RuneController {
     private static final Set<String> STACKABLE_RUNES = new HashSet<>(Arrays.asList(
             UNBREAKING_RUNE_ID,
             VITALITY_RUNE_ID,
-            BASTION_RUNE_ID
+            BASTION_RUNE_ID,
+            PROTECTION_RUNE_ID
     ));
 
     private final ElytriaEssentials plugin;

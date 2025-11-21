@@ -668,7 +668,7 @@ public class ArrowSkillHandler implements Listener, CommandExecutor, TabComplete
     }
 
     private void spawnPlagueImpactEffects(Location impactLocation, World world) {
-        world.spawnParticle(Particle.EXPLOSION_NORMAL, impactLocation, 12, 0.35, 0.35, 0.35, 0.05);
+        world.spawnParticle(Particle.EXPLOSION, impactLocation, 12, 0.35, 0.35, 0.35, 0.05);
         world.spawnParticle(Particle.SPORE_BLOSSOM_AIR, impactLocation, 45, 0.6, 0.75, 0.6, 0.05);
         world.spawnParticle(Particle.ITEM_SLIME, impactLocation, 20, 0.4, 0.4, 0.4, 0.02);
         world.playSound(impactLocation, Sound.ENTITY_SLIME_SQUISH, 1.0F, 0.8F);
