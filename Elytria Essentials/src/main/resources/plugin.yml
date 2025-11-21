@@ -1,5 +1,5 @@
 name: ElytriaEssentials
-version: '6.0'
+version: '6.2'
 main: me.luisgamedev.elytriaEssentials.ElytriaEssentials
 api-version: '1.21'
 depend: [Vault, Citizens, WorldGuard, MMOCore, MythicHUD]
