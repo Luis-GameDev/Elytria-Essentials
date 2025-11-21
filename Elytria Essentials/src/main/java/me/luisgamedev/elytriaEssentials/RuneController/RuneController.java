@@ -36,6 +36,12 @@ public final class RuneController {
     private static final String PROTECTION_RUNE_ID = "RUNE_OF_PROTECTION";
     private static final String VITALITY_RUNE_ID = "RUNE_OF_VITALITY";
     private static final String BASTION_RUNE_ID = "RUNE_OF_BASTION";
+    private static final Set<String> ALLOWED_RUNES = new HashSet<>(Arrays.asList(
+            UNBREAKING_RUNE_ID,
+            PROTECTION_RUNE_ID,
+            VITALITY_RUNE_ID,
+            BASTION_RUNE_ID
+    ));
     private static final Set<String> STACKABLE_RUNES = new HashSet<>(Arrays.asList(
             UNBREAKING_RUNE_ID,
             VITALITY_RUNE_ID,
@@ -79,8 +85,16 @@ public final class RuneController {
         if (item == null) {
             return;
         }
+        if (isArmor(item) && !isAllowedRune(runeId)) {
+            event.setCancelled(true);
+            Player player = event.getPlayer();
+            if (player != null) {
+                player.sendMessage(ChatColor.RED + "This rune cannot be applied to that item.");
+            }
+            return;
+        }
         int existingRunes = getExistingRuneCount(event.getTargetItem(), runeId);
-        if (isWeapon(item) && !isRuneStackable(runeId) && existingRunes > 0) {
+        if (!isRuneStackable(runeId) && existingRunes > 0) {
             event.setCancelled(true);
             Player player = event.getPlayer();
             if (player != null) {
@@ -99,6 +113,9 @@ public final class RuneController {
         }
         ItemStack item = extractTargetItem(event.getTargetItem());
         if (item == null) {
+            return;
+        }
+        if (isArmor(item) && !isAllowedRune(runeId)) {
             return;
         }
         int currentRunes = getExistingRuneCount(event.getTargetItem(), runeId);
@@ -221,6 +238,10 @@ public final class RuneController {
         return STACKABLE_RUNES.contains(runeId.toUpperCase(Locale.ROOT));
     }
 
+    private boolean isAllowedRune(String runeId) {
+        return ALLOWED_RUNES.contains(runeId.toUpperCase(Locale.ROOT));
+    }
+
     private boolean isWeapon(ItemStack item) {
         Material type = item.getType();
         if (type == null) {
@@ -228,6 +249,19 @@ public final class RuneController {
         }
         String materialName = type.name();
         return materialName.endsWith("_SWORD") || materialName.endsWith("_AXE") || type == Material.BOW;
+    }
+
+    private boolean isArmor(ItemStack item) {
+        Material type = item.getType();
+        if (type == null) {
+            return false;
+        }
+        String name = type.name();
+        return name.endsWith("_HELMET")
+                || name.endsWith("_CHESTPLATE")
+                || name.endsWith("_LEGGINGS")
+                || name.endsWith("_BOOTS")
+                || type == Material.ELYTRA;
     }
 
     private String extractRuneIdFromItem(ItemStack stack) {
