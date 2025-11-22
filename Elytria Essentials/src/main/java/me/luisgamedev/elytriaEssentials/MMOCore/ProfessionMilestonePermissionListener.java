@@ -212,6 +212,8 @@ public class ProfessionMilestonePermissionListener implements Listener {
     }
 
     private void debug(String message) {
-        plugin.getLogger().log(Level.INFO, "[ProfessionMilestones] " + message);
+        if(plugin.getConfig().getBoolean("debug-mode")) {
+            plugin.getLogger().log(Level.INFO, "[ProfessionMilestones] " + message);
+        }
     }
 }
