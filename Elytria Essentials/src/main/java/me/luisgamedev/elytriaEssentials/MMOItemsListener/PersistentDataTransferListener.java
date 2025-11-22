@@ -36,6 +36,8 @@ public class PersistentDataTransferListener implements Listener {
     private final boolean debug;
     private final Set<NamespacedKey> keysToTransfer;
     private final RuneController runeController;
+    private enum ItemSource { MAIN_HAND, OFF_HAND, INVENTORY }
+    private record SourceSelection(ItemStack item, ItemSource source, int slotIndex) {}
 
     public PersistentDataTransferListener(ElytriaEssentials plugin) {
         this.plugin = plugin;
@@ -119,23 +121,13 @@ public class PersistentDataTransferListener implements Listener {
             return;
         }
 
-        // Capture the player's held item and which hand it was in before MMOItems overwrites it.
-        ItemStack sourceClone;
-        boolean sourceWasMainHand = true;
-        ItemStack main = player.getInventory().getItemInMainHand();
-        if (main != null && !main.getType().isAir()) {
-            sourceClone = main.clone();
-            sourceWasMainHand = true;
-        } else {
-            ItemStack off = player.getInventory().getItemInOffHand();
-            if (off != null && !off.getType().isAir()) {
-                sourceClone = off.clone();
-                sourceWasMainHand = false;
-            } else {
-                if (debug) plugin.getLogger().info("No held item found to copy PDC from.");
-                return;
-            }
+        // Capture the player's item before MMOItems overwrites it. Prefer hands, but fall back to inventory/target item.
+        SourceSelection selection = resolveSourceItem(player, event);
+        if (selection == null) {
+            if (debug) plugin.getLogger().info("No item found in hands or inventory to copy PDC from.");
+            return;
         }
+        ItemStack sourceClone = selection.item();
 
         // Build some data to use later in the scheduled task.
         MMOItem targetMMOItem = event.getTargetItem();
@@ -151,7 +143,8 @@ public class PersistentDataTransferListener implements Listener {
         }
 
         // Schedule one tick later so MMOItems has finished rebuilding and applying the result stack.
-        boolean finalSourceWasMainHand = sourceWasMainHand;
+        ItemSource finalSourceLocation = selection.source();
+        int finalSourceSlot = selection.slotIndex();
         new BukkitRunnable() {
             @Override
             public void run() {
@@ -173,12 +166,12 @@ public class PersistentDataTransferListener implements Listener {
                         return;
                     }
 
-                    // Put the rebuilt item back into the same hand if possible.
+                    // Put the rebuilt item back into the same slot if possible.
                     try {
-                        if (finalSourceWasMainHand) {
-                            player.getInventory().setItemInMainHand(rebuilt);
-                        } else {
-                            player.getInventory().setItemInOffHand(rebuilt);
+                        switch (finalSourceLocation) {
+                            case MAIN_HAND -> player.getInventory().setItemInMainHand(rebuilt);
+                            case OFF_HAND -> player.getInventory().setItemInOffHand(rebuilt);
+                            case INVENTORY -> placeInInventory(player, finalSourceSlot, sourceClone, rebuilt);
                         }
 
                         // As a safety: if that didn't work or MMOItems placed the item somewhere else,
@@ -193,6 +186,58 @@ public class PersistentDataTransferListener implements Listener {
                 }
             }
         }.runTask(plugin);
+    }
+
+    private SourceSelection resolveSourceItem(Player player, ApplyGemStoneEvent event) {
+        ItemStack main = player.getInventory().getItemInMainHand();
+        if (main != null && !main.getType().isAir()) {
+            return new SourceSelection(main.clone(), ItemSource.MAIN_HAND, -1);
+        }
+        ItemStack off = player.getInventory().getItemInOffHand();
+        if (off != null && !off.getType().isAir()) {
+            return new SourceSelection(off.clone(), ItemSource.OFF_HAND, -1);
+        }
+        return resolveSourceFromInventory(player, event);
+    }
+
+    private SourceSelection resolveSourceFromInventory(Player player, ApplyGemStoneEvent event) {
+        ItemStack targetStack = buildFromMMOItem(event.getTargetItem());
+        if (targetStack == null || targetStack.getType().isAir()) {
+            return null;
+        }
+
+        ItemStack[] contents = player.getInventory().getStorageContents();
+        for (int i = 0; i < contents.length; i++) {
+            ItemStack stack = contents[i];
+            if (stack != null && !stack.getType().isAir() && stack.isSimilar(targetStack)) {
+                return new SourceSelection(stack.clone(), ItemSource.INVENTORY, i);
+            }
+        }
+
+        // If the item is not found in storage contents, still return the target copy so PDC can be preserved.
+        return new SourceSelection(targetStack.clone(), ItemSource.INVENTORY, -1);
+    }
+
+    private void placeInInventory(Player player, int slot, ItemStack original, ItemStack replacement) {
+        try {
+            if (slot >= 0 && slot < player.getInventory().getSize()) {
+                player.getInventory().setItem(slot, replacement);
+                return;
+            }
+        } catch (Throwable ignored) {
+        }
+
+        ItemStack[] contents = player.getInventory().getStorageContents();
+        for (int i = 0; i < contents.length; i++) {
+            ItemStack stack = contents[i];
+            if (stack != null && stack.isSimilar(original)) {
+                player.getInventory().setItem(i, replacement);
+                return;
+            }
+        }
+
+        // Fallback: add to inventory if we couldn't locate the original slot.
+        player.getInventory().addItem(replacement);
     }
 
     private ItemStack buildFromMMOItem(MMOItem mmoItem) {
