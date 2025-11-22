@@ -19,6 +19,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.logging.Level;
 
 public class ProfessionMilestonePermissionListener implements Listener {
     private static final Map<String, List<Integer>> PROFESSION_MILESTONES = Map.of(
@@ -47,12 +48,15 @@ public class ProfessionMilestonePermissionListener implements Listener {
     public ProfessionMilestonePermissionListener(ElytriaEssentials plugin) {
         this.plugin = plugin;
         Bukkit.getOnlinePlayers().forEach(this::refreshPermissions);
+        debug("Profession milestone listener initialized; refreshed online players.");
     }
 
     @EventHandler
     public void onDataLoad(PlayerDataLoadEvent event) {
         Player player = event.getPlayer();
         if (player != null) {
+            debug("Handling PlayerDataLoadEvent for " + player.getName() + " | class="
+                    + event.getData().getProfess() + " | level=" + event.getData().getLevel());
             updateAllMilestones(player, event.getData());
         }
     }
@@ -61,11 +65,20 @@ public class ProfessionMilestonePermissionListener implements Listener {
     public void onProfessionLevelChange(PlayerLevelUpEvent event) {
         Player player = event.getPlayer();
         if (player == null) {
+            debug("PlayerLevelUpEvent without player; ignoring.");
             return;
         }
 
+        debug("PlayerLevelUpEvent for " + player.getName()
+                + " | hasProfession=" + event.hasProfession()
+                + " | profession=" + (event.hasProfession() ? event.getProfession().getId() : "none")
+                + " | oldLevel=" + event.getOldLevel()
+                + " | newLevel=" + event.getNewLevel()
+                + " | mainThread=" + Bukkit.isPrimaryThread());
+
         Runnable applyChange = () -> {
             if (!player.isOnline()) {
+                debug("Player " + player.getName() + " went offline before applying changes.");
                 return;
             }
 
@@ -73,9 +86,13 @@ public class ProfessionMilestonePermissionListener implements Listener {
                 String professionId = event.getProfession().getId().toLowerCase(Locale.ROOT);
                 List<Integer> milestones = PROFESSION_MILESTONES.get(professionId);
                 if (milestones != null) {
+                    debug("Updating profession milestones for " + player.getName() + " | profession=" + professionId);
                     updateProfessionPermissions(player, professionId, event.getNewLevel());
+                } else {
+                    debug("No configured milestones for profession " + professionId + "; skipping.");
                 }
             } else {
+                debug("Updating class milestones for " + player.getName());
                 updateClassPermissions(player, event.getData(), event.getNewLevel());
             }
 
@@ -97,18 +114,22 @@ public class ProfessionMilestonePermissionListener implements Listener {
     public void cleanup() {
         attachments.values().forEach(PermissionAttachment::remove);
         attachments.clear();
+        debug("Cleared all profession milestone permission attachments.");
     }
 
     private void refreshPermissions(Player player) {
         if (!PlayerData.has(player)) {
+            debug("Skipping refresh for " + player.getName() + " because PlayerData is not loaded.");
             return;
         }
 
+        debug("Refreshing permissions for " + player.getName());
         updateAllMilestones(player, PlayerData.get(player));
     }
 
     private void updateAllMilestones(Player player, PlayerData data) {
         if (player == null || !player.isOnline()) {
+            debug("Skipping milestone update; player is null or offline.");
             return;
         }
 
@@ -121,6 +142,7 @@ public class ProfessionMilestonePermissionListener implements Listener {
     }
 
     private void applyAllMilestones(Player player, PlayerData data) {
+        debug("Applying all milestones for " + player.getName());
         updateAllProfessions(player, data);
         updateClassPermissions(player, data);
         player.recalculatePermissions();
@@ -129,6 +151,7 @@ public class ProfessionMilestonePermissionListener implements Listener {
     private void updateAllProfessions(Player player, PlayerData data) {
         PROFESSION_MILESTONES.forEach((professionId, milestones) -> {
             int level = data.getCollectionSkills().getLevel(professionId);
+            debug("Applying profession milestones for " + player.getName() + " | profession=" + professionId + " | level=" + level);
             updateProfessionPermissions(player, professionId, level);
         });
     }
@@ -137,12 +160,15 @@ public class ProfessionMilestonePermissionListener implements Listener {
         PermissionAttachment attachment = getOrCreateAttachment(player);
         List<Integer> milestones = PROFESSION_MILESTONES.get(professionId);
         if (milestones == null) {
+            debug("No milestones configured for profession " + professionId + "; skipping update.");
             return;
         }
 
         for (Integer milestone : milestones) {
             boolean hasReached = level >= milestone;
             attachment.setPermission(buildPermission(professionId, milestone), hasReached);
+            debug("Set profession permission for " + player.getName() + " | permission=" + buildPermission(professionId, milestone)
+                    + " | reached=" + hasReached);
         }
     }
 
@@ -153,11 +179,13 @@ public class ProfessionMilestonePermissionListener implements Listener {
     private void updateClassPermissions(Player player, PlayerData data, int level) {
         PlayerClass playerClass = data.getProfess();
         if (playerClass == null) {
+            debug("Player " + player.getName() + " has no class; skipping class milestones.");
             return;
         }
 
         String classId = playerClass.getId().toLowerCase(Locale.ROOT);
         if (!TARGET_CLASSES.contains(classId)) {
+            debug("Class " + classId + " not tracked for milestones; skipping.");
             return;
         }
 
@@ -165,11 +193,14 @@ public class ProfessionMilestonePermissionListener implements Listener {
         for (Integer milestone : CLASS_MILESTONES) {
             boolean hasReached = level >= milestone;
             attachment.setPermission(buildPermission(classId, milestone), hasReached);
+            debug("Set class permission for " + player.getName() + " | permission=" + buildPermission(classId, milestone)
+                    + " | reached=" + hasReached);
         }
     }
 
     private void removeAttachment(UUID uniqueId) {
         Optional.ofNullable(attachments.remove(uniqueId)).ifPresent(PermissionAttachment::remove);
+        debug("Removed permission attachment for player UUID " + uniqueId);
     }
 
     private PermissionAttachment getOrCreateAttachment(Player player) {
@@ -178,5 +209,9 @@ public class ProfessionMilestonePermissionListener implements Listener {
 
     private String buildPermission(String professionId, int milestone) {
         return professionId + "." + milestone;
+    }
+
+    private void debug(String message) {
+        plugin.getLogger().log(Level.INFO, "[ProfessionMilestones] " + message);
     }
 }
