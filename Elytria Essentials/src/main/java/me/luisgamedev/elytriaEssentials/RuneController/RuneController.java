@@ -36,12 +36,6 @@ public final class RuneController {
     private static final String PROTECTION_RUNE_ID = "RUNE_OF_PROTECTION";
     private static final String VITALITY_RUNE_ID = "RUNE_OF_VITALITY";
     private static final String BASTION_RUNE_ID = "RUNE_OF_BASTION";
-    private static final Set<String> ALLOWED_RUNES = new HashSet<>(Arrays.asList(
-            UNBREAKING_RUNE_ID,
-            PROTECTION_RUNE_ID,
-            VITALITY_RUNE_ID,
-            BASTION_RUNE_ID
-    ));
     private static final Set<String> STACKABLE_RUNES = new HashSet<>(Arrays.asList(
             UNBREAKING_RUNE_ID,
             VITALITY_RUNE_ID,
@@ -86,14 +80,6 @@ public final class RuneController {
         if (item == null) {
             return;
         }
-        if (isArmor(item) && !isAllowedRune(runeId)) {
-            event.setCancelled(true);
-            Player player = event.getPlayer();
-            if (player != null) {
-                player.sendMessage(ChatColor.RED + "This rune cannot be applied to that item.");
-            }
-            return;
-        }
         int existingRunes = getExistingRuneCount(event.getTargetItem(), runeId);
         if (!isRuneStackable(runeId) && existingRunes > 0) {
             event.setCancelled(true);
@@ -105,7 +91,7 @@ public final class RuneController {
     }
 
     private void handleGemApplyUpdate(ApplyGemStoneEvent event) {
-        if (event.isCancelled() || event.getResult() != GemStone.ResultType.SUCCESS) {
+        if (event.isCancelled()) {
             return;
         }
         String runeId = extractRuneId(event.getGemStone());
@@ -116,7 +102,18 @@ public final class RuneController {
         if (item == null) {
             return;
         }
-        if (isArmor(item) && !isAllowedRune(runeId)) {
+        GemStone.ResultType result = event.getResult();
+        if (result == null) {
+            return;
+        }
+        String resultName = result.name().toUpperCase(Locale.ROOT);
+        boolean success = result == GemStone.ResultType.SUCCESS
+                || resultName.contains("SUCCESS")
+                || resultName.contains("APPLY")
+                || resultName.contains("APPLIED")
+                || resultName.contains("OK")
+                || resultName.contains("PASS");
+        if (!success) {
             return;
         }
         int currentRunes = getExistingRuneCount(event.getTargetItem(), runeId);
@@ -237,10 +234,6 @@ public final class RuneController {
 
     private boolean isRuneStackable(String runeId) {
         return STACKABLE_RUNES.contains(runeId.toUpperCase(Locale.ROOT));
-    }
-
-    private boolean isAllowedRune(String runeId) {
-        return ALLOWED_RUNES.contains(runeId.toUpperCase(Locale.ROOT));
     }
 
     private boolean isWeapon(ItemStack item) {
