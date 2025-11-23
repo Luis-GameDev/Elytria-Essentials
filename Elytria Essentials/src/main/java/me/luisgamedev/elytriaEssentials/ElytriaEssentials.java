@@ -49,6 +49,7 @@ import me.luisgamedev.elytriaEssentials.RuneController.RuneController;
 import me.luisgamedev.elytriaEssentials.RandomInformation.RandomInformationManager;
 import me.luisgamedev.elytriaEssentials.ChestLimiter.ChestLimiterManager;
 import me.luisgamedev.elytriaEssentials.MMOItemsListener.PersistentDataTransferListener;
+import me.luisgamedev.elytriaEssentials.MMOCore.CraftingProfessionExpListener;
 import me.luisgamedev.elytriaEssentials.MMOCore.ProfessionMilestonePermissionListener;
 import me.luisgamedev.elytriaEssentials.ArrowSkillHandler.ArrowSkillHandler;
 
@@ -81,6 +82,9 @@ public final class ElytriaEssentials extends JavaPlugin {
         }
         languageConfig = YamlConfiguration.loadConfiguration(langFile);
         PluginManager pm = Bukkit.getPluginManager();
+        if (!new File(getDataFolder(), "exp-rewards.yml").exists()) {
+            saveResource("exp-rewards.yml", false);
+        }
         ArrowSkillHandler arrowSkillHandler = new ArrowSkillHandler(this);
         pm.registerEvents(arrowSkillHandler, this);
         PluginCommand arrowSkillCommand = getCommand("arrowskill");
@@ -138,7 +142,8 @@ public final class ElytriaEssentials extends JavaPlugin {
 
         soulbindingManager = new SoulbindingManager(this);
 
-        if (Bukkit.getPluginManager().isPluginEnabled("MMOItems")) {
+        boolean mmoItemsEnabled = pm.isPluginEnabled("MMOItems");
+        if (mmoItemsEnabled) {
             runeController = new RuneController(this);
             persistentDataTransferListener = new PersistentDataTransferListener(this);
         } else {
@@ -170,7 +175,7 @@ public final class ElytriaEssentials extends JavaPlugin {
             getLogger().warning("WGRegionEvents plugin not found. Custom music will be disabled.");
         }
 
-        boolean mmocoreEnabled = Bukkit.getPluginManager().isPluginEnabled("MMOCore");
+        boolean mmocoreEnabled = pm.isPluginEnabled("MMOCore");
         if (mmocoreEnabled && Bukkit.getPluginManager().isPluginEnabled("MythicHUD")) {
             hudManager = new HudManager(this);
         } else {
@@ -186,6 +191,9 @@ public final class ElytriaEssentials extends JavaPlugin {
             pm.registerEvents(professionMilestonePermissionListener, this);
             partyIntegrationManager = new PartyIntegrationManager(this);
             partyIntegrationManager.initialize();
+            if (mmoItemsEnabled) {
+                pm.registerEvents(new CraftingProfessionExpListener(this), this);
+            }
         } else {
             getLogger().info("MMOCore not detected. Class change limitations will be disabled.");
         }
