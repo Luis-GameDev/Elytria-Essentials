@@ -80,10 +80,17 @@ public final class RuneController {
         if (item == null) {
             return;
         }
+        Player player = event.getPlayer();
+        if (!isMainHandTarget(player, item)) {
+            if (player != null) {
+                player.sendMessage(ChatColor.RED + "Runes can only be applied to the item in your main hand.");
+            }
+            event.setCancelled(true);
+            return;
+        }
         int existingRunes = getExistingRuneCount(event.getTargetItem(), runeId);
         if (!isRuneStackable(runeId) && existingRunes > 0) {
             event.setCancelled(true);
-            Player player = event.getPlayer();
             if (player != null) {
                 player.sendMessage(ChatColor.RED + "This item already contains that rune.");
             }
@@ -256,6 +263,14 @@ public final class RuneController {
                 || name.endsWith("_LEGGINGS")
                 || name.endsWith("_BOOTS")
                 || type == Material.ELYTRA;
+    }
+
+    private boolean isMainHandTarget(Player player, ItemStack target) {
+        if (player == null || target == null) {
+            return false;
+        }
+        ItemStack mainHand = player.getInventory().getItemInMainHand();
+        return mainHand != null && !mainHand.getType().isAir() && mainHand.isSimilar(target);
     }
 
     private String extractRuneIdFromItem(ItemStack stack) {
