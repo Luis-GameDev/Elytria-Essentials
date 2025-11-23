@@ -50,7 +50,13 @@ public class BlockersListener implements Listener {
             NamespacedKey.minecraft("minecart"),
             NamespacedKey.minecraft("furnace_minecart"),
             NamespacedKey.minecraft("chest_minecart"),
-            NamespacedKey.minecraft("hopper_minecart")
+            NamespacedKey.minecraft("hopper_minecart"),
+
+            // Block vanilla diamond armor while allowing custom armor recipes
+            NamespacedKey.minecraft("diamond_helmet"),
+            NamespacedKey.minecraft("diamond_chestplate"),
+            NamespacedKey.minecraft("diamond_leggings"),
+            NamespacedKey.minecraft("diamond_boots")
     );
 
     private static final Set<Material> BANNED_ITEMS = EnumSet.of(
