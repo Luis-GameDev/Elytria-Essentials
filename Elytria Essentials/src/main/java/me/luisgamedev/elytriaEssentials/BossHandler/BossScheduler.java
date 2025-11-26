@@ -4,6 +4,7 @@ import io.lumine.mythic.bukkit.MythicBukkit;
 import io.lumine.mythic.bukkit.BukkitAPIHelper;
 import io.lumine.mythic.api.exceptions.InvalidMobTypeException;
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -68,6 +69,11 @@ public class BossScheduler implements Listener {
         String fallbackMaterial = plugin.getConfig().getString(path + "fallbackMaterial", "DIAMOND");
         String spawnCommandTemplate = plugin.getConfig().getString(path + "spawnCommand",
                 "/mm m spawn %boss% %world%,%x%,%y%,%z%");
+        int preSpawnMinutes = Math.max(0, plugin.getConfig().getInt(path + "preSpawnNoticeMinutes", 30));
+        String preSpawnMessage = plugin.getConfig().getString(path + "preSpawnMessage",
+                "&6The boss %boss% will spawn in %minutes% minutes at %world% (%x%, %y%, %z%)!");
+        String spawnMessage = plugin.getConfig().getString(path + "spawnMessage",
+                "&cThe boss %boss% has spawned at %world% (%x%, %y%, %z%)!");
 
         if (timeStr == null || loc.size() < 3) {
             plugin.getLogger().warning("boss." + bossKey + " missing time or location (needs [x,y,z]). Skipping.");
@@ -97,22 +103,33 @@ public class BossScheduler implements Listener {
         // schedule first run at next occurrence of spawnTime
         long initialDelayTicks = computeTicksUntilNext(spawnTime);
         debug("Initial delay for boss '" + bossKey + "' is " + initialDelayTicks + " ticks.");
+        long preSpawnDelayTicks = initialDelayTicks - preSpawnMinutes * 60L * 20L;
+        if (preSpawnDelayTicks <= 0) {
+            debug("Pre-spawn notice for boss '" + bossKey + "' would be in the past. Scheduling immediately.");
+            preSpawnDelayTicks = 1L;
+        }
         // schedule a repeating task that triggers every 24h after first run
         BukkitTask task = Bukkit.getScheduler().runTaskLater(plugin, () -> {
             runSpawnAndRescheduleDaily(bossKey, spawnLocation, lootCommand, lootKey, fallbackMaterial,
-                    spawnCommandTemplate);
+                    spawnCommandTemplate, spawnMessage);
         }, initialDelayTicks);
         scheduledTasks.add(task);
+
+        BukkitTask warningTask = Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            sendPreSpawnWarningAndRescheduleDaily(bossKey, preSpawnMinutes, spawnLocation, preSpawnMessage);
+        }, preSpawnDelayTicks);
+        scheduledTasks.add(warningTask);
 
         plugin.getLogger().info("Scheduled boss " + bossKey + " at " + spawnTime.toString() + " (first in " +
                 (initialDelayTicks / 20) + "s).");
     }
 
     private void runSpawnAndRescheduleDaily(String bossKey, Location spawnLocation, String lootCommandTemplate, String lootKey,
-            String fallbackMaterial, String spawnCommandTemplate) {
+            String fallbackMaterial, String spawnCommandTemplate, String spawnMessage) {
 
         debug("Running daily spawn task for boss '" + bossKey + "'.");
         spawnBossAndMark(bossKey, spawnLocation, spawnCommandTemplate);
+        broadcastBossMessage(spawnMessage, bossKey, spawnLocation, 0);
 
         int lifetimeTicks = plugin.getConfig().getInt("boss." + bossKey + ".lifetimeTicks", -1);
         if (lifetimeTicks > 0) {
@@ -129,7 +146,7 @@ public class BossScheduler implements Listener {
         long ticksPerDay = 24L * 3600L * 20L;
         BukkitTask next = Bukkit.getScheduler().runTaskLater(plugin, () -> {
             runSpawnAndRescheduleDaily(bossKey, spawnLocation, lootCommandTemplate, lootKey, fallbackMaterial,
-                    spawnCommandTemplate);
+                    spawnCommandTemplate, spawnMessage);
         }, ticksPerDay);
         scheduledTasks.add(next);
         debug("Scheduled next daily spawn for boss '" + bossKey + "' in " + ticksPerDay + " ticks.");
@@ -269,6 +286,17 @@ public class BossScheduler implements Listener {
         return Math.max(1L, ticks);
     }
 
+    private void sendPreSpawnWarningAndRescheduleDaily(String bossKey, int minutesBefore, Location spawnLocation,
+            String messageTemplate) {
+        broadcastBossMessage(messageTemplate, bossKey, spawnLocation, minutesBefore);
+        long ticksPerDay = 24L * 3600L * 20L;
+        BukkitTask next = Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            sendPreSpawnWarningAndRescheduleDaily(bossKey, minutesBefore, spawnLocation, messageTemplate);
+        }, ticksPerDay);
+        scheduledTasks.add(next);
+        debug("Scheduled next pre-spawn message for boss '" + bossKey + "' in " + ticksPerDay + " ticks.");
+    }
+
     // very lenient time parser for formats like "8pm", "8:00pm", "20:00", "08:00", "23", "7 am"
     private LocalTime parseTimeLenient(String s) {
         if (s == null) return null;
@@ -308,6 +336,19 @@ public class BossScheduler implements Listener {
 
     private String locStr(Location loc) {
         return String.format("%s@%d,%d,%d", loc.getWorld().getName(), loc.getBlockX(), loc.getBlockY(), loc.getBlockZ());
+    }
+
+    private void broadcastBossMessage(String template, String bossKey, Location spawnLocation, int minutesUntil) {
+        if (template == null || template.isEmpty()) return;
+        String message = template
+                .replace("%boss%", bossKey)
+                .replace("%world%", spawnLocation.getWorld().getName())
+                .replace("%x%", String.valueOf(spawnLocation.getBlockX()))
+                .replace("%y%", String.valueOf(spawnLocation.getBlockY()))
+                .replace("%z%", String.valueOf(spawnLocation.getBlockZ()))
+                .replace("%minutes%", String.valueOf(minutesUntil));
+        Bukkit.broadcastMessage(ChatColor.translateAlternateColorCodes('&', message));
+        debug("Broadcasted boss message: " + message);
     }
 
     private boolean spawnUsingMythicAPI(String bossKey, Location spawnLocation) {
