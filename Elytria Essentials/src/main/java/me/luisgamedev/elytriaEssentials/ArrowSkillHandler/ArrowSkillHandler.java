@@ -20,6 +20,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.entity.EntityChangeBlockEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityShootBowEvent;
 import org.bukkit.event.entity.ProjectileHitEvent;
 import org.bukkit.command.Command;
@@ -196,7 +197,7 @@ public class ArrowSkillHandler implements Listener, CommandExecutor, TabComplete
                     triggerDoomshotImpact(arrow, impactDirection, true);
                 }
                 case THUNDERSHOT -> spawnThunderImpact(arrow, null, event.getHitBlock());
-                case PLAGUESHOT -> applyPlagueShotEffects(arrow.getLocation());
+                case PLAGUESHOT -> applyPlagueShotEffects(arrow, arrow.getLocation());
                 default -> {
                 }
             }
@@ -224,30 +225,50 @@ public class ArrowSkillHandler implements Listener, CommandExecutor, TabComplete
             case ARCANE_SHOT -> applyArcaneShotEffect(arrow, hitEntity);
             case FLAMETHORN -> {
                 if (hitEntity instanceof LivingEntity living) {
-                    living.setFireTicks(100);
+                    if (shouldApplyAbilityTo(living, arrow, Ability.FLAMETHORN)) {
+                        living.setFireTicks(100);
+                    }
                 }
             }
             case WEBTRAP -> spawnWebTrapAtLocation(arrow.getLocation());
             case TOXIC_ARROWS -> {
                 if (hitEntity instanceof LivingEntity living) {
-                    living.addPotionEffect(new PotionEffect(PotionEffectType.POISON, 100, 0));
+                    if (shouldApplyAbilityTo(living, arrow, Ability.TOXIC_ARROWS)) {
+                        living.addPotionEffect(new PotionEffect(PotionEffectType.POISON, 100, 0));
+                    }
                 }
             }
             case DOOMSHOT -> {
                 Vector impactDirection = computeImpactDirection(arrow, null);
                 triggerDoomshotImpact(arrow, impactDirection, !event.isCancelled());
             }
-            case BLOODARROW -> applyBloodArrowBonusDamage(event);
-            case THUNDERSHOT -> spawnThunderImpact(arrow, hitEntity, null);
+            case BLOODARROW -> {
+                if (!(hitEntity instanceof LivingEntity living) || shouldApplyAbilityTo(living, arrow, Ability.BLOODARROW)) {
+                    applyBloodArrowBonusDamage(event);
+                }
+            }
+            case THUNDERSHOT -> {
+                if (!(hitEntity instanceof LivingEntity living) || shouldApplyAbilityTo(living, arrow, Ability.THUNDERSHOT)) {
+                    spawnThunderImpact(arrow, hitEntity, null);
+                }
+            }
             case FOREST_THORN -> {
-                applyForestThornHitEffects(hitEntity);
-                if (hitEntity instanceof LivingEntity living) {
+                if (hitEntity instanceof LivingEntity living && shouldApplyAbilityTo(living, arrow, Ability.FOREST_THORN)) {
+                    applyForestThornHitEffects(living);
                     applyForestThornTrueDamageLater(living);
                 }
             }
-            case STUNNING_THORN -> applyStunningThornEffects(hitEntity);
-            case PLAGUESHOT -> applyPlagueShotEffects(hitEntity != null ? hitEntity.getLocation() : arrow.getLocation());
-            case NATURES_GRASP -> applyNaturesGraspEffect(hitEntity);
+            case STUNNING_THORN -> {
+                if (hitEntity instanceof LivingEntity living && shouldApplyAbilityTo(living, arrow, Ability.STUNNING_THORN)) {
+                    applyStunningThornEffects(living);
+                }
+            }
+            case PLAGUESHOT -> applyPlagueShotEffects(arrow, hitEntity != null ? hitEntity.getLocation() : arrow.getLocation());
+            case NATURES_GRASP -> {
+                if (hitEntity instanceof LivingEntity living && shouldApplyAbilityTo(living, arrow, Ability.NATURES_GRASP)) {
+                    applyNaturesGraspEffect(hitEntity);
+                }
+            }
         }
     }
 
@@ -330,12 +351,27 @@ public class ArrowSkillHandler implements Listener, CommandExecutor, TabComplete
         arrowLastVelocities.remove(arrowId);
     }
 
+    private boolean shouldApplyAbilityTo(LivingEntity target, Arrow arrow, Ability ability) {
+        if (target == null || arrow == null || ability == null) {
+            return false;
+        }
+
+        EntityDamageByEntityEvent damageEvent = new EntityDamageByEntityEvent(arrow, target,
+                EntityDamageEvent.DamageCause.PROJECTILE, 0);
+        Bukkit.getPluginManager().callEvent(damageEvent);
+        return !damageEvent.isCancelled();
+    }
+
     private void applyArcaneShotEffect(Arrow arrow, Entity hitEntity) {
         if (!(hitEntity instanceof LivingEntity target)) {
             return;
         }
 
         if (!(arrow.getShooter() instanceof LivingEntity shooter)) {
+            return;
+        }
+
+        if (!shouldApplyAbilityTo(target, arrow, Ability.ARCANE_SHOT)) {
             return;
         }
 
@@ -525,9 +561,14 @@ public class ArrowSkillHandler implements Listener, CommandExecutor, TabComplete
         if (knockEntitiesAway) {
             world.getNearbyEntities(impactLocation, radius, radius, radius, entity -> entity instanceof LivingEntity)
                     .forEach(entity -> {
+                        LivingEntity living = (LivingEntity) entity;
+                        if (!shouldApplyAbilityTo(living, arrow, Ability.DOOMSHOT)) {
+                            return;
+                        }
+
                         double randomBoost = 0.8D + ThreadLocalRandom.current().nextDouble(0.6D);
                         Vector launch = launchDirection.clone().multiply(playerVelocity * randomBoost);
-                        entity.setVelocity(launch);
+                        living.setVelocity(launch);
                     });
         }
 
@@ -578,11 +619,7 @@ public class ArrowSkillHandler implements Listener, CommandExecutor, TabComplete
         }
     }
 
-    private void applyForestThornHitEffects(Entity hitEntity) {
-        if (!(hitEntity instanceof LivingEntity living)) {
-            return;
-        }
-
+    private void applyForestThornHitEffects(LivingEntity living) {
         AbilitySettings settings = abilitySettings.get(Ability.FOREST_THORN);
         if (settings == null) {
             return;
@@ -621,11 +658,7 @@ public class ArrowSkillHandler implements Listener, CommandExecutor, TabComplete
         living.setHealth(clamped);
     }
 
-    private void applyStunningThornEffects(Entity hitEntity) {
-        if (!(hitEntity instanceof LivingEntity living)) {
-            return;
-        }
-
+    private void applyStunningThornEffects(LivingEntity living) {
         AbilitySettings settings = abilitySettings.get(Ability.STUNNING_THORN);
         if (settings == null) {
             return;
@@ -642,7 +675,7 @@ public class ArrowSkillHandler implements Listener, CommandExecutor, TabComplete
         spawnStunningThornParticles(living);
     }
 
-    private void applyPlagueShotEffects(Location impactLocation) {
+    private void applyPlagueShotEffects(Arrow arrow, Location impactLocation) {
         if (impactLocation == null) {
             return;
         }
@@ -661,7 +694,7 @@ public class ArrowSkillHandler implements Listener, CommandExecutor, TabComplete
 
         double radius = 3.0D;
         world.getNearbyLivingEntities(impactLocation, radius).forEach(living -> {
-            if (settings.plagueWitherDurationTicks() > 0) {
+            if (settings.plagueWitherDurationTicks() > 0 && shouldApplyAbilityTo(living, arrow, Ability.PLAGUESHOT)) {
                 living.addPotionEffect(new PotionEffect(PotionEffectType.WITHER, settings.plagueWitherDurationTicks(), Math.max(0, settings.plagueWitherAmplifier())));
             }
         });
@@ -778,7 +811,7 @@ public class ArrowSkillHandler implements Listener, CommandExecutor, TabComplete
         return settings.selectionDurationMs();
     }
 
-    private enum Ability {
+    public enum Ability {
         ARCANE_SHOT("arcaneshot", Particle.ENCHANT, false, 3_000L),
         FLAMETHORN("flamethorn", Particle.FLAME, true, 5_000L),
         WEBTRAP("webtrap", Particle.SMOKE, false, 3_000L),
