@@ -668,10 +668,10 @@ public class ArrowSkillHandler implements Listener, CommandExecutor, TabComplete
     }
 
     private void spawnPlagueImpactEffects(Location impactLocation, World world) {
-        world.spawnParticle(Particle.EXPLOSION, impactLocation, 12, 0.35, 0.35, 0.35, 0.05);
-        world.spawnParticle(Particle.SPORE_BLOSSOM_AIR, impactLocation, 45, 0.6, 0.75, 0.6, 0.05);
-        world.spawnParticle(Particle.ITEM_SLIME, impactLocation, 20, 0.4, 0.4, 0.4, 0.02);
-        world.playSound(impactLocation, Sound.ENTITY_SLIME_SQUISH, 1.0F, 0.8F);
+        world.spawnParticle(Particle.EXPLOSION, impactLocation, 6, 0.35, 0.35, 0.35, 0.05);
+        world.spawnParticle(Particle.LARGE_SMOKE, impactLocation, 90, 1.2, 1.5, 1.2, 0.05);
+        world.spawnParticle(Particle.WHITE_SMOKE, impactLocation, 20, 0.4, 0.4, 0.4, 0.02);
+        world.playSound(impactLocation, Sound.ENTITY_ZOMBIE_ATTACK_IRON_DOOR, 0.8F, 0.5F);
         world.playSound(impactLocation, Sound.ENTITY_GENERIC_EXPLODE, 0.6F, 0.5F);
     }
 
@@ -788,7 +788,7 @@ public class ArrowSkillHandler implements Listener, CommandExecutor, TabComplete
         THUNDERSHOT("thundershot", Particle.WAX_OFF, false, 3_000L),
         FOREST_THORN("forest_thorn", Particle.TOTEM_OF_UNDYING, true, 10_000L),
         STUNNING_THORN("stunning_thorn", Particle.WITCH, false, 3_000L),
-        PLAGUESHOT("plagueshot", Particle.SPORE_BLOSSOM_AIR, true, 6_000L),
+        PLAGUESHOT("plagueshot", Particle.LARGE_SMOKE, false, 3_000L),
         NATURES_GRASP("natures_grasp", Particle.HAPPY_VILLAGER, false, 3_000L);
 
         private final String key;
