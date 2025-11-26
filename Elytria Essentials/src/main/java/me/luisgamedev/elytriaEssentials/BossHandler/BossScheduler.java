@@ -14,7 +14,6 @@ import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
-import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.metadata.FixedMetadataValue;
@@ -24,15 +23,12 @@ import org.bukkit.scheduler.BukkitTask;
 import java.time.*;
 import java.time.format.DateTimeParseException;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 
 public class BossScheduler implements Listener {
 
     private final Plugin plugin;
     private final ConsoleCommandSender console;
-    // entityUUID -> set of player UUIDs who damaged it
-    private final Map<UUID, Set<UUID>> damageMap = new ConcurrentHashMap<>();
     // scheduled tasks so we can cancel on disable if needed
     private final List<BukkitTask> scheduledTasks = new ArrayList<>();
 
@@ -191,26 +187,6 @@ public class BossScheduler implements Listener {
         }, 10L); // 10 ticks delay to let MythicMobs create the entity
     }
 
-    // track damagers
-    @EventHandler
-    public void onEntityDamage(EntityDamageByEntityEvent ev) {
-        if (ev.getEntity() == null) return;
-        Entity target = ev.getEntity();
-        if (!target.hasMetadata("customBoss")) return;
-        debug("Recorded damage on boss entity " + target.getUniqueId());
-        // get damager player (direct or projectile shooter)
-        Player p = null;
-        if (ev.getDamager() instanceof Player) {
-            p = (Player) ev.getDamager();
-        } else if (ev.getDamager() instanceof org.bukkit.entity.Projectile) {
-            org.bukkit.entity.Projectile proj = (org.bukkit.entity.Projectile) ev.getDamager();
-            if (proj.getShooter() instanceof Player) p = (Player) proj.getShooter();
-        }
-        if (p == null) return;
-        UUID eid = target.getUniqueId();
-        damageMap.computeIfAbsent(eid, k -> Collections.newSetFromMap(new ConcurrentHashMap<>())).add(p.getUniqueId());
-    }
-
     @EventHandler
     public void onEntityDeath(EntityDeathEvent ev) {
         Entity dead = ev.getEntity();
@@ -222,10 +198,13 @@ public class BossScheduler implements Listener {
         } catch (Exception ignored) {}
         if (bossKey == null) return;
 
-        Set<UUID> damagers = damageMap.remove(dead.getUniqueId());
-        if (damagers == null || damagers.isEmpty()) {
-            plugin.getLogger().info("Boss " + bossKey + " died but no damagers recorded.");
-            debug("No damagers found for boss '" + bossKey + "'.");
+        List<Player> nearbyPlayers = dead.getWorld().getPlayers().stream()
+                .filter(p -> p.getLocation().distance(dead.getLocation()) <= 30)
+                .toList();
+
+        if (nearbyPlayers.isEmpty()) {
+            plugin.getLogger().info("Boss " + bossKey + " died but no players were in range for loot.");
+            debug("No players within 30 blocks of boss '" + bossKey + "'.");
             return;
         }
 
@@ -234,9 +213,9 @@ public class BossScheduler implements Listener {
         String lootKey = plugin.getConfig().getString("boss." + bossKey + ".lootKey", "default_item_key");
         String fallbackMatName = plugin.getConfig().getString("boss." + bossKey + ".fallbackMaterial", "DIAMOND");
 
-        for (UUID puid : damagers) {
-            Player p = Bukkit.getPlayer(puid);
-            if (p == null) continue; // offline
+        debug("Found " + nearbyPlayers.size() + " players within loot radius for boss '" + bossKey + "'.");
+
+        for (Player p : nearbyPlayers) {
             // build command
             String finalCmd = lootCommand.replace("%player%", p.getName()).replace("%lootKey%", lootKey).replace("%boss%", bossKey);
             // run command as console
@@ -260,7 +239,7 @@ public class BossScheduler implements Listener {
             }
         }
 
-        plugin.getLogger().info("Distributed loot for boss " + bossKey + " to " + damagers.size() + " players.");
+        plugin.getLogger().info("Distributed loot for boss " + bossKey + " to " + nearbyPlayers.size() + " players.");
     }
 
     private boolean hasInventorySpace(Player p) {
