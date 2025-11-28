@@ -287,7 +287,14 @@ public class BlockersListener implements Listener {
 
     @EventHandler(ignoreCancelled = true)
     public void onItemSpawn(ItemSpawnEvent event) {
-        if (isBanned(event.getEntity().getItemStack())) {
+        ItemStack itemStack = event.getEntity().getItemStack();
+
+        if (itemStack != null && itemStack.getType() == Material.TIPPED_ARROW) {
+            event.getEntity().setItemStack(new ItemStack(Material.ARROW, itemStack.getAmount()));
+            return;
+        }
+
+        if (isBanned(itemStack)) {
             event.setCancelled(true);
         }
     }
