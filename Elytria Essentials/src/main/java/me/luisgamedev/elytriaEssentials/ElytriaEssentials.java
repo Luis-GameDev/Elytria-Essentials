@@ -3,6 +3,7 @@ package me.luisgamedev.elytriaEssentials;
 import me.luisgamedev.elytriaEssentials.BossHandler.BossScheduler;
 import me.luisgamedev.elytriaEssentials.ClassLimiter.ClassArmorModelListener;
 import me.luisgamedev.elytriaEssentials.ClassLimiter.ClassChangeManager;
+import me.luisgamedev.elytriaEssentials.FirstJoin.FirstJoinListener;
 import me.luisgamedev.elytriaEssentials.CooldownAPI.CooldownAdjustCommand;
 import me.luisgamedev.elytriaEssentials.CooldownAPI.CooldownApplyCommand;
 import me.luisgamedev.elytriaEssentials.CooldownAPI.ManaRestoreCommand;
@@ -102,6 +103,7 @@ public final class ElytriaEssentials extends JavaPlugin {
         pm.registerEvents(new TeleportListener(this), this);
         pm.registerEvents(new BlockersListener(), this);
         pm.registerEvents(new ChestLimiterManager(this), this);
+        pm.registerEvents(new FirstJoinListener(this), this);
         clanManager = new ClanManager(this);
         pm.registerEvents(new ClanListener(this, clanManager), this);
         ClanCommand clanCommand = new ClanCommand(this, clanManager);
