@@ -2,6 +2,7 @@ package me.luisgamedev.elytriaEssentials.MMOCore;
 
 import me.luisgamedev.elytriaEssentials.ElytriaEssentials;
 import net.Indyuce.mmocore.api.event.PlayerDataLoadEvent;
+import net.Indyuce.mmocore.api.event.PlayerChangeClassEvent;
 import net.Indyuce.mmocore.api.event.PlayerLevelUpEvent;
 import net.Indyuce.mmocore.api.player.PlayerData;
 import net.Indyuce.mmocore.api.player.profess.PlayerClass;
@@ -58,6 +59,36 @@ public class ProfessionMilestonePermissionListener implements Listener {
             debug("Handling PlayerDataLoadEvent for " + player.getName() + " | class="
                     + event.getData().getProfess() + " | level=" + event.getData().getLevel());
             updateAllMilestones(player, event.getData());
+        }
+    }
+
+    @EventHandler
+    public void onClassChange(PlayerChangeClassEvent event) {
+        Player player = event.getPlayer();
+        PlayerData data = event.getData();
+        if (player == null || data == null) {
+            debug("PlayerChangeClassEvent missing player or data; skipping.");
+            return;
+        }
+
+        debug("PlayerChangeClassEvent for " + player.getName()
+                + " | newClass=" + (event.getNewClass() != null ? event.getNewClass().getId() : "none")
+                + " | level=" + data.getLevel());
+
+        Runnable task = () -> {
+            if (!player.isOnline()) {
+                debug("Player " + player.getName() + " went offline before updating class permissions.");
+                return;
+            }
+
+            updateClassPermissions(player, data, data.getLevel());
+            player.recalculatePermissions();
+        };
+
+        if (Bukkit.isPrimaryThread()) {
+            task.run();
+        } else {
+            Bukkit.getScheduler().runTask(plugin, task);
         }
     }
 
@@ -178,23 +209,22 @@ public class ProfessionMilestonePermissionListener implements Listener {
 
     private void updateClassPermissions(Player player, PlayerData data, int level) {
         PlayerClass playerClass = data.getProfess();
-        if (playerClass == null) {
-            debug("Player " + player.getName() + " has no class; skipping class milestones.");
-            return;
-        }
-
-        String classId = playerClass.getId().toLowerCase(Locale.ROOT);
-        if (!TARGET_CLASSES.contains(classId)) {
-            debug("Class " + classId + " not tracked for milestones; skipping.");
-            return;
-        }
-
         PermissionAttachment attachment = getOrCreateAttachment(player);
-        for (Integer milestone : CLASS_MILESTONES) {
-            boolean hasReached = level >= milestone;
-            attachment.setPermission(buildPermission(classId, milestone), hasReached);
-            debug("Set class permission for " + player.getName() + " | permission=" + buildPermission(classId, milestone)
-                    + " | reached=" + hasReached);
+        String classId = playerClass != null ? playerClass.getId().toLowerCase(Locale.ROOT) : null;
+
+        boolean trackedClass = classId != null && TARGET_CLASSES.contains(classId);
+        if (!trackedClass) {
+            debug("Player " + player.getName() + " has no tracked class; resetting tracked class permissions.");
+        }
+
+        for (String targetClass : TARGET_CLASSES) {
+            boolean isCurrentClass = trackedClass && targetClass.equals(classId);
+            for (Integer milestone : CLASS_MILESTONES) {
+                boolean hasReached = isCurrentClass && level >= milestone;
+                attachment.setPermission(buildPermission(targetClass, milestone), hasReached);
+                debug("Set class permission for " + player.getName() + " | permission=" + buildPermission(targetClass, milestone)
+                        + " | reached=" + hasReached);
+            }
         }
     }
 
