@@ -812,17 +812,17 @@ public class ArrowSkillHandler implements Listener, CommandExecutor, TabComplete
     }
 
     public enum Ability {
-        ARCANE_SHOT("arcaneshot", Particle.ENCHANT, false, 3_000L),
-        FLAMETHORN("flamethorn", Particle.FLAME, true, 5_000L),
-        WEBTRAP("webtrap", Particle.SMOKE, false, 3_000L),
-        TOXIC_ARROWS("toxic_arrows", Particle.COMPOSTER, true, 5_000L),
-        DOOMSHOT("doomshot", Particle.SOUL, false, 3_000L),
-        BLOODARROW("bloodarrow", Particle.DAMAGE_INDICATOR, false, 3_000L),
-        THUNDERSHOT("thundershot", Particle.WAX_OFF, false, 3_000L),
-        FOREST_THORN("forest_thorn", Particle.TOTEM_OF_UNDYING, true, 10_000L),
-        STUNNING_THORN("stunning_thorn", Particle.WITCH, false, 3_000L),
-        PLAGUESHOT("plagueshot", Particle.LARGE_SMOKE, false, 3_000L),
-        NATURES_GRASP("natures_grasp", Particle.HAPPY_VILLAGER, false, 3_000L);
+        ARCANE_SHOT("arcaneshot", Particle.ENCHANT, false, 5_000L),
+        FLAMETHORN("flamethorn", Particle.FLAME, true, 12_000L),
+        WEBTRAP("webtrap", Particle.SMOKE, false, 5_000L),
+        TOXIC_ARROWS("toxic_arrows", Particle.COMPOSTER, true, 12_000L),
+        DOOMSHOT("doomshot", Particle.SOUL, false, 5_000L),
+        BLOODARROW("bloodarrow", Particle.DAMAGE_INDICATOR, false, 5_000L),
+        THUNDERSHOT("thundershot", Particle.WAX_OFF, false, 5_000L),
+        FOREST_THORN("forest_thorn", Particle.TOTEM_OF_UNDYING, true, 15_000L),
+        STUNNING_THORN("stunning_thorn", Particle.WITCH, false, 5_000L),
+        PLAGUESHOT("plagueshot", Particle.LARGE_SMOKE, false, 5_000L),
+        NATURES_GRASP("natures_grasp", Particle.HAPPY_VILLAGER, false, 5_000L);
 
         private final String key;
         private final Particle particle;

@@ -127,6 +127,17 @@ boss:
     location: [-40, -27, 923]  # x,y,z
     world: world
     spawnCommand: "/mm m spawn %boss% %world%,%x%,%y%,%z%" # %boss%, %world%, %x%, %y%, %z%
+    preSpawnNoticeMinutes: 30
+    preSpawnMessage: |
+      &8+-------------------+
+      &5Dark Magic is beginning to erupt
+      &5in the depths...
+      &8+-------------------+
+    spawnMessage: |
+      &8+-------------------+
+      &dThe &5&lAbyssal Manticore
+      &dhas emerged from the depths...
+      &8+-------------------+
     lootCommand: "mi give BOOSTER XP_BOOSTER_1 %player% 1"
     lootKey: "XP_BOOSTER_1"
     fallbackMaterial: "GOLD_INGOT"

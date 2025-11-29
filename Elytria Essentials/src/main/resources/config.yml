@@ -135,7 +135,7 @@ boss:
       &8+-------------------+
     spawnMessage: |
       &8+-------------------+
-      &dThe &5&l%boss%
+      &dThe &5&lAbyssal Manticore
       &dhas emerged from the depths...
       &8+-------------------+
     lootCommand: "mi give BOOSTER XP_BOOSTER_1 %player% 1"
