@@ -5,6 +5,7 @@ import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -22,6 +23,7 @@ public class HologramCommand implements CommandExecutor, TabCompleter {
 
     private static final long CONFIRM_TIMEOUT_MILLIS = 30_000L;
     private static final int TARGET_RANGE = 20;
+    private static final double NEARBY_HOLOGRAM_RADIUS = 3.0;
 
     private final Map<UUID, PendingDeletion> pendingDeletions = new HashMap<>();
     private final PlainTextComponentSerializer plainSerializer = PlainTextComponentSerializer.plainText();
@@ -87,20 +89,27 @@ public class HologramCommand implements CommandExecutor, TabCompleter {
 
     private Entity findTargetHologram(Player player) {
         RayTraceResult result = player.rayTraceEntities(TARGET_RANGE);
-        if (result == null || result.getHitEntity() == null) {
-            return null;
+        if (result != null && isValidHologram(result.getHitEntity())) {
+            return result.getHitEntity();
         }
 
-        Entity entity = result.getHitEntity();
+        Location eyeLocation = player.getEyeLocation();
+        return player.getNearbyEntities(NEARBY_HOLOGRAM_RADIUS, NEARBY_HOLOGRAM_RADIUS, NEARBY_HOLOGRAM_RADIUS).stream()
+                .filter(this::isValidHologram)
+                .min(Comparator.comparingDouble(entity -> entity.getLocation().distanceSquared(eyeLocation)))
+                .orElse(null);
+    }
+
+    private boolean isValidHologram(Entity entity) {
         if (entity instanceof TextDisplay textDisplay && textDisplay.getText() != null) {
-            return textDisplay;
+            return true;
         }
 
         if (entity instanceof ArmorStand armorStand && armorStand.customName() != null) {
-            return armorStand;
+            return true;
         }
 
-        return null;
+        return false;
     }
 
     private Component extractText(Entity entity) {
