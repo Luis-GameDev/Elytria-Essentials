@@ -24,6 +24,7 @@ import me.luisgamedev.elytriaEssentials.ShopSystem.ShopManager;
 import me.luisgamedev.elytriaEssentials.Money.CoinPickupListener;
 import me.luisgamedev.elytriaEssentials.commands.ReloadCommand;
 import me.luisgamedev.elytriaEssentials.commands.PartyCommand;
+import me.luisgamedev.elytriaEssentials.commands.HologramCommand;
 import me.luisgamedev.elytriaEssentials.Soulbinding.SoulbindingManager;
 import me.luisgamedev.elytriaEssentials.MMOCore.PartyIntegrationManager;
 import org.bukkit.Bukkit;
@@ -126,6 +127,14 @@ public final class ElytriaEssentials extends JavaPlugin {
             reloadCommand.setExecutor(new ReloadCommand(this));
         } else {
             getLogger().warning("reload command is not defined in plugin.yml");
+        }
+        PluginCommand hologramCommand = getCommand("hologram");
+        if (hologramCommand != null) {
+            HologramCommand hologramExecutor = new HologramCommand();
+            hologramCommand.setExecutor(hologramExecutor);
+            hologramCommand.setTabCompleter(hologramExecutor);
+        } else {
+            getLogger().warning("hologram command is not defined in plugin.yml");
         }
 
         setupEconomy();
