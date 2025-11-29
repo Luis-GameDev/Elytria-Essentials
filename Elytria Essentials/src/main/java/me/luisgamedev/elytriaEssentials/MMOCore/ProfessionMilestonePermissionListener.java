@@ -58,7 +58,16 @@ public class ProfessionMilestonePermissionListener implements Listener {
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPlayerJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
-        Bukkit.getScheduler().runTask(plugin, () -> refreshPermissions(player));
+        Bukkit.getScheduler().runTask(plugin, () -> {
+            PlayerData data = PlayerData.get(player);
+            if (data == null) {
+                debug("Could not load MMOCore data for " + player.getName() + " on join.");
+                return;
+            }
+
+            debug("Loaded MMOCore data for " + player.getName() + " on join | level=" + data.getLevel());
+            updateAllMilestones(player, data);
+        });
     }
 
     @EventHandler
@@ -151,13 +160,14 @@ public class ProfessionMilestonePermissionListener implements Listener {
     }
 
     private void refreshPermissions(Player player) {
-        if (!PlayerData.has(player)) {
-            debug("Skipping refresh for " + player.getName() + " because PlayerData is not loaded.");
+        PlayerData data = PlayerData.get(player);
+        if (data == null) {
+            debug("Skipping refresh for " + player.getName() + " because PlayerData could not be loaded.");
             return;
         }
 
         debug("Refreshing permissions for " + player.getName());
-        updateAllMilestones(player, PlayerData.get(player));
+        updateAllMilestones(player, data);
     }
 
     private void updateAllMilestones(Player player, PlayerData data) {
