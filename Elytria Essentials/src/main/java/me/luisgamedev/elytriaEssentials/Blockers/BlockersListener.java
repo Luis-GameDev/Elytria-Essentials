@@ -47,6 +47,7 @@ public class BlockersListener implements Listener {
             NamespacedKey.minecraft("tnt_minecart"),
             NamespacedKey.minecraft("mace"),
             NamespacedKey.minecraft("wind_charge"),
+            NamespacedKey.minecraft("shield"),
             NamespacedKey.minecraft("minecart"),
             NamespacedKey.minecraft("furnace_minecart"),
             NamespacedKey.minecraft("chest_minecart"),
@@ -64,7 +65,8 @@ public class BlockersListener implements Listener {
             Material.ENCHANTED_GOLDEN_APPLE,
             Material.TOTEM_OF_UNDYING,
             Material.WIND_CHARGE,
-            Material.MACE
+            Material.MACE,
+            Material.SHIELD
     );
 
     private static boolean isBanned(ItemStack stack) {
