@@ -820,7 +820,7 @@ public class ArrowSkillHandler implements Listener, CommandExecutor, TabComplete
         BLOODARROW("bloodarrow", Particle.DAMAGE_INDICATOR, false, 5_000L),
         THUNDERSHOT("thundershot", Particle.WAX_OFF, false, 5_000L),
         FOREST_THORN("forest_thorn", Particle.TOTEM_OF_UNDYING, true, 15_000L),
-        STUNNING_THORN("stunning_thorn", Particle.WITCH, false, 5_000L),
+        STUNNING_THORN("stunning_thorn", Particle.CRIT, false, 5_000L),
         PLAGUESHOT("plagueshot", Particle.LARGE_SMOKE, false, 5_000L),
         NATURES_GRASP("natures_grasp", Particle.HAPPY_VILLAGER, false, 5_000L);
 

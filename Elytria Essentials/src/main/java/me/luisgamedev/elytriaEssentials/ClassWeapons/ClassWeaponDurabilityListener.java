@@ -73,7 +73,7 @@ public class ClassWeaponDurabilityListener implements Listener {
             return original;
         }
 
-        int unbreaking = original.getEnchantmentLevel(Enchantment.DURABILITY);
+        int unbreaking = original.getEnchantmentLevel(Enchantment.UNBREAKING);
         if (unbreaking > 0 && ThreadLocalRandom.current().nextInt(unbreaking + 1) != 0) {
             return original;
         }
