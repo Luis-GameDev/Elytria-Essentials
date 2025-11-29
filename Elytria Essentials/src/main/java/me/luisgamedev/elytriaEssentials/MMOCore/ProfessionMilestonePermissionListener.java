@@ -13,7 +13,9 @@ import net.luckperms.api.node.Node;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerJoinEvent;
 
 import java.util.List;
 import java.util.Locale;
@@ -51,6 +53,12 @@ public class ProfessionMilestonePermissionListener implements Listener {
         this.luckPerms = LuckPermsProvider.get();
         Bukkit.getOnlinePlayers().forEach(this::refreshPermissions);
         debug("Profession milestone listener initialized; refreshed online players.");
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onPlayerJoin(PlayerJoinEvent event) {
+        Player player = event.getPlayer();
+        Bukkit.getScheduler().runTask(plugin, () -> refreshPermissions(player));
     }
 
     @EventHandler
