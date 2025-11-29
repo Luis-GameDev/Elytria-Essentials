@@ -6,18 +6,18 @@ import net.Indyuce.mmocore.api.event.PlayerChangeClassEvent;
 import net.Indyuce.mmocore.api.event.PlayerLevelUpEvent;
 import net.Indyuce.mmocore.api.player.PlayerData;
 import net.Indyuce.mmocore.api.player.profess.PlayerClass;
+import net.luckperms.api.LuckPerms;
+import net.luckperms.api.LuckPermsProvider;
+import net.luckperms.api.model.user.User;
+import net.luckperms.api.node.Node;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
-import org.bukkit.event.player.PlayerQuitEvent;
-import org.bukkit.permissions.PermissionAttachment;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.logging.Level;
@@ -44,10 +44,11 @@ public class ProfessionMilestonePermissionListener implements Listener {
     );
 
     private final ElytriaEssentials plugin;
-    private final Map<UUID, PermissionAttachment> attachments = new HashMap<>();
+    private final LuckPerms luckPerms;
 
     public ProfessionMilestonePermissionListener(ElytriaEssentials plugin) {
         this.plugin = plugin;
+        this.luckPerms = LuckPermsProvider.get();
         Bukkit.getOnlinePlayers().forEach(this::refreshPermissions);
         debug("Profession milestone listener initialized; refreshed online players.");
     }
@@ -137,15 +138,8 @@ public class ProfessionMilestonePermissionListener implements Listener {
         }
     }
 
-    @EventHandler
-    public void onPlayerQuit(PlayerQuitEvent event) {
-        removeAttachment(event.getPlayer().getUniqueId());
-    }
-
     public void cleanup() {
-        attachments.values().forEach(PermissionAttachment::remove);
-        attachments.clear();
-        debug("Cleared all profession milestone permission attachments.");
+        debug("Profession milestone permission listener cleaned up (persistent permissions retained).");
     }
 
     private void refreshPermissions(Player player) {
@@ -188,7 +182,6 @@ public class ProfessionMilestonePermissionListener implements Listener {
     }
 
     private void updateProfessionPermissions(Player player, String professionId, int level) {
-        PermissionAttachment attachment = getOrCreateAttachment(player);
         List<Integer> milestones = PROFESSION_MILESTONES.get(professionId);
         if (milestones == null) {
             debug("No milestones configured for profession " + professionId + "; skipping update.");
@@ -197,7 +190,7 @@ public class ProfessionMilestonePermissionListener implements Listener {
 
         for (Integer milestone : milestones) {
             boolean hasReached = level >= milestone;
-            attachment.setPermission(buildPermission(professionId, milestone), hasReached);
+            setPersistentPermission(player, buildPermission(professionId, milestone), hasReached);
             debug("Set profession permission for " + player.getName() + " | permission=" + buildPermission(professionId, milestone)
                     + " | reached=" + hasReached);
         }
@@ -209,7 +202,6 @@ public class ProfessionMilestonePermissionListener implements Listener {
 
     private void updateClassPermissions(Player player, PlayerData data, int level) {
         PlayerClass playerClass = data.getProfess();
-        PermissionAttachment attachment = getOrCreateAttachment(player);
         String classId = playerClass != null ? playerClass.getId().toLowerCase(Locale.ROOT) : null;
 
         boolean trackedClass = classId != null && TARGET_CLASSES.contains(classId);
@@ -221,24 +213,27 @@ public class ProfessionMilestonePermissionListener implements Listener {
             boolean isCurrentClass = trackedClass && targetClass.equals(classId);
             for (Integer milestone : CLASS_MILESTONES) {
                 boolean hasReached = isCurrentClass && level >= milestone;
-                attachment.setPermission(buildPermission(targetClass, milestone), hasReached);
+                setPersistentPermission(player, buildPermission(targetClass, milestone), hasReached);
                 debug("Set class permission for " + player.getName() + " | permission=" + buildPermission(targetClass, milestone)
                         + " | reached=" + hasReached);
             }
         }
     }
 
-    private void removeAttachment(UUID uniqueId) {
-        Optional.ofNullable(attachments.remove(uniqueId)).ifPresent(PermissionAttachment::remove);
-        debug("Removed permission attachment for player UUID " + uniqueId);
-    }
-
-    private PermissionAttachment getOrCreateAttachment(Player player) {
-        return attachments.computeIfAbsent(player.getUniqueId(), ignored -> player.addAttachment(plugin));
-    }
-
     private String buildPermission(String professionId, int milestone) {
         return professionId + "." + milestone;
+    }
+
+    private void setPersistentPermission(Player player, String permission, boolean granted) {
+        UUID uniqueId = player.getUniqueId();
+        luckPerms.getUserManager().modifyUser(uniqueId, user -> updateUserPermission(user, permission, granted));
+    }
+
+    private void updateUserPermission(User user, String permission, boolean granted) {
+        user.data().clear(node -> node.getKey().equalsIgnoreCase(permission));
+        if (granted) {
+            user.data().add(Node.builder(permission).value(true).build());
+        }
     }
 
     private void debug(String message) {
