@@ -45,6 +45,13 @@ commands:
     permission: elytria.reload
     default: op
     permission-message: You do not have permission to reload Elytria Essentials.
+  hologram:
+    description: Inspect and delete hologram text entities the player is looking at.
+    usage: |-
+      /hologram
+      /hologram confirm
+    permission: elytria.hologram.manage
+    default: op
 permissions:
   elytria.classchange.bypass:
     description: Allows the player to bypass the class change cooldown.
@@ -54,4 +61,7 @@ permissions:
     default: op
   elytria.arrowskill.use:
     description: Allows the player to apply temporary arrow abilities.
+    default: op
+  elytria.hologram.manage:
+    description: Allows inspecting and deleting hologram text entities.
     default: op
