@@ -14,6 +14,7 @@ import me.luisgamedev.elytriaEssentials.ClanSystem.ClanListener;
 import me.luisgamedev.elytriaEssentials.ClanSystem.ClanManager;
 import me.luisgamedev.elytriaEssentials.ClanSystem.Commands.ClanCommand;
 import me.luisgamedev.elytriaEssentials.ClanSystem.Placeholders.RegisterPlaceholders;
+import me.luisgamedev.elytriaEssentials.ClassWeapons.ClassWeaponDurabilityListener;
 import me.luisgamedev.elytriaEssentials.Music.CustomMusicManager;
 import me.luisgamedev.elytriaEssentials.Protection.FallDamageProtectionManager;
 import me.luisgamedev.elytriaEssentials.HUD.HudManager;
@@ -195,6 +196,9 @@ public final class ElytriaEssentials extends JavaPlugin {
             partyIntegrationManager.initialize();
             if (mmoItemsEnabled) {
                 pm.registerEvents(new CraftingProfessionExpListener(this), this);
+            }
+            if (mmoItemsEnabled) {
+                pm.registerEvents(new ClassWeaponDurabilityListener(), this);
             }
         } else {
             getLogger().info("MMOCore not detected. Class change limitations will be disabled.");
