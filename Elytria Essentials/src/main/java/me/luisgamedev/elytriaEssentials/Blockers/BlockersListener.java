@@ -352,44 +352,44 @@ public class BlockersListener implements Listener {
         event.setCancelled(true);
     }
 
-    @EventHandler(ignoreCancelled = true)
-    public void onPlayerDamageNonAggroHostile(EntityDamageByEntityEvent event) {
-        if (!(event.getEntity() instanceof Monster monster)) {
-            return;
-        }
-
-        Player attacker = null;
-        boolean projectileAttack = false;
-        if (event.getDamager() instanceof Player player) {
-            attacker = player;
-        } else if (event.getDamager() instanceof Projectile projectile && projectile.getShooter() instanceof Player shooter) {
-            attacker = shooter;
-            projectileAttack = true;
-        }
-
-        if (attacker == null) {
-            return;
-        }
-
-        if (attacker.getGameMode() == GameMode.CREATIVE) {
-            return;
-        }
-
-        if (!projectileAttack) {
-            return;
-        }
-
-        LivingEntity target = monster.getTarget();
-        if (target instanceof Player) {
-            return;
-        }
-
-        double reducedDamage = Math.min(event.getDamage(), 0.5);
-        if (reducedDamage <= 0) {
-            reducedDamage = 0.1;
-        }
-
-        event.setDamage(reducedDamage);
-    }
+    //@EventHandler(ignoreCancelled = true)
+    //public void onPlayerDamageNonAggroHostile(EntityDamageByEntityEvent event) {
+    //    if (!(event.getEntity() instanceof Monster monster)) {
+    //        return;
+    //    }
+//
+    //    Player attacker = null;
+    //    boolean projectileAttack = false;
+    //    if (event.getDamager() instanceof Player player) {
+    //        attacker = player;
+    //    } else if (event.getDamager() instanceof Projectile projectile && projectile.getShooter() instanceof Player shooter) {
+    //        attacker = shooter;
+    //        projectileAttack = true;
+    //    }
+//
+    //    if (attacker == null) {
+    //        return;
+    //    }
+//
+    //    if (attacker.getGameMode() == GameMode.CREATIVE) {
+    //        return;
+    //    }
+//
+    //    if (!projectileAttack) {
+    //        return;
+    //    }
+//
+    //    LivingEntity target = monster.getTarget();
+    //    if (target instanceof Player) {
+    //        return;
+    //    }
+//
+    //    double reducedDamage = Math.min(event.getDamage(), 0.5);
+    //    if (reducedDamage <= 0) {
+    //        reducedDamage = 0.1;
+    //    }
+//
+    //    event.setDamage(reducedDamage);
+    //}
 }
 
