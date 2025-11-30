@@ -7,6 +7,7 @@ import me.luisgamedev.elytriaEssentials.FirstJoin.FirstJoinListener;
 import me.luisgamedev.elytriaEssentials.CooldownAPI.CooldownAdjustCommand;
 import me.luisgamedev.elytriaEssentials.CooldownAPI.CooldownApplyCommand;
 import me.luisgamedev.elytriaEssentials.CooldownAPI.ManaRestoreCommand;
+import me.luisgamedev.elytriaEssentials.Crafting.LogRecoveryRecipes;
 import me.luisgamedev.elytriaEssentials.CustomRepair.CustomRepairManager;
 import me.luisgamedev.elytriaEssentials.AnvilRename.CustomRenameListener;
 import me.luisgamedev.elytriaEssentials.OutpostTeleport.TeleportListener;
@@ -232,6 +233,8 @@ public final class ElytriaEssentials extends JavaPlugin {
         } else {
             getLogger().warning("npcshop command is not defined in plugin.yml");
         }
+
+        LogRecoveryRecipes.register(this);
     }
 
     private CommandMap getCommandMap() {
