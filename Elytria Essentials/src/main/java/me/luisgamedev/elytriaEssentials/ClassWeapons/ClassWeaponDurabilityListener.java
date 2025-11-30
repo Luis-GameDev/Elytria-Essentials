@@ -73,18 +73,25 @@ public class ClassWeaponDurabilityListener implements Listener {
             return original;
         }
 
+        int currentDamage = damageable.getDamage();
+        int maxDamageBeforeBreak = maxDurability - 1;
+
+        // Leave the final point of durability to vanilla so we do not double-consume durability
+        // when abilities are cast alongside normal usage (e.g., firing an arrow).
+        if (currentDamage >= maxDamageBeforeBreak) {
+            return original;
+        }
+
         int unbreaking = original.getEnchantmentLevel(Enchantment.UNBREAKING);
         if (unbreaking > 0 && ThreadLocalRandom.current().nextInt(unbreaking + 1) != 0) {
             return original;
         }
 
-        int newDamage = damageable.getDamage() + 1;
-        if (newDamage >= maxDurability) {
-            return null;
-        }
-
-        damageable.setDamage(newDamage);
-        original.setItemMeta(damageable);
-        return original;
+        ItemStack updated = original.clone();
+        Damageable updatedMeta = (Damageable) updated.getItemMeta();
+        int newDamage = Math.min(currentDamage + 1, maxDamageBeforeBreak);
+        updatedMeta.setDamage(newDamage);
+        updated.setItemMeta(updatedMeta);
+        return updated;
     }
 }
