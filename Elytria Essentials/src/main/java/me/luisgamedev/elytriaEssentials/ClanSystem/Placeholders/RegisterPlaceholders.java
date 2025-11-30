@@ -8,10 +8,13 @@ import net.Indyuce.mmocore.MMOCore;
 import net.Indyuce.mmocore.api.player.PlayerData;
 import net.Indyuce.mmocore.api.player.profess.PlayerClass;
 import net.Indyuce.mmocore.api.player.profess.SavedClassInformation;
+import net.Indyuce.mmoitems.MMOItems;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Mob;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.Material;
 
 import java.util.HashMap;
 import java.util.Locale;
@@ -23,6 +26,28 @@ public class RegisterPlaceholders extends PlaceholderExpansion {
     private final ElytriaEssentials plugin;
     private final ClanManager manager;
     private double entityLookupRange = 20.0;
+
+    private static final Map<String, Integer> LEVEL_SYNONYMS = Map.of(
+            "WORN", 1,
+            "FORGED", 10,
+            "HARDENED", 20,
+            "REFINED", 40,
+            "MASTERWORK", 60,
+            "RUNED", 80,
+            "GEMSTONE", 100
+    );
+
+    private static final Map<String, String> CLASS_TO_WEAPON = Map.of(
+            "SCOUT", "LONGBOW",
+            "RANGER", "WARBOW",
+            "GUARDIAN", "GREATSWORD",
+            "PRIEST", "SCEPTER",
+            "ARCHMAGE", "STAFF",
+            "MYSTIC", "FOCUS",
+            "BERSERK", "GREATAXE",
+            "LYKANTHROP", "CLAW",
+            "SHADOWWALKER", "DAGGER"
+    );
 
     public RegisterPlaceholders(ElytriaEssentials plugin, ClanManager manager) {
         this.plugin = plugin;
@@ -69,6 +94,9 @@ public class RegisterPlaceholders extends PlaceholderExpansion {
         if (params.equalsIgnoreCase("clanmembersamount")) {
             return clan != null ? String.valueOf(clan.getMembers().size()) : "0";
         }
+        if (params.equalsIgnoreCase("has_classweapon")) {
+            return String.valueOf(hasUsableClassWeapon(player));
+        }
         return null;
     }
 
@@ -88,6 +116,87 @@ public class RegisterPlaceholders extends PlaceholderExpansion {
         }
 
         return target instanceof Mob;
+    }
+
+    private boolean hasUsableClassWeapon(Player player) {
+        if (!Bukkit.getPluginManager().isPluginEnabled("MMOItems")
+                || !Bukkit.getPluginManager().isPluginEnabled("MMOCore")) {
+            return false;
+        }
+
+        if (!PlayerData.has(player)) {
+            return false;
+        }
+
+        PlayerData playerData = PlayerData.get(player);
+        if (playerData == null) {
+            return false;
+        }
+
+        PlayerClass playerClass = playerData.getProfess();
+        String classKey = resolveClassKey(playerClass);
+        if (classKey == null) {
+            return false;
+        }
+
+        String requiredWeapon = CLASS_TO_WEAPON.get(classKey);
+        if (requiredWeapon == null) {
+            return false;
+        }
+
+        int playerLevel = playerData.getLevel();
+        ItemStack[] contents = player.getInventory().getContents();
+        for (ItemStack itemStack : contents) {
+            if (!isUsableClassWeapon(itemStack, requiredWeapon, playerLevel)) {
+                continue;
+            }
+            return true;
+        }
+        return false;
+    }
+
+    private boolean isUsableClassWeapon(ItemStack itemStack, String requiredWeapon, int playerLevel) {
+        if (itemStack == null || itemStack.getType() == Material.AIR) {
+            return false;
+        }
+
+        String itemId = MMOItems.getID(itemStack);
+        if (itemId == null || itemId.isBlank()) {
+            return false;
+        }
+
+        String normalizedId = itemId.toUpperCase(Locale.ROOT);
+        int separatorIndex = normalizedId.indexOf('_');
+        if (separatorIndex <= 0 || separatorIndex >= normalizedId.length() - 1) {
+            return false;
+        }
+
+        String levelKey = normalizedId.substring(0, separatorIndex);
+        Integer requiredLevel = LEVEL_SYNONYMS.get(levelKey);
+        if (requiredLevel == null || playerLevel < requiredLevel) {
+            return false;
+        }
+
+        String weaponName = normalizedId.substring(separatorIndex + 1);
+        return weaponName.equals(requiredWeapon);
+    }
+
+    private String resolveClassKey(PlayerClass playerClass) {
+        if (playerClass == null) {
+            return null;
+        }
+
+        String classId = playerClass.getId();
+        if (classId != null && !classId.isBlank()) {
+            return classId.toUpperCase(Locale.ROOT);
+        }
+
+        String className = playerClass.getName();
+        if (className != null && !className.isBlank()) {
+            return className.toUpperCase(Locale.ROOT);
+        }
+
+        return null;
     }
 
     public static class MMOClassPlaceholders extends PlaceholderExpansion {
