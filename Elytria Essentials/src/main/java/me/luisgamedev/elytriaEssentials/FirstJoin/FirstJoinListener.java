@@ -19,8 +19,8 @@ public class FirstJoinListener implements Listener {
     @EventHandler(priority = EventPriority.MONITOR)
     public void onFirstJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
+        Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "recipe give " + player.getName() + " *");
         if (!player.hasPlayedBefore()) {
-            Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "recipe give " + player.getName() + " *");
             Bukkit.getScheduler().runTask(plugin, () -> player.kickPlayer("Profile created. Reconnect to play."));
         }
     }
