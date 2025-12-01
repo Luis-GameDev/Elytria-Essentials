@@ -33,6 +33,12 @@ name: ni12126628_1_DB
 # Debug
 debug-mode: true
 
+# Level-up broadcast
+level-up-broadcast:
+  enabled: true
+  milestones: [20, 50, 80, 100]
+  message: "&d{player} reached level {level} in {type} {name}!"
+
 # Clan System
 max-clan-tag-length: 3
 max-clan-name-length: 25

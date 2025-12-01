@@ -23,6 +23,7 @@ import me.luisgamedev.elytriaEssentials.ShopSystem.ShopCommand;
 import me.luisgamedev.elytriaEssentials.ShopSystem.ShopListener;
 import me.luisgamedev.elytriaEssentials.ShopSystem.ShopManager;
 import me.luisgamedev.elytriaEssentials.Money.CoinPickupListener;
+import me.luisgamedev.elytriaEssentials.MMOCore.LevelMilestoneBroadcastListener;
 import me.luisgamedev.elytriaEssentials.commands.ReloadCommand;
 import me.luisgamedev.elytriaEssentials.commands.PartyCommand;
 import me.luisgamedev.elytriaEssentials.commands.HologramCommand;
@@ -202,6 +203,7 @@ public final class ElytriaEssentials extends JavaPlugin {
             armorModelListener.refreshOnlinePlayers();
             professionMilestonePermissionListener = new ProfessionMilestonePermissionListener(this);
             pm.registerEvents(professionMilestonePermissionListener, this);
+            pm.registerEvents(new LevelMilestoneBroadcastListener(this), this);
             partyIntegrationManager = new PartyIntegrationManager(this);
             partyIntegrationManager.initialize();
             if (mmoItemsEnabled) {
