@@ -11,6 +11,8 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.entity.Player;
 
+import java.util.Locale;
+
 public class CooldownApplyCommand implements CommandExecutor {
 
     @Override
@@ -26,6 +28,7 @@ public class CooldownApplyCommand implements CommandExecutor {
         }
 
         final String abilityId = args[0];
+        final String normalizedAbilityId = abilityId.toLowerCase(Locale.ROOT);
         double seconds;
         try {
             seconds = Double.parseDouble(args[1]);
@@ -63,7 +66,7 @@ public class CooldownApplyCommand implements CommandExecutor {
         ClassSkill classSkill = null;
         try {
             if (mmocore.getProfess() != null) {
-                classSkill = mmocore.getProfess().getSkill(abilityId);
+                classSkill = mmocore.getProfess().getSkill(normalizedAbilityId);
             }
         } catch (Throwable ignored) {
         }
@@ -71,7 +74,7 @@ public class CooldownApplyCommand implements CommandExecutor {
         if (classSkill != null) {
             map.applyCooldown(classSkill, seconds);
         } else {
-            map.applyCooldown(abilityId, seconds);
+            map.applyCooldown(normalizedAbilityId, seconds);
         }
 
         sender.sendMessage("§aApplied " + seconds + "s cooldown to '" + abilityId + "' for " + playerName + ".");
