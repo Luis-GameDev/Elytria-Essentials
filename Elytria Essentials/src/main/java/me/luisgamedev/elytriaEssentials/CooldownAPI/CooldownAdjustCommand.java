@@ -1,13 +1,15 @@
 package me.luisgamedev.elytriaEssentials.CooldownAPI;
 
 import io.lumine.mythic.lib.api.player.MMOPlayerData;
-import io.lumine.mythic.lib.player.cooldown.CooldownMap;
 import io.lumine.mythic.lib.player.cooldown.CooldownInfo;
+import io.lumine.mythic.lib.player.cooldown.CooldownMap;
 import net.Indyuce.mmocore.api.player.PlayerData;
 import net.Indyuce.mmocore.skill.ClassSkill;
 import org.bukkit.Bukkit;
 import org.bukkit.command.*;
 import org.bukkit.entity.Player;
+
+import java.util.Locale;
 
 public class CooldownAdjustCommand implements CommandExecutor {
 
@@ -25,6 +27,7 @@ public class CooldownAdjustCommand implements CommandExecutor {
         }
 
         final String abilityId = args[0];
+        final String normalizedAbilityId = abilityId.toLowerCase(Locale.ROOT);
         double percent;
         try {
             percent = Double.parseDouble(args[1]);
@@ -56,7 +59,7 @@ public class CooldownAdjustCommand implements CommandExecutor {
         ClassSkill classSkill = null;
         try {
             if (mmocore.getProfess() != null)
-                classSkill = mmocore.getProfess().getSkill(abilityId);
+                classSkill = mmocore.getProfess().getSkill(normalizedAbilityId);
         } catch (Throwable ignored) {}
 
         boolean onCd;
@@ -66,8 +69,8 @@ public class CooldownAdjustCommand implements CommandExecutor {
             onCd = map.isOnCooldown(classSkill);
             info  = map.getInfo(classSkill);
         } else {
-            onCd = map.isOnCooldown(abilityId);
-            info = map.getInfo(abilityId);
+            onCd = map.isOnCooldown(normalizedAbilityId);
+            info = map.getInfo(normalizedAbilityId);
         }
 
         if (!onCd || info == null) {
