@@ -52,6 +52,11 @@ commands:
       /hologram confirm
     permission: elytria.hologram.manage
     default: op
+  firstjoinitems:
+    description: Manage items granted to new players on first join.
+    usage: /firstjoinitems [add|gui]
+    permission: elytria.firstjoinitems.manage
+    default: op
 permissions:
   elytria.classchange.bypass:
     description: Allows the player to bypass the class change cooldown.
@@ -64,4 +69,7 @@ permissions:
     default: op
   elytria.hologram.manage:
     description: Allows inspecting and deleting hologram text entities.
+    default: op
+  elytria.firstjoinitems.manage:
+    description: Allows managing items given to players on their first join.
     default: op
