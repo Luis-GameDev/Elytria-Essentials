@@ -4,6 +4,9 @@ import me.luisgamedev.elytriaEssentials.BossHandler.BossScheduler;
 import me.luisgamedev.elytriaEssentials.ClassLimiter.ClassArmorModelListener;
 import me.luisgamedev.elytriaEssentials.ClassLimiter.ClassChangeManager;
 import me.luisgamedev.elytriaEssentials.FirstJoin.FirstJoinListener;
+import me.luisgamedev.elytriaEssentials.FirstJoin.FirstJoinItemCommand;
+import me.luisgamedev.elytriaEssentials.FirstJoin.FirstJoinItemManager;
+import me.luisgamedev.elytriaEssentials.FirstJoin.FirstJoinItemMenu;
 import me.luisgamedev.elytriaEssentials.CooldownAPI.CooldownAdjustCommand;
 import me.luisgamedev.elytriaEssentials.CooldownAPI.CooldownApplyCommand;
 import me.luisgamedev.elytriaEssentials.CooldownAPI.ManaRestoreCommand;
@@ -76,6 +79,7 @@ public final class ElytriaEssentials extends JavaPlugin {
     private BossScheduler bs;
     private SoulbindingManager soulbindingManager;
     private PartyIntegrationManager partyIntegrationManager;
+    private FirstJoinItemManager firstJoinItemManager;
 
     @Override
     public void onEnable() {
@@ -107,7 +111,18 @@ public final class ElytriaEssentials extends JavaPlugin {
         pm.registerEvents(new TeleportListener(this), this);
         pm.registerEvents(new BlockersListener(), this);
         pm.registerEvents(new ChestLimiterManager(this), this);
-        pm.registerEvents(new FirstJoinListener(this), this);
+        firstJoinItemManager = new FirstJoinItemManager(this);
+        FirstJoinItemMenu firstJoinItemMenu = new FirstJoinItemMenu(this, firstJoinItemManager);
+        pm.registerEvents(new FirstJoinListener(this, firstJoinItemManager), this);
+        pm.registerEvents(firstJoinItemMenu, this);
+        FirstJoinItemCommand firstJoinItemCommand = new FirstJoinItemCommand(this, firstJoinItemManager, firstJoinItemMenu);
+        PluginCommand firstJoinCommand = getCommand("firstjoinitems");
+        if (firstJoinCommand != null) {
+            firstJoinCommand.setExecutor(firstJoinItemCommand);
+            firstJoinCommand.setTabCompleter(firstJoinItemCommand);
+        } else {
+            getLogger().warning("firstjoinitems command is not defined in plugin.yml");
+        }
         clanManager = new ClanManager(this);
         pm.registerEvents(new ClanListener(this, clanManager), this);
         ClanCommand clanCommand = new ClanCommand(this, clanManager);
