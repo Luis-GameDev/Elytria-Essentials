@@ -24,7 +24,6 @@ public final class LogRecoveryRecipes {
                 new LogRecipe(Material.DARK_OAK_WOOD, Material.DARK_OAK_LOG, "dark_oak_log_from_wood"),
                 new LogRecipe(Material.MANGROVE_WOOD, Material.MANGROVE_LOG, "mangrove_log_from_wood"),
                 new LogRecipe(Material.CHERRY_WOOD, Material.CHERRY_LOG, "cherry_log_from_wood"),
-                new LogRecipe(Material.STRIPPED_BAMBOO_BLOCK, Material.BAMBOO_BLOCK, "bamboo_block_from_stripped_block"),
                 new LogRecipe(Material.CRIMSON_HYPHAE, Material.CRIMSON_STEM, "crimson_stem_from_hyphae"),
                 new LogRecipe(Material.WARPED_HYPHAE, Material.WARPED_STEM, "warped_stem_from_hyphae"),
                 new LogRecipe(Material.PALE_OAK_WOOD, Material.PALE_OAK_LOG, "pale_oak_log_from_wood")
