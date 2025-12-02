@@ -121,9 +121,9 @@ public final class ElytriaEssentials extends JavaPlugin {
         } else {
             getLogger().warning("party command is not defined in plugin.yml");
         }
-        getCommand("mmocd").setExecutor(new CooldownAdjustCommand());
-        getCommand("mmocdadd").setExecutor(new CooldownApplyCommand());
-        getCommand("mmomana").setExecutor(new ManaRestoreCommand());
+        getCommand("mmocd").setExecutor(new CooldownAdjustCommand(this));
+        getCommand("mmocdadd").setExecutor(new CooldownApplyCommand(this));
+        getCommand("mmomana").setExecutor(new ManaRestoreCommand(this));
         PluginCommand reloadCommand = getCommand("reload");
         if (reloadCommand != null) {
             reloadCommand.setExecutor(new ReloadCommand(this));

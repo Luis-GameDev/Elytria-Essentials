@@ -2,6 +2,7 @@ package me.luisgamedev.elytriaEssentials.CooldownAPI;
 
 import io.lumine.mythic.lib.api.player.MMOPlayerData;
 import io.lumine.mythic.lib.player.cooldown.CooldownMap;
+import me.luisgamedev.elytriaEssentials.ElytriaEssentials;
 import net.Indyuce.mmocore.api.player.PlayerData;
 import net.Indyuce.mmocore.skill.ClassSkill;
 import org.bukkit.Bukkit;
@@ -14,6 +15,12 @@ import org.bukkit.entity.Player;
 import java.util.Locale;
 
 public class CooldownApplyCommand implements CommandExecutor {
+
+    private final ElytriaEssentials plugin;
+
+    public CooldownApplyCommand(ElytriaEssentials plugin) {
+        this.plugin = plugin;
+    }
 
     @Override
     public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
@@ -73,11 +80,19 @@ public class CooldownApplyCommand implements CommandExecutor {
 
         if (classSkill != null) {
             map.applyCooldown(classSkill, seconds);
+            debug("Applied " + seconds + "s cooldown to class skill '" + abilityId + "' for " + playerName + ".");
         } else {
             map.applyCooldown(normalizedAbilityId, seconds);
+            debug("Applied " + seconds + "s cooldown to ability id '" + abilityId + "' for " + playerName + ".");
         }
 
         sender.sendMessage("§aApplied " + seconds + "s cooldown to '" + abilityId + "' for " + playerName + ".");
         return true;
+    }
+
+    private void debug(String message) {
+        if (plugin.getConfig().getBoolean("debug-mode", false)) {
+            plugin.getLogger().info("[CooldownApply][DEBUG] " + message);
+        }
     }
 }
