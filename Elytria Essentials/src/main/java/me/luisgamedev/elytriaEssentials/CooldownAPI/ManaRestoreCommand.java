@@ -1,6 +1,7 @@
 package me.luisgamedev.elytriaEssentials.CooldownAPI;
 
 import io.lumine.mythic.lib.api.stat.StatInstance;
+import me.luisgamedev.elytriaEssentials.ElytriaEssentials;
 import net.Indyuce.mmocore.api.player.PlayerData;
 import net.Indyuce.mmocore.api.player.stats.PlayerStats;
 import net.Indyuce.mmocore.api.player.stats.StatType;
@@ -12,6 +13,12 @@ import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.entity.Player;
 
 public class ManaRestoreCommand implements CommandExecutor {
+
+    private final ElytriaEssentials plugin;
+
+    public ManaRestoreCommand(ElytriaEssentials plugin) {
+        this.plugin = plugin;
+    }
 
     @Override
     public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
@@ -69,6 +76,14 @@ public class ManaRestoreCommand implements CommandExecutor {
 
         mmocore.setMana(newMana);
 
+        debug("Restored " + amount + " mana to " + playerName + " (new mana=" + newMana + ", max mana=" + maxMana + ").");
+
         return true;
+    }
+
+    private void debug(String message) {
+        if (plugin.getConfig().getBoolean("debug-mode", false)) {
+            plugin.getLogger().info("[ManaRestore][DEBUG] " + message);
+        }
     }
 }

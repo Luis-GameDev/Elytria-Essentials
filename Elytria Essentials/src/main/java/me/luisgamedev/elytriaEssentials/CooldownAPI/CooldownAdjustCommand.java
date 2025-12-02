@@ -3,6 +3,7 @@ package me.luisgamedev.elytriaEssentials.CooldownAPI;
 import io.lumine.mythic.lib.api.player.MMOPlayerData;
 import io.lumine.mythic.lib.player.cooldown.CooldownInfo;
 import io.lumine.mythic.lib.player.cooldown.CooldownMap;
+import me.luisgamedev.elytriaEssentials.ElytriaEssentials;
 import net.Indyuce.mmocore.api.player.PlayerData;
 import net.Indyuce.mmocore.skill.ClassSkill;
 import org.bukkit.Bukkit;
@@ -12,6 +13,12 @@ import org.bukkit.entity.Player;
 import java.util.Locale;
 
 public class CooldownAdjustCommand implements CommandExecutor {
+
+    private final ElytriaEssentials plugin;
+
+    public CooldownAdjustCommand(ElytriaEssentials plugin) {
+        this.plugin = plugin;
+    }
 
     @Override
     public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
@@ -83,11 +90,19 @@ public class CooldownAdjustCommand implements CommandExecutor {
         if (percent >= 100.0) {
             info.reduceRemainingCooldown(1.0);
             info.reduceInitialCooldown(1.0);
+            debug("Removed cooldown for '" + abilityId + "' for " + playerName + " (percent=" + percent + ", classSkill=" + (classSkill != null) + ").");
         } else {
             info.reduceRemainingCooldown(fraction);
             info.reduceInitialCooldown(fraction);
+            debug("Reduced cooldown for '" + abilityId + "' by " + percent + "% for " + playerName + " (classSkill=" + (classSkill != null) + ").");
         }
 
         return true;
+    }
+
+    private void debug(String message) {
+        if (plugin.getConfig().getBoolean("debug-mode", false)) {
+            plugin.getLogger().info("[CooldownAdjust][DEBUG] " + message);
+        }
     }
 }
