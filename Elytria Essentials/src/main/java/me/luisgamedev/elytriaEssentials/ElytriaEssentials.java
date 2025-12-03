@@ -10,6 +10,7 @@ import me.luisgamedev.elytriaEssentials.FirstJoin.FirstJoinItemMenu;
 import me.luisgamedev.elytriaEssentials.CooldownAPI.CooldownAdjustCommand;
 import me.luisgamedev.elytriaEssentials.CooldownAPI.CooldownApplyCommand;
 import me.luisgamedev.elytriaEssentials.CooldownAPI.ManaRestoreCommand;
+import me.luisgamedev.elytriaEssentials.CooldownAPI.CooldownListCommand;
 import me.luisgamedev.elytriaEssentials.Crafting.LogRecoveryRecipes;
 import me.luisgamedev.elytriaEssentials.CustomRepair.CustomRepairManager;
 import me.luisgamedev.elytriaEssentials.AnvilRename.CustomRenameListener;
@@ -138,6 +139,7 @@ public final class ElytriaEssentials extends JavaPlugin {
         }
         getCommand("mmocd").setExecutor(new CooldownAdjustCommand(this));
         getCommand("mmocdadd").setExecutor(new CooldownApplyCommand(this));
+        getCommand("mmocdlist").setExecutor(new CooldownListCommand(this));
         getCommand("mmomana").setExecutor(new ManaRestoreCommand(this));
         PluginCommand reloadCommand = getCommand("reload");
         if (reloadCommand != null) {
