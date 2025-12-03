@@ -34,6 +34,11 @@ commands:
     usage: /mmocdadd <abilityId> <seconds> <playerName>
     permission: elytria.cooldownAPI.use
     default: op
+  mmocdlist:
+    description: Show all active cooldowns for a player.
+    usage: /mmocdlist <playerName>
+    permission: elytria.cooldownAPI.use
+    default: op
   mmomana:
     description: Restore a specific amount of MMOCore mana to a player (console-only).
     usage: /mmomana <amount> <playerName>
