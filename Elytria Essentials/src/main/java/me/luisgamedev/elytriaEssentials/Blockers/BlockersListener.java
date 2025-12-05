@@ -1,5 +1,6 @@
 package me.luisgamedev.elytriaEssentials.Blockers;
 
+import org.bukkit.ChatColor;
 import org.bukkit.GameMode;
 import org.bukkit.Keyed;
 import org.bukkit.Material;
@@ -33,6 +34,7 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.PlayerInventory;
 
 import java.util.EnumSet;
+import java.util.Locale;
 import java.util.Set;
 
 public class BlockersListener implements Listener {
@@ -350,6 +352,23 @@ public class BlockersListener implements Listener {
     @EventHandler
     public void onLingeringPotionUse(LingeringPotionSplashEvent event) {
         event.setCancelled(true);
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onBlockedCommand(PlayerCommandPreprocessEvent event) {
+        if (event.getPlayer().isOp()) {
+            return;
+        }
+
+        String commandLabel = event.getMessage().split("\\s+", 2)[0];
+        commandLabel = commandLabel.startsWith("/") ? commandLabel.substring(1) : commandLabel;
+        String normalized = commandLabel.toLowerCase(Locale.ROOT);
+
+        if (normalized.equals("pl") || normalized.equals("plugins") || normalized.equals("plugin") ||
+                normalized.equals("bukkit:pl") || normalized.equals("bukkit:plugins") || normalized.equals("bukkit:plugin")) {
+            event.setCancelled(true);
+            event.getPlayer().sendMessage(ChatColor.RED + "Unknown command.");
+        }
     }
 
     //@EventHandler(ignoreCancelled = true)
