@@ -22,16 +22,19 @@ import java.io.File;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 public class CraftingProfessionExpListener implements Listener {
     private static final Set<String> SUPPORTED_PROFESSIONS = Set.of("fishing", "mining", "farming", "woodcutting");
 
     private final ElytriaEssentials plugin;
+    private final boolean debug;
     private final Map<String, ProfessionReward> rewards = new HashMap<>();
 
     public CraftingProfessionExpListener(ElytriaEssentials plugin) {
         this.plugin = plugin;
+        this.debug = plugin.getConfig().getBoolean("debug-mode", false);
         loadRewards();
     }
 
@@ -40,8 +43,14 @@ public class CraftingProfessionExpListener implements Listener {
         YamlConfiguration config = YamlConfiguration.loadConfiguration(file);
         rewards.clear();
 
-        for (String professionId : SUPPORTED_PROFESSIONS) {
-            ConfigurationSection section = config.getConfigurationSection(professionId);
+        for (String sectionKey : config.getKeys(false)) {
+            String professionId = resolveProfession(sectionKey);
+            if (professionId == null) {
+                debug("Skipping unsupported profession section '" + sectionKey + "'.");
+                continue;
+            }
+
+            ConfigurationSection section = config.getConfigurationSection(sectionKey);
             if (section == null) {
                 continue;
             }
@@ -62,6 +71,7 @@ public class CraftingProfessionExpListener implements Listener {
                     continue;
                 }
                 rewards.put(itemId.toUpperCase(Locale.ROOT), new ProfessionReward(profession, exp));
+                debug("Loaded reward for profession '" + profession.getId() + "': " + itemId + " -> " + exp + " EXP per craft.");
             }
         }
     }
@@ -104,6 +114,8 @@ public class CraftingProfessionExpListener implements Listener {
         double totalExp = reward.expPerCraft() * craftsCompleted;
         PlayerProfessions professions = PlayerData.get(player).getCollectionSkills();
         professions.giveExperience(reward.profession(), totalExp, EXPSource.OTHER);
+        debug("Awarded " + totalExp + " EXP to " + player.getName() + " for crafting " + craftsCompleted + "x " + mmoItemId
+                + " (profession: " + reward.profession().getId() + ").");
     }
 
     private int countCrafts(CraftItemEvent event) {
@@ -132,6 +144,20 @@ public class CraftingProfessionExpListener implements Listener {
         }
 
         return Math.max(0, maxCrafts);
+    }
+
+    private String resolveProfession(String configKey) {
+        String lowerKey = configKey.toLowerCase(Locale.ROOT);
+        Optional<String> matched = SUPPORTED_PROFESSIONS.stream()
+                .filter(profession -> profession.equalsIgnoreCase(lowerKey))
+                .findFirst();
+        return matched.orElse(null);
+    }
+
+    private void debug(String message) {
+        if (debug) {
+            plugin.getLogger().info("[CraftingProfessionExp] " + message);
+        }
     }
 
     private record ProfessionReward(Profession profession, double expPerCraft) {}
