@@ -248,17 +248,31 @@ public class ProfessionMilestonePermissionListener implements Listener {
     }
 
     private void updateUserPermission(User user, String permission, boolean granted) {
-        boolean alreadyMatches = user.data().toCollection().stream()
-                .anyMatch(node -> node.getKey().equalsIgnoreCase(permission) && node.getValue() == granted);
+        boolean hasGrant = user.data().toCollection().stream()
+                .anyMatch(node -> node.getKey().equalsIgnoreCase(permission) && node.getValue());
+        boolean hasDeny = user.data().toCollection().stream()
+                .anyMatch(node -> node.getKey().equalsIgnoreCase(permission) && !node.getValue());
 
-        if (alreadyMatches) {
+        if (granted) {
+            if (hasGrant) {
+                return;
+            }
+
+            // Remove any conflicting denies before applying the grant.
+            if (hasDeny) {
+                user.data().clear(node -> node.getKey().equalsIgnoreCase(permission) && !node.getValue());
+            }
+
+            user.data().add(Node.builder(permission).value(true).build());
             return;
         }
 
-        user.data().clear(node -> node.getKey().equalsIgnoreCase(permission));
-        if (granted) {
-            user.data().add(Node.builder(permission).value(true).build());
+        // If the permission is already absent or explicitly denied, leave it untouched.
+        if (!hasGrant) {
+            return;
         }
+
+        user.data().clear(node -> node.getKey().equalsIgnoreCase(permission) && node.getValue());
     }
 
     private void debug(String message) {
