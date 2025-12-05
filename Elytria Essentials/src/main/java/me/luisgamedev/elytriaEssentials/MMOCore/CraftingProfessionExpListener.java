@@ -79,35 +79,47 @@ public class CraftingProfessionExpListener implements Listener {
     @EventHandler(priority = EventPriority.MONITOR)
     public void onCraftItem(CraftItemEvent event) {
         if (event.isCancelled()) {
+            debug("Craft event cancelled; skipping EXP.");
             return;
         }
 
         ItemStack crafted = event.getCurrentItem();
         if (crafted == null || crafted.getType().isAir()) {
+            debug("No crafted item found in event; skipping EXP.");
             return;
         }
 
-        NBTItem nbtItem = NBTItem.get(crafted);
-        String mmoItemId = nbtItem == null ? null : MMOUtils.getID(nbtItem);
+        String mmoItemId = resolveItemId(crafted);
+        if (mmoItemId == null && event.getRecipe() != null) {
+            // Some servers report an empty cursor item but still expose the recipe result.
+            mmoItemId = resolveItemId(event.getRecipe().getResult());
+            debug("Resolved MMO item ID from recipe result: " + mmoItemId);
+        }
+
         if (mmoItemId == null) {
+            debug("Crafted item has no MMOItems ID; skipping EXP.");
             return;
         }
 
         ProfessionReward reward = rewards.get(mmoItemId.toUpperCase(Locale.ROOT));
         if (reward == null) {
+            debug("No reward configured for MMO item ID '" + mmoItemId + "'. Known rewards: " + rewards.keySet());
             return;
         }
 
         if (!(event.getWhoClicked() instanceof Player player)) {
+            debug("Crafting entity is not a player; skipping EXP.");
             return;
         }
 
         if (!PlayerData.has(player)) {
+            debug("PlayerData not loaded for " + player.getName() + "; skipping EXP.");
             return;
         }
 
         int craftsCompleted = countCrafts(event);
         if (craftsCompleted <= 0) {
+            debug("Unable to determine crafted amount for " + mmoItemId + "; skipping EXP.");
             return;
         }
 
@@ -116,6 +128,13 @@ public class CraftingProfessionExpListener implements Listener {
         professions.giveExperience(reward.profession(), totalExp, EXPSource.OTHER);
         debug("Awarded " + totalExp + " EXP to " + player.getName() + " for crafting " + craftsCompleted + "x " + mmoItemId
                 + " (profession: " + reward.profession().getId() + ").");
+    }
+
+    private String resolveItemId(ItemStack crafted) {
+        NBTItem nbtItem = NBTItem.get(crafted);
+        String mmoItemId = nbtItem == null ? null : MMOUtils.getID(nbtItem);
+        debug("Resolved MMO item ID '" + mmoItemId + "' from crafted stack " + crafted.getType() + ".");
+        return mmoItemId;
     }
 
     private int countCrafts(CraftItemEvent event) {
