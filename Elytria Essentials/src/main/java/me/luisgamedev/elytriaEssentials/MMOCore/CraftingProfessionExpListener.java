@@ -2,6 +2,7 @@ package me.luisgamedev.elytriaEssentials.MMOCore;
 
 import io.lumine.mythic.lib.api.item.NBTItem;
 import me.luisgamedev.elytriaEssentials.ElytriaEssentials;
+import net.Indyuce.mmoitems.api.event.CraftMMOItemEvent;
 import net.Indyuce.mmoitems.util.MMOUtils;
 import net.Indyuce.mmocore.MMOCore;
 import net.Indyuce.mmocore.api.player.PlayerData;
@@ -37,7 +38,7 @@ public class CraftingProfessionExpListener implements Listener {
         this.debug = plugin.getConfig().getBoolean("debug-mode", false);
         loadRewards();
     }
-
+    
     private void loadRewards() {
         File file = new File(plugin.getDataFolder(), "exp-rewards.yml");
         YamlConfiguration config = YamlConfiguration.loadConfiguration(file);
@@ -77,7 +78,7 @@ public class CraftingProfessionExpListener implements Listener {
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
-    public void onCraftItem(CraftItemEvent event) {
+    public void onCraftItem(CraftMMOItemEvent event) {
         if (event.isCancelled()) {
             debug("Craft event cancelled; skipping EXP.");
             return;
