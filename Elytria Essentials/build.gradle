@@ -31,7 +31,8 @@ repositories {
 dependencies {
     compileOnly("io.papermc.paper:paper-api:1.21.4-R0.1-SNAPSHOT")
     compileOnly files("libs/Citizens-2.0.33-b3399.jar")
-    compileOnly files("libs/MythicMobsPremium-5.10.1-SNAPSHOT.jar")
+    //compileOnly files("libs/MythicMobsPremium-5.10.1-SNAPSHOT.jar")
+    compileOnly files("libs/MythicMobsPremium-5.11.0.jar")
     compileOnly("net.luckperms:api:5.4")
     compileOnly("me.clip:placeholderapi:2.11.5")
     compileOnly("com.mysql:mysql-connector-j:8.3.0")
