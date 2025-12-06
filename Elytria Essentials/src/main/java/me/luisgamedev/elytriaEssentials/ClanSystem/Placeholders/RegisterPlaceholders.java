@@ -118,7 +118,8 @@ public class RegisterPlaceholders extends PlaceholderExpansion {
             return true;
         }
 
-        double toleranceRadians = Math.toRadians(entityLookAngleToleranceDegrees);
+        double defaultToleranceRadians = Math.toRadians(entityLookAngleToleranceDegrees);
+        double distantToleranceRadians = Math.toRadians(7.0);
         Location eyeLocation = player.getEyeLocation();
         Vector direction = eyeLocation.getDirection();
 
@@ -131,6 +132,8 @@ public class RegisterPlaceholders extends PlaceholderExpansion {
             if (toEntity.lengthSquared() == 0) {
                 continue;
             }
+
+            double toleranceRadians = toEntity.lengthSquared() > 100 ? distantToleranceRadians : defaultToleranceRadians;
 
             if (direction.angle(toEntity) <= toleranceRadians) {
                 return true;
