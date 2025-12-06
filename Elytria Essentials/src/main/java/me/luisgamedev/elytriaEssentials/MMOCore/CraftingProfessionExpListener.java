@@ -15,8 +15,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.event.inventory.CraftItemEvent;
-import org.bukkit.inventory.CraftingInventory;
 import org.bukkit.inventory.ItemStack;
 
 import java.io.File;
@@ -84,18 +82,13 @@ public class CraftingProfessionExpListener implements Listener {
             return;
         }
 
-        ItemStack crafted = event.getCurrentItem();
+        ItemStack crafted = event.getResult();
         if (crafted == null || crafted.getType().isAir()) {
             debug("No crafted item found in event; skipping EXP.");
             return;
         }
 
         String mmoItemId = resolveItemId(crafted);
-        if (mmoItemId == null && event.getRecipe() != null) {
-            // Some servers report an empty cursor item but still expose the recipe result.
-            mmoItemId = resolveItemId(event.getRecipe().getResult());
-            debug("Resolved MMO item ID from recipe result: " + mmoItemId);
-        }
 
         if (mmoItemId == null) {
             debug("Crafted item has no MMOItems ID; skipping EXP.");
@@ -108,10 +101,7 @@ public class CraftingProfessionExpListener implements Listener {
             return;
         }
 
-        if (!(event.getWhoClicked() instanceof Player player)) {
-            debug("Crafting entity is not a player; skipping EXP.");
-            return;
-        }
+        Player player = event.getPlayer();
 
         if (!PlayerData.has(player)) {
             debug("PlayerData not loaded for " + player.getName() + "; skipping EXP.");
@@ -138,32 +128,9 @@ public class CraftingProfessionExpListener implements Listener {
         return mmoItemId;
     }
 
-    private int countCrafts(CraftItemEvent event) {
-        ItemStack result = event.getRecipe() != null ? event.getRecipe().getResult() : null;
-        int resultAmount = result != null ? Math.max(1, result.getAmount()) : 1;
-
-        if (!event.isShiftClick()) {
-            ItemStack current = event.getCurrentItem();
-            int amount = current != null ? current.getAmount() : resultAmount;
-            return Math.max(1, amount / resultAmount);
-        }
-
-        CraftingInventory inventory = event.getInventory();
-        ItemStack[] matrix = inventory.getMatrix();
-        int maxCrafts = Integer.MAX_VALUE;
-
-        for (ItemStack ingredient : matrix) {
-            if (ingredient == null || ingredient.getType().isAir()) {
-                continue;
-            }
-            maxCrafts = Math.min(maxCrafts, ingredient.getAmount());
-        }
-
-        if (maxCrafts == Integer.MAX_VALUE) {
-            return 0;
-        }
-
-        return Math.max(0, maxCrafts);
+    private int countCrafts(CraftMMOItemEvent event) {
+        ItemStack result = event.getResult();
+        return Math.max(1, result != null ? result.getAmount() : 1);
     }
 
     private String resolveProfession(String configKey) {
