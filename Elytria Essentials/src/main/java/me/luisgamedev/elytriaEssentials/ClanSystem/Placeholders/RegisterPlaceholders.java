@@ -15,6 +15,8 @@ import org.bukkit.entity.Mob;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.Material;
+import org.bukkit.Location;
+import org.bukkit.util.Vector;
 
 import java.util.HashMap;
 import java.util.Locale;
@@ -26,6 +28,7 @@ public class RegisterPlaceholders extends PlaceholderExpansion {
     private final ElytriaEssentials plugin;
     private final ClanManager manager;
     private double entityLookupRange = 20.0;
+    private double entityLookAngleToleranceDegrees = 15.0;
 
     private static final Map<String, Integer> LEVEL_SYNONYMS = Map.of(
             "WORN", 1,
@@ -56,6 +59,10 @@ public class RegisterPlaceholders extends PlaceholderExpansion {
 
     public void setEntityLookupRange(double entityLookupRange) {
         this.entityLookupRange = Math.max(0, entityLookupRange);
+    }
+
+    public void setEntityLookAngleToleranceDegrees(double entityLookAngleToleranceDegrees) {
+        this.entityLookAngleToleranceDegrees = Math.max(0, Math.min(180, entityLookAngleToleranceDegrees));
     }
 
     @Override
@@ -107,6 +114,33 @@ public class RegisterPlaceholders extends PlaceholderExpansion {
         }
 
         Entity target = player.getTargetEntity(range);
+        if (isLivingTarget(target)) {
+            return true;
+        }
+
+        double toleranceRadians = Math.toRadians(entityLookAngleToleranceDegrees);
+        Location eyeLocation = player.getEyeLocation();
+        Vector direction = eyeLocation.getDirection();
+
+        for (Entity nearby : player.getNearbyEntities(range, range, range)) {
+            if (!isLivingTarget(nearby)) {
+                continue;
+            }
+
+            Vector toEntity = nearby.getLocation().toVector().subtract(eyeLocation.toVector());
+            if (toEntity.lengthSquared() == 0) {
+                continue;
+            }
+
+            if (direction.angle(toEntity) <= toleranceRadians) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private boolean isLivingTarget(Entity target) {
         if (target == null) {
             return false;
         }
