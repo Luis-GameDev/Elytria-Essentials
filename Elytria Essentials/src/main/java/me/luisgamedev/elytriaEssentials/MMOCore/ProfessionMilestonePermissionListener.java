@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.logging.Level;
+import java.util.concurrent.ExecutionException;
 
 public class ProfessionMilestonePermissionListener implements Listener {
     private static final Map<String, List<Integer>> PROFESSION_MILESTONES = Map.of(
@@ -99,8 +100,17 @@ public class ProfessionMilestonePermissionListener implements Listener {
                 return;
             }
 
-            updateClassPermissions(player, data, data.getLevel());
-            player.recalculatePermissions();
+            User user = loadUser(player.getUniqueId());
+            if (user == null) {
+                debug("Could not load LuckPerms user while handling class change for " + player.getName() + "; skipping.");
+                return;
+            }
+
+            boolean changed = updateClassPermissions(player, data, data.getLevel(), user);
+            if (changed) {
+                saveUser(user, player.getName());
+                player.recalculatePermissions();
+            }
         };
 
         if (Bukkit.isPrimaryThread()) {
@@ -131,21 +141,33 @@ public class ProfessionMilestonePermissionListener implements Listener {
                 return;
             }
 
+            User user = loadUser(player.getUniqueId());
+            if (user == null) {
+                debug("Could not load LuckPerms user while handling profession level change for " + player.getName() + "; skipping.");
+                return;
+            }
+
             if (event.hasProfession()) {
                 String professionId = event.getProfession().getId().toLowerCase(Locale.ROOT);
                 List<Integer> milestones = PROFESSION_MILESTONES.get(professionId);
                 if (milestones != null) {
                     debug("Updating profession milestones for " + player.getName() + " | profession=" + professionId);
-                    updateProfessionPermissions(player, professionId, event.getNewLevel());
+                    boolean changed = updateProfessionPermissions(player, professionId, event.getNewLevel(), user);
+                    if (changed) {
+                        saveUser(user, player.getName());
+                        player.recalculatePermissions();
+                    }
                 } else {
                     debug("No configured milestones for profession " + professionId + "; skipping.");
                 }
             } else {
                 debug("Updating class milestones for " + player.getName());
-                updateClassPermissions(player, event.getData(), event.getNewLevel());
+                boolean changed = updateClassPermissions(player, event.getData(), event.getNewLevel(), user);
+                if (changed) {
+                    saveUser(user, player.getName());
+                    player.recalculatePermissions();
+                }
             }
-
-            player.recalculatePermissions();
         };
 
         if (Bukkit.isPrimaryThread()) {
@@ -185,40 +207,67 @@ public class ProfessionMilestonePermissionListener implements Listener {
     }
 
     private void applyAllMilestones(Player player, PlayerData data) {
-        debug("Applying all milestones for " + player.getName());
-        updateAllProfessions(player, data);
-        updateClassPermissions(player, data);
-        player.recalculatePermissions();
-    }
-
-    private void updateAllProfessions(Player player, PlayerData data) {
-        PROFESSION_MILESTONES.forEach((professionId, milestones) -> {
-            int level = data.getCollectionSkills().getLevel(professionId);
-            debug("Applying profession milestones for " + player.getName() + " | profession=" + professionId + " | level=" + level);
-            updateProfessionPermissions(player, professionId, level);
-        });
-    }
-
-    private void updateProfessionPermissions(Player player, String professionId, int level) {
-        List<Integer> milestones = PROFESSION_MILESTONES.get(professionId);
-        if (milestones == null) {
-            debug("No milestones configured for profession " + professionId + "; skipping update.");
+        User user = loadUser(player.getUniqueId());
+        if (user == null) {
+            debug("Unable to load LuckPerms user for " + player.getName() + "; skipping milestone application.");
             return;
         }
 
+        debug("Applying all milestones for " + player.getName());
+
+        boolean changed = updateAllProfessions(player, data, user);
+        changed |= updateClassPermissions(player, data, user);
+
+        if (!changed) {
+            debug("No permission changes required for " + player.getName() + " during full refresh.");
+            return;
+        }
+
+        saveUser(user, player.getName());
+        player.recalculatePermissions();
+    }
+
+    private boolean updateAllProfessions(Player player, PlayerData data, User user) {
+        boolean changed = false;
+
+        for (Map.Entry<String, List<Integer>> entry : PROFESSION_MILESTONES.entrySet()) {
+            String professionId = entry.getKey();
+            int level = data.getCollectionSkills().getLevel(professionId);
+            debug("Applying profession milestones for " + player.getName() + " | profession=" + professionId + " | level=" + level);
+
+            if (updateProfessionPermissions(player, professionId, level, user)) {
+                changed = true;
+            }
+        }
+
+        return changed;
+    }
+
+    private boolean updateProfessionPermissions(Player player, String professionId, int level, User user) {
+        List<Integer> milestones = PROFESSION_MILESTONES.get(professionId);
+        if (milestones == null) {
+            debug("No milestones configured for profession " + professionId + "; skipping update.");
+            return false;
+        }
+
+        boolean changed = false;
         for (Integer milestone : milestones) {
             boolean hasReached = level >= milestone;
-            setPersistentPermission(player, buildPermission(professionId, milestone), hasReached);
-            debug("Set profession permission for " + player.getName() + " | permission=" + buildPermission(professionId, milestone)
-                    + " | reached=" + hasReached);
+            if (setPersistentPermission(user, buildPermission(professionId, milestone), hasReached)) {
+                changed = true;
+                debug("Updated profession permission for " + player.getName() + " | permission=" + buildPermission(professionId, milestone)
+                        + " | reached=" + hasReached);
+            }
         }
+
+        return changed;
     }
 
-    private void updateClassPermissions(Player player, PlayerData data) {
-        updateClassPermissions(player, data, data.getLevel());
+    private boolean updateClassPermissions(Player player, PlayerData data, User user) {
+        return updateClassPermissions(player, data, data.getLevel(), user);
     }
 
-    private void updateClassPermissions(Player player, PlayerData data, int level) {
+    private boolean updateClassPermissions(Player player, PlayerData data, int level, User user) {
         PlayerClass playerClass = data.getProfess();
         String classId = playerClass != null ? playerClass.getId().toLowerCase(Locale.ROOT) : null;
 
@@ -227,52 +276,74 @@ public class ProfessionMilestonePermissionListener implements Listener {
             debug("Player " + player.getName() + " has no tracked class; resetting tracked class permissions.");
         }
 
+        boolean changed = false;
         for (String targetClass : TARGET_CLASSES) {
             boolean isCurrentClass = trackedClass && targetClass.equals(classId);
             for (Integer milestone : CLASS_MILESTONES) {
                 boolean hasReached = isCurrentClass && level >= milestone;
-                setPersistentPermission(player, buildPermission(targetClass, milestone), hasReached);
-                debug("Set class permission for " + player.getName() + " | permission=" + buildPermission(targetClass, milestone)
-                        + " | reached=" + hasReached);
+                if (setPersistentPermission(user, buildPermission(targetClass, milestone), hasReached)) {
+                    changed = true;
+                    debug("Updated class permission for " + player.getName() + " | permission=" + buildPermission(targetClass, milestone)
+                            + " | reached=" + hasReached);
+                }
             }
         }
+
+        return changed;
     }
 
     private String buildPermission(String professionId, int milestone) {
         return professionId + "." + milestone;
     }
 
-    private void setPersistentPermission(Player player, String permission, boolean granted) {
-        UUID uniqueId = player.getUniqueId();
-        luckPerms.getUserManager().modifyUser(uniqueId, user -> updateUserPermission(user, permission, granted));
+    private boolean setPersistentPermission(User user, String permission, boolean granted) {
+        return updateUserPermission(user, permission, granted);
     }
 
-    private void updateUserPermission(User user, String permission, boolean granted) {
-        boolean hasGrant = user.data().toCollection().stream()
-                .anyMatch(node -> node.getKey().equalsIgnoreCase(permission) && node.getValue());
-        boolean hasDeny = user.data().toCollection().stream()
-                .anyMatch(node -> node.getKey().equalsIgnoreCase(permission) && !node.getValue());
+    private boolean updateUserPermission(User user, String permission, boolean granted) {
+        boolean hasDesired = user.data().toCollection().stream()
+                .anyMatch(node -> node.getKey().equalsIgnoreCase(permission) && node.getValue() == granted);
+        boolean hasConflict = user.data().toCollection().stream()
+                .anyMatch(node -> node.getKey().equalsIgnoreCase(permission) && node.getValue() != granted);
+
+        if (hasDesired && !hasConflict) {
+            return false;
+        }
+
+        user.data().clear(node -> node.getKey().equalsIgnoreCase(permission));
 
         if (granted) {
-            if (hasGrant) {
-                return;
-            }
-
-            // Remove any conflicting denies before applying the grant.
-            if (hasDeny) {
-                user.data().clear(node -> node.getKey().equalsIgnoreCase(permission) && !node.getValue());
-            }
-
             user.data().add(Node.builder(permission).value(true).build());
-            return;
         }
 
-        // If the permission is already absent or explicitly denied, leave it untouched.
-        if (!hasGrant) {
-            return;
+        return true;
+    }
+
+    private User loadUser(UUID uniqueId) {
+        User user = luckPerms.getUserManager().getUser(uniqueId);
+        if (user != null) {
+            return user;
         }
 
-        user.data().clear(node -> node.getKey().equalsIgnoreCase(permission) && node.getValue());
+        try {
+            return luckPerms.getUserManager().loadUser(uniqueId).get();
+        } catch (InterruptedException exception) {
+            Thread.currentThread().interrupt();
+            debug("Interrupted while loading LuckPerms user " + uniqueId + ": " + exception.getMessage());
+        } catch (ExecutionException exception) {
+            debug("Failed to load LuckPerms user " + uniqueId + ": " + exception.getMessage());
+        }
+
+        return null;
+    }
+
+    private void saveUser(User user, String playerName) {
+        try {
+            luckPerms.getUserManager().saveUser(user);
+            debug("Saved LuckPerms data for " + playerName + " after permission updates.");
+        } catch (Exception exception) {
+            debug("Failed to save LuckPerms data for " + playerName + ": " + exception.getMessage());
+        }
     }
 
     private void debug(String message) {
