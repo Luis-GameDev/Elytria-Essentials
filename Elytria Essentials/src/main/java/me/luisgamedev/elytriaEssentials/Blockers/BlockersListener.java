@@ -238,6 +238,11 @@ public class BlockersListener implements Listener {
 
     @EventHandler(ignoreCancelled = true)
     public void onItemPickup(EntityPickupItemEvent event) {
+        if (!(event.getEntity() instanceof Player)) {
+            event.setCancelled(true);
+            return;
+        }
+
         ItemStack stack = event.getItem().getItemStack();
         if (isBanned(stack)) {
             event.setCancelled(true);
@@ -335,6 +340,10 @@ public class BlockersListener implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onEntityDeath(EntityDeathEvent event) {
         event.setDroppedExp(0);
+
+        if (!(event.getEntity() instanceof Player)) {
+            event.getDrops().removeIf(BlockersListener::isArmorOrWeapon);
+        }
     }
 
     @EventHandler
@@ -352,6 +361,13 @@ public class BlockersListener implements Listener {
     @EventHandler
     public void onLingeringPotionUse(LingeringPotionSplashEvent event) {
         event.setCancelled(true);
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onBlockTrample(EntityChangeBlockEvent event) {
+        if (event.getBlock().getType() == Material.FARMLAND && event.getTo() == Material.DIRT) {
+            event.setCancelled(true);
+        }
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
@@ -410,5 +426,30 @@ public class BlockersListener implements Listener {
 //
     //    event.setDamage(reducedDamage);
     //}
+
+
+    private static boolean isArmorOrWeapon(ItemStack itemStack) {
+        if (itemStack == null) {
+            return false;
+        }
+
+        Material type = itemStack.getType();
+        String name = type.name();
+
+        return name.endsWith("HELMET") ||
+                name.endsWith("CHESTPLATE") ||
+                name.endsWith("LEGGINGS") ||
+                name.endsWith("BOOTS") ||
+                name.endsWith("SWORD") ||
+                name.endsWith("AXE") ||
+                name.endsWith("HOE") ||
+                name.endsWith("PICKAXE") ||
+                name.endsWith("SHOVEL") ||
+                type == Material.BOW ||
+                type == Material.CROSSBOW ||
+                type == Material.TRIDENT ||
+                type == Material.SHIELD ||
+                type == Material.MACE;
+    }
 }
 
