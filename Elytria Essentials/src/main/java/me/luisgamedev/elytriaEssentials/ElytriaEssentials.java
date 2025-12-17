@@ -61,6 +61,7 @@ import me.luisgamedev.elytriaEssentials.MMOItemsListener.PersistentDataTransferL
 import me.luisgamedev.elytriaEssentials.MMOCore.CraftingProfessionExpListener;
 import me.luisgamedev.elytriaEssentials.MMOCore.ProfessionMilestonePermissionListener;
 import me.luisgamedev.elytriaEssentials.ArrowSkillHandler.ArrowSkillHandler;
+import me.luisgamedev.elytriaEssentials.MMOItemsListener.GrindstoneMMOItemBlocker;
 
 public final class ElytriaEssentials extends JavaPlugin {
 
@@ -177,6 +178,7 @@ public final class ElytriaEssentials extends JavaPlugin {
         if (mmoItemsEnabled) {
             runeController = new RuneController(this);
             persistentDataTransferListener = new PersistentDataTransferListener(this);
+            pm.registerEvents(new GrindstoneMMOItemBlocker(), this);
         } else {
             getLogger().warning("MMOItems plugin not found. Rune Controller will be disabled.");
         }
