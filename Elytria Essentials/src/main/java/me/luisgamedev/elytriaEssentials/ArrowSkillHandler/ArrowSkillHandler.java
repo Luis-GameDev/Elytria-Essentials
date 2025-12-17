@@ -18,6 +18,8 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.BlockDropItemEvent;
+import org.bukkit.event.block.BlockFromToEvent;
 import org.bukkit.event.entity.EntityChangeBlockEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
@@ -282,8 +284,39 @@ public class ArrowSkillHandler implements Listener, CommandExecutor, TabComplete
 
         if (System.currentTimeMillis() <= expire) {
             event.setCancelled(true);
+            event.setDropItems(false);
         } else {
             protectedWebBlocks.remove(location);
+        }
+    }
+
+    @EventHandler
+    public void onProtectedWebDrop(BlockDropItemEvent event) {
+        Location location = event.getBlock().getLocation().toBlockLocation();
+        Long expire = protectedWebBlocks.get(location);
+        if (expire == null) {
+            return;
+        }
+
+        if (System.currentTimeMillis() <= expire) {
+            event.setCancelled(true);
+        } else {
+            protectedWebBlocks.remove(location);
+        }
+    }
+
+    @EventHandler
+    public void onProtectedWebWaterFlow(BlockFromToEvent event) {
+        Location target = event.getToBlock().getLocation().toBlockLocation();
+        Long expire = protectedWebBlocks.get(target);
+        if (expire == null) {
+            return;
+        }
+
+        if (System.currentTimeMillis() <= expire) {
+            event.setCancelled(true);
+        } else {
+            protectedWebBlocks.remove(target);
         }
     }
 
