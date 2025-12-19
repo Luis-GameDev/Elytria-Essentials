@@ -6,6 +6,9 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.inventory.ItemStack;
+
+import java.util.List;
 
 public class NextJoinItemListener implements Listener {
 
@@ -20,7 +23,13 @@ public class NextJoinItemListener implements Listener {
     @EventHandler(priority = EventPriority.MONITOR)
     public void onPlayerJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
-        if (!itemManager.hasItems(player.getUniqueId())) {
+        boolean hasItems = itemManager.hasItems(player.getUniqueId());
+        debug("Player " + player.getName() + " joined with pending next-join items: " + hasItems + ".");
+        if (hasItems) {
+            List<ItemStack> items = itemManager.getItems(player.getUniqueId());
+            debug("Pending next-join items for " + player.getName() + ": " + NextJoinItemUtils.describeItems(items) + ".");
+        }
+        if (!hasItems) {
             return;
         }
         plugin.getServer().getScheduler().runTask(plugin, () -> {
@@ -32,5 +41,11 @@ public class NextJoinItemListener implements Listener {
             }
             NextJoinItemUtils.attemptDelivery(plugin, itemManager, player, false);
         });
+    }
+
+    private void debug(String message) {
+        if (plugin.getConfig().getBoolean("debug-mode", false)) {
+            plugin.getLogger().info("[NextJoinItems] " + message);
+        }
     }
 }
