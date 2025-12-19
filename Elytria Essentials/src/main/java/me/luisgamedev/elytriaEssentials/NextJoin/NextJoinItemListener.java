@@ -23,6 +23,14 @@ public class NextJoinItemListener implements Listener {
         if (!itemManager.hasItems(player.getUniqueId())) {
             return;
         }
-        NextJoinItemUtils.attemptDelivery(plugin, itemManager, player, false);
+        plugin.getServer().getScheduler().runTask(plugin, () -> {
+            if (!player.isOnline()) {
+                return;
+            }
+            if (!itemManager.hasItems(player.getUniqueId())) {
+                return;
+            }
+            NextJoinItemUtils.attemptDelivery(plugin, itemManager, player, false);
+        });
     }
 }
