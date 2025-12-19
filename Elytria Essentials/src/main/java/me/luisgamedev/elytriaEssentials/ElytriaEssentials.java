@@ -7,6 +7,10 @@ import me.luisgamedev.elytriaEssentials.FirstJoin.FirstJoinListener;
 import me.luisgamedev.elytriaEssentials.FirstJoin.FirstJoinItemCommand;
 import me.luisgamedev.elytriaEssentials.FirstJoin.FirstJoinItemManager;
 import me.luisgamedev.elytriaEssentials.FirstJoin.FirstJoinItemMenu;
+import me.luisgamedev.elytriaEssentials.NextJoin.NextJoinItemCommand;
+import me.luisgamedev.elytriaEssentials.NextJoin.NextJoinItemListener;
+import me.luisgamedev.elytriaEssentials.NextJoin.NextJoinItemManager;
+import me.luisgamedev.elytriaEssentials.NextJoin.NextJoinItemMenu;
 import me.luisgamedev.elytriaEssentials.CooldownAPI.CooldownAdjustCommand;
 import me.luisgamedev.elytriaEssentials.CooldownAPI.CooldownApplyCommand;
 import me.luisgamedev.elytriaEssentials.CooldownAPI.ManaRestoreCommand;
@@ -82,6 +86,7 @@ public final class ElytriaEssentials extends JavaPlugin {
     private SoulbindingManager soulbindingManager;
     private PartyIntegrationManager partyIntegrationManager;
     private FirstJoinItemManager firstJoinItemManager;
+    private NextJoinItemManager nextJoinItemManager;
 
     @Override
     public void onEnable() {
@@ -124,6 +129,18 @@ public final class ElytriaEssentials extends JavaPlugin {
             firstJoinCommand.setTabCompleter(firstJoinItemCommand);
         } else {
             getLogger().warning("firstjoinitems command is not defined in plugin.yml");
+        }
+        nextJoinItemManager = new NextJoinItemManager(this);
+        NextJoinItemMenu nextJoinItemMenu = new NextJoinItemMenu(this, nextJoinItemManager);
+        pm.registerEvents(new NextJoinItemListener(this, nextJoinItemManager), this);
+        pm.registerEvents(nextJoinItemMenu, this);
+        NextJoinItemCommand nextJoinItemCommand = new NextJoinItemCommand(this, nextJoinItemManager, nextJoinItemMenu);
+        PluginCommand nextJoinCommand = getCommand("nextjoinitems");
+        if (nextJoinCommand != null) {
+            nextJoinCommand.setExecutor(nextJoinItemCommand);
+            nextJoinCommand.setTabCompleter(nextJoinItemCommand);
+        } else {
+            getLogger().warning("nextjoinitems command is not defined in plugin.yml");
         }
         clanManager = new ClanManager(this);
         pm.registerEvents(new ClanListener(this, clanManager), this);
