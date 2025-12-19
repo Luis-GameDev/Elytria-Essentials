@@ -44,8 +44,13 @@ public class NextJoinItemUtils {
     }
 
     private static boolean canFitAll(Player player, List<ItemStack> items) {
-        Inventory temp = Bukkit.createInventory(null, player.getInventory().getSize());
-        temp.setContents(player.getInventory().getContents());
+        ItemStack[] storageContents = player.getInventory().getStorageContents();
+        int inventorySize = storageContents.length;
+        if (inventorySize % 9 != 0) {
+            inventorySize = Math.min(54, Math.max(9, ((inventorySize + 8) / 9) * 9));
+        }
+        Inventory temp = Bukkit.createInventory(null, inventorySize);
+        temp.setContents(storageContents);
         Map<Integer, ItemStack> leftovers = temp.addItem(items.stream()
                 .map(ItemStack::clone)
                 .toArray(ItemStack[]::new));
