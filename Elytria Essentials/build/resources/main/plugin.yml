@@ -1,5 +1,5 @@
 name: ElytriaEssentials
-version: '8.2'
+version: '8.5'
 main: me.luisgamedev.elytriaEssentials.ElytriaEssentials
 api-version: '1.21'
 depend: [Vault, Citizens, WorldGuard, MMOCore, MythicHUD]
@@ -62,6 +62,9 @@ commands:
     usage: /firstjoinitems [add|gui]
     permission: elytria.firstjoinitems.manage
     default: op
+  nextjoinitems:
+    description: Manage items granted to a player on their next join.
+    usage: /nextjoinitems <add|gui|claim> [player]
 permissions:
   elytria.classchange.bypass:
     description: Allows the player to bypass the class change cooldown.
@@ -77,4 +80,7 @@ permissions:
     default: op
   elytria.firstjoinitems.manage:
     description: Allows managing items given to players on their first join.
+    default: op
+  elytria.nextjoinitems.manage:
+    description: Allows managing items given to players on their next join.
     default: op
