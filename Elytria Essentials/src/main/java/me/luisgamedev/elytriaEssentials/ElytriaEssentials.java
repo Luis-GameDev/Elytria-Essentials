@@ -66,6 +66,7 @@ import me.luisgamedev.elytriaEssentials.MMOCore.CraftingProfessionExpListener;
 import me.luisgamedev.elytriaEssentials.MMOCore.ProfessionMilestonePermissionListener;
 import me.luisgamedev.elytriaEssentials.ArrowSkillHandler.ArrowSkillHandler;
 import me.luisgamedev.elytriaEssentials.MMOItemsListener.GrindstoneMMOItemBlocker;
+import me.luisgamedev.elytriaEssentials.BeginnerProtection.BeginnerProtectionListener;
 
 public final class ElytriaEssentials extends JavaPlugin {
 
@@ -115,6 +116,7 @@ public final class ElytriaEssentials extends JavaPlugin {
         pm.registerEvents(bs, this);
         bs.loadAndScheduleAll();
 
+        pm.registerEvents(new BeginnerProtectionListener(), this);
         pm.registerEvents(new TeleportListener(this), this);
         pm.registerEvents(new BlockersListener(), this);
         pm.registerEvents(new ChestLimiterManager(this), this);
