@@ -30,15 +30,16 @@ public final class LogRecoveryRecipes {
         );
 
         for (LogRecipe recipe : recipes) {
-            Bukkit.addRecipe(recipe.createRecipe(plugin));
+            NamespacedKey key = new NamespacedKey(plugin, recipe.keySuffix());
+            Bukkit.removeRecipe(key);
+            Bukkit.addRecipe(recipe.createRecipe(key));
         }
     }
 
     private record LogRecipe(Material wood, Material log, String keySuffix) {
 
-        public ShapedRecipe createRecipe(JavaPlugin plugin) {
-            NamespacedKey namespacedKey = new NamespacedKey(plugin, keySuffix);
-            ShapedRecipe recipe = new ShapedRecipe(namespacedKey, new ItemStack(log, 4));
+        public ShapedRecipe createRecipe(NamespacedKey key) {
+            ShapedRecipe recipe = new ShapedRecipe(key, new ItemStack(log, 4));
             recipe.shape("WW", "WW");
             recipe.setIngredient('W', wood);
             return recipe;
