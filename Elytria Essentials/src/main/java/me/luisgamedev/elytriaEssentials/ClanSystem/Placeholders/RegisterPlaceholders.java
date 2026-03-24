@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 
 public class RegisterPlaceholders extends PlaceholderExpansion {
 
@@ -38,6 +39,16 @@ public class RegisterPlaceholders extends PlaceholderExpansion {
             "MASTERWORK", 60,
             "RUNED", 80,
             "GEMSTONE", 100
+    );
+
+    private static final Map<String, String> LEVEL_PLACEHOLDER_VALUES = Map.of(
+            "WORN", "0.4",
+            "FORGED", "0.5",
+            "HARDENED", "0.6",
+            "REFINED", "0.7",
+            "MASTERWORK", "0.8",
+            "RUNED", "0.9",
+            "GEMSTONE", "1"
     );
 
     private static final Map<String, String> CLASS_TO_WEAPON = Map.of(
@@ -104,6 +115,9 @@ public class RegisterPlaceholders extends PlaceholderExpansion {
         if (params.equalsIgnoreCase("has_classweapon")) {
             return String.valueOf(hasUsableClassWeapon(player));
         }
+        if (params.equalsIgnoreCase("weapon_level")) {
+            return getHighestUsableClassWeaponLevel(player).orElse("0");
+        }
         return null;
     }
 
@@ -156,66 +170,87 @@ public class RegisterPlaceholders extends PlaceholderExpansion {
     }
 
     private boolean hasUsableClassWeapon(Player player) {
+        return getHighestUsableClassWeaponLevel(player).isPresent();
+    }
+
+    private Optional<String> getHighestUsableClassWeaponLevel(Player player) {
         if (!Bukkit.getPluginManager().isPluginEnabled("MMOItems")
                 || !Bukkit.getPluginManager().isPluginEnabled("MMOCore")) {
-            return false;
+            return Optional.empty();
         }
 
         if (!PlayerData.has(player)) {
-            return false;
+            return Optional.empty();
         }
 
         PlayerData playerData = PlayerData.get(player);
         if (playerData == null) {
-            return false;
+            return Optional.empty();
         }
 
         PlayerClass playerClass = playerData.getProfess();
         String classKey = resolveClassKey(playerClass);
         if (classKey == null) {
-            return false;
+            return Optional.empty();
         }
 
         String requiredWeapon = CLASS_TO_WEAPON.get(classKey);
         if (requiredWeapon == null) {
-            return false;
+            return Optional.empty();
         }
 
         int playerLevel = playerData.getLevel();
+        int highestRequiredLevel = -1;
+        String highestLevelKey = null;
         ItemStack[] contents = player.getInventory().getContents();
         for (ItemStack itemStack : contents) {
-            if (!isUsableClassWeapon(itemStack, requiredWeapon, playerLevel)) {
+            String levelKey = getUsableWeaponLevelKey(itemStack, requiredWeapon, playerLevel);
+            if (levelKey == null) {
                 continue;
             }
-            return true;
+
+            int requiredLevel = LEVEL_SYNONYMS.get(levelKey);
+            if (requiredLevel > highestRequiredLevel) {
+                highestRequiredLevel = requiredLevel;
+                highestLevelKey = levelKey;
+            }
         }
-        return false;
+
+        if (highestLevelKey == null) {
+            return Optional.empty();
+        }
+
+        return Optional.ofNullable(LEVEL_PLACEHOLDER_VALUES.get(highestLevelKey));
     }
 
-    private boolean isUsableClassWeapon(ItemStack itemStack, String requiredWeapon, int playerLevel) {
+    private String getUsableWeaponLevelKey(ItemStack itemStack, String requiredWeapon, int playerLevel) {
         if (itemStack == null || itemStack.getType() == Material.AIR) {
-            return false;
+            return null;
         }
 
         String itemId = MMOItems.getID(itemStack);
         if (itemId == null || itemId.isBlank()) {
-            return false;
+            return null;
         }
 
         String normalizedId = itemId.toUpperCase(Locale.ROOT);
         int separatorIndex = normalizedId.indexOf('_');
         if (separatorIndex <= 0 || separatorIndex >= normalizedId.length() - 1) {
-            return false;
+            return null;
         }
 
         String levelKey = normalizedId.substring(0, separatorIndex);
         Integer requiredLevel = LEVEL_SYNONYMS.get(levelKey);
         if (requiredLevel == null || playerLevel < requiredLevel) {
-            return false;
+            return null;
         }
 
         String weaponName = normalizedId.substring(separatorIndex + 1);
-        return weaponName.equals(requiredWeapon);
+        if (!weaponName.equals(requiredWeapon)) {
+            return null;
+        }
+
+        return levelKey;
     }
 
     private String resolveClassKey(PlayerClass playerClass) {
@@ -359,4 +394,3 @@ public class RegisterPlaceholders extends PlaceholderExpansion {
         }
     }
 }
-
