@@ -4,7 +4,7 @@ plugins {
 }
 
 group = 'me.luisgamedev'
-version = '1.0'
+version = '8.7'
 
 repositories {
     mavenCentral()
