@@ -22,9 +22,12 @@ public class CustomRegenerationManager implements Listener {
 
     // 1.0 health point in Bukkit = half a heart in the client UI.
     private static final double DEFAULT_HEAL_AMOUNT_HP = 1.0D;
+    private static final double DEFAULT_FOOD_POINTS_PER_HP_AT_ONE_BAR = 0.1D;
+    private static final double DEFAULT_FOOD_POINTS_PER_HP_AT_MAX_BARS = 0.4D;
 
     private final ElytriaEssentials plugin;
     private final Map<UUID, Long> elapsedTicksByPlayer = new ConcurrentHashMap<>();
+    private final Map<UUID, Double> pendingFoodFractionsByPlayer = new ConcurrentHashMap<>();
     private BukkitTask task;
 
     public CustomRegenerationManager(ElytriaEssentials plugin) {
@@ -42,6 +45,7 @@ public class CustomRegenerationManager implements Listener {
             task = null;
         }
         elapsedTicksByPlayer.clear();
+        pendingFoodFractionsByPlayer.clear();
     }
 
     @EventHandler
@@ -52,16 +56,19 @@ public class CustomRegenerationManager implements Listener {
     @EventHandler
     public void onPlayerQuit(PlayerQuitEvent event) {
         elapsedTicksByPlayer.remove(event.getPlayer().getUniqueId());
+        pendingFoodFractionsByPlayer.remove(event.getPlayer().getUniqueId());
     }
 
     @EventHandler
     public void onPlayerChangedWorld(PlayerChangedWorldEvent event) {
         elapsedTicksByPlayer.put(event.getPlayer().getUniqueId(), 0L);
+        pendingFoodFractionsByPlayer.put(event.getPlayer().getUniqueId(), 0.0D);
     }
 
     @EventHandler
     public void onPlayerDeath(PlayerDeathEvent event) {
         elapsedTicksByPlayer.put(event.getPlayer().getUniqueId(), 0L);
+        pendingFoodFractionsByPlayer.put(event.getEntity().getUniqueId(), 0.0D);
     }
 
     private void tickRegen() {
@@ -100,15 +107,79 @@ public class CustomRegenerationManager implements Listener {
                 continue;
             }
 
+            double oldHealth = player.getHealth();
             double healAmount = plugin.getConfig().getDouble("custom-regeneration.heal-amount-hp", DEFAULT_HEAL_AMOUNT_HP);
-            double newHealth = Math.min(maxHealth, player.getHealth() + Math.max(0.0D, healAmount));
+            double newHealth = Math.min(maxHealth, oldHealth + Math.max(0.0D, healAmount));
 
-            if (newHealth > player.getHealth()) {
+            if (newHealth > oldHealth) {
                 player.setHealth(newHealth);
+                applyConfiguredFoodLoss(player, newHealth - oldHealth);
             }
 
             elapsedTicksByPlayer.put(playerId, 0L);
         }
+    }
+
+    private void applyConfiguredFoodLoss(Player player, double healedHp) {
+        if (!plugin.getConfig().getBoolean("custom-regeneration.food-loss.enabled", true)) {
+            return;
+        }
+
+        if (healedHp <= 0.0D) {
+            return;
+        }
+
+        double foodPointsPerHp = getFoodPointsPerHpForFoodLevel(player.getFoodLevel());
+        double totalFoodPointsToConsume = Math.max(0.0D, foodPointsPerHp * healedHp);
+        if (totalFoodPointsToConsume <= 0.0D) {
+            return;
+        }
+
+        boolean useSaturationFirst = plugin.getConfig().getBoolean("custom-regeneration.food-loss.use-saturation-first", true);
+        if (useSaturationFirst) {
+            float currentSaturation = player.getSaturation();
+            float saturationToConsume = (float) Math.min(currentSaturation, totalFoodPointsToConsume);
+            if (saturationToConsume > 0.0F) {
+                player.setSaturation(Math.max(0.0F, currentSaturation - saturationToConsume));
+                totalFoodPointsToConsume -= saturationToConsume;
+            }
+        }
+
+        if (totalFoodPointsToConsume <= 0.0D) {
+            return;
+        }
+
+        UUID playerId = player.getUniqueId();
+        double pendingFraction = pendingFoodFractionsByPlayer.getOrDefault(playerId, 0.0D);
+        double totalWithPending = totalFoodPointsToConsume + Math.max(0.0D, pendingFraction);
+
+        int wholeFoodPointsToConsume = (int) Math.floor(totalWithPending);
+        double newPendingFraction = totalWithPending - wholeFoodPointsToConsume;
+
+        if (wholeFoodPointsToConsume > 0) {
+            int newFoodLevel = Math.max(0, player.getFoodLevel() - wholeFoodPointsToConsume);
+            player.setFoodLevel(newFoodLevel);
+        }
+
+        pendingFoodFractionsByPlayer.put(playerId, newPendingFraction);
+    }
+
+    private double getFoodPointsPerHpForFoodLevel(int foodLevel) {
+        double minCost = plugin.getConfig().getDouble(
+                "custom-regeneration.food-loss.food-points-per-hp-at-one-hunger-bar",
+                DEFAULT_FOOD_POINTS_PER_HP_AT_ONE_BAR
+        );
+        double maxCost = plugin.getConfig().getDouble(
+                "custom-regeneration.food-loss.food-points-per-hp-at-max-hunger-bars",
+                DEFAULT_FOOD_POINTS_PER_HP_AT_MAX_BARS
+        );
+
+        double clampedMinCost = Math.max(0.0D, minCost);
+        double clampedMaxCost = Math.max(0.0D, maxCost);
+        double hungerBars = Math.max(1.0D, Math.min(10.0D, foodLevel / 2.0D));
+        double progressToMax = (hungerBars - 1.0D) / 9.0D;
+
+        return clampedMinCost + ((clampedMaxCost - clampedMinCost) * progressToMax);
     }
 
     private boolean shouldUseCustomRegeneration(Player player) {
