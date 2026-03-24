@@ -187,6 +187,14 @@ custom-regeneration:
   enabled: true
   # 1.0 HP = half a heart in Minecraft.
   heal-amount-hp: 1.0
+  food-loss:
+    enabled: true
+    # Consumed food points per 1.0 HP healed when the player is at 1 hunger bar (food level 2).
+    food-points-per-hp-at-one-hunger-bar: 0.1
+    # Consumed food points per 1.0 HP healed when the player is at max hunger bars (food level 20).
+    food-points-per-hp-at-max-hunger-bars: 0.4
+    # True = consume saturation first (vanilla-like), then food level.
+    use-saturation-first: true
   intervals:
     # food level 20
     full-hunger-seconds: 3
