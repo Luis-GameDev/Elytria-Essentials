@@ -34,7 +34,7 @@ dependencies {
     //compileOnly files("libs/MythicMobsPremium-5.10.1-SNAPSHOT.jar")
     compileOnly files("libs/MythicMobsPremium-5.11.0.jar")
     compileOnly("net.luckperms:api:5.4")
-    compileOnly("me.clip:placeholderapi:2.11.5")
+    compileOnly("me.clip:placeholderapi:2.12.2")
     compileOnly("com.mysql:mysql-connector-j:8.3.0")
     compileOnly 'com.sk89q.worldedit:worldedit-bukkit:7.2.18'
     compileOnly 'com.sk89q.worldguard:worldguard-bukkit:7.0.9'

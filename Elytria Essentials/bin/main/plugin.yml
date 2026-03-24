@@ -1,0 +1,86 @@
+name: ElytriaEssentials
+version: '8.5'
+main: me.luisgamedev.elytriaEssentials.ElytriaEssentials
+api-version: '1.21'
+depend: [Vault, Citizens, WorldGuard, MMOCore, MythicHUD]
+softdepend: [WGRegionEvents, MMOItems, MythicLib]
+commands:
+  clan:
+    description: Clan management command
+    usage: /clan
+  party:
+    description: Open the MMOCore party menu
+    usage: /party
+  npcshop:
+    description: Manage NPC buy shops
+    usage: /npcshop additem <shopId> <price>
+    permission: elytria.npcshop.manage
+    default: op
+    permission-message: You do not have permission to manage NPC shops.
+  arrowskill:
+    description: Apply temporary arrow abilities.
+    usage: |-
+      /arrowskill <ability>
+      /arrowskill <player> <ability>
+    permission: elytria.arrowskill.use
+    default: op
+  mmocd:
+    description: Reduce a player's MMOCore/MythicLib skill cooldown (console-only).
+    usage: /mmocd <abilityId> <percent(1-100)> <playerName>
+    permission: elytria.cooldownAPI.use
+    default: op
+  mmocdadd:
+    description: Apply a fixed amount of cooldown seconds to a player's MMOCore/MythicLib skill (console-only).
+    usage: /mmocdadd <abilityId> <seconds> <playerName>
+    permission: elytria.cooldownAPI.use
+    default: op
+  mmocdlist:
+    description: Show all active cooldowns for a player.
+    usage: /mmocdlist <playerName>
+    permission: elytria.cooldownAPI.use
+    default: op
+  mmomana:
+    description: Restore a specific amount of MMOCore mana to a player (console-only).
+    usage: /mmomana <amount> <playerName>
+    permission: elytria.cooldownAPI.use
+    default: op
+  reload:
+    description: Reload Elytria Essentials configuration.
+    usage: /reload
+    permission: elytria.reload
+    default: op
+    permission-message: You do not have permission to reload Elytria Essentials.
+  hologram:
+    description: Inspect and delete hologram text entities the player is looking at.
+    usage: |-
+      /hologram
+      /hologram confirm
+    permission: elytria.hologram.manage
+    default: op
+  firstjoinitems:
+    description: Manage items granted to new players on first join.
+    usage: /firstjoinitems [add|gui]
+    permission: elytria.firstjoinitems.manage
+    default: op
+  nextjoinitems:
+    description: Manage items granted to a player on their next join.
+    usage: /nextjoinitems <add|gui|claim> [player]
+permissions:
+  elytria.classchange.bypass:
+    description: Allows the player to bypass the class change cooldown.
+    default: op
+  elytria.reload:
+    description: Allows reloading Elytria Essentials without restarting the server.
+    default: op
+  elytria.arrowskill.use:
+    description: Allows the player to apply temporary arrow abilities.
+    default: op
+  elytria.hologram.manage:
+    description: Allows inspecting and deleting hologram text entities.
+    default: op
+  elytria.firstjoinitems.manage:
+    description: Allows managing items given to players on their first join.
+    default: op
+  elytria.nextjoinitems.manage:
+    description: Allows managing items given to players on their next join.
+    default: op

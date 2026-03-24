@@ -1,0 +1,182 @@
+# Outpost Teleport
+npc-id: 9
+teleport-cooldown: 1200 # 30 mins
+locations:
+  desert:
+    world: world
+    x: 2192
+    y: 187
+    z: 1596
+  feyforest:
+    world: world
+    x: -3441
+    y: 191
+    z: 1415
+  oaklands:
+    world: world
+    x: 1689
+    y: 137
+    z: -1978
+  frostland:
+    world: world
+    x: -2021
+    y: 151
+    z: -2015
+
+# Database
+host: ms2616.gamedata.io
+user: ni12126628_1_DB
+password: sXF4FLNx
+port: 3306
+name: ni12126628_1_DB
+
+# Debug
+debug-mode: true
+
+# Level-up broadcast
+level-up-broadcast:
+  enabled: true
+  milestones: [20, 50, 80, 100]
+  message: "&d{player} reached level {level} in {type} {name}!"
+
+# Clan System
+max-clan-tag-length: 3
+max-clan-name-length: 25
+max-members-per-clan: 30
+newbie-protection-hours: 24
+clan-home-cooldown: 1200 # 30 mins
+clan-sethome-cooldown: 172800 # 48 hrs
+
+# Music System
+spawnSound:
+  MusicKey: minecraft:custom.spawn
+  category: music
+  volume: 0.7
+  pitch1am: 0.7
+  pitch1pm: 1.0
+  loopMs: 70000
+  regions:
+    - "spawn"
+
+singularitySound:
+  MusicKey: minecraft:custom.singularity
+  category: music
+  volume: 0.7
+  pitch1am: 0.7
+  pitch1pm: 1.0
+  loopMs: 120000
+  regions:
+    - "singularity"
+
+# Fall Damage Protection
+fall-damage-protection:
+  spawnProtection:
+    duration-seconds: 15
+    regions:
+      - "spawn_desert"
+      - "spawn_feyforest"
+      - "spawn_frostlands"
+      - "spawn_oaklands"
+      - "skyisland"
+
+# Custom Repair
+custom-repair:
+  enabled: true
+  base-cost-per-durability: 0.25
+  cost-growth-factor: 1.5
+  npcs: [11]
+
+# Custom Rename
+custom-rename:
+  enabled: true
+  price: 1000.0
+
+# Soulbinding
+soulbinding:
+  enabled: true
+  price-per-binding: 500.0
+  npcs: [1]
+  max-bindings: 3
+
+# Random Information
+random-information:
+  interval-seconds: 1200
+
+# MMOItems data bridge
+mmoitems:
+  transfer-keys:
+    - elytriaessentials:soulbinding_count
+    - elytriaessentials:repairs_done
+    - repairs_done
+    - soulbinding_count
+
+# Class Limiter
+class-limiter:
+  class-change-cooldown-seconds: 86400 # 24 hours
+
+# Chest Limiter
+chest-limiter:
+  enabled: true
+  max-chests-per-chunk: 50
+  limit-message: "&cThis chunk already has the maximum number of chests (%max%)."
+
+# NPC Shops
+npc-shops:
+  example-shop:
+    npc-id: 3
+    title: "&5Decoration Shop"
+    size: 54 # Number of slots in the shop GUI (must be a multiple of 9, max 54)
+
+boss:
+  mf_ember_claw:
+    time: "10pm"               # E.g: "20:00", "8pm", "8:00pm", "08:00"
+    location: [-40, -27, 923]  # x,y,z
+    world: world
+    spawnCommand: "/mm m spawn %boss% %world%,%x%,%y%,%z%" # %boss%, %world%, %x%, %y%, %z%
+    preSpawnNoticeMinutes: 30
+    preSpawnMessage: |
+      &8+-------------------+
+      &5Dark Magic is beginning to erupt
+      &5in the depths...
+      &8+-------------------+
+    spawnMessage: |
+      &8+-------------------+
+      &dThe &5&lAbyssal Manticore
+      &dhas emerged from the depths...
+      &8+-------------------+
+    lootCommand: "mi give BOOSTER XP_BOOSTER_1 %player% 1"
+    lootKey: "XP_BOOSTER_1"
+    fallbackMaterial: "GOLD_INGOT"
+    lifetimeTicks: 72000
+
+# Arrow Skill Settings
+arrow-skills:
+  arcaneshot:
+    selection-duration-seconds: 3
+    teleport-distance: 1.5
+  bloodarrow:
+    selection-duration-seconds: 3
+    bonus-damage: 8.0
+  doomshot:
+    selection-duration-seconds: 3
+    impact-radius: 4.0
+    player-knockup-velocity: 1.5
+    block-knockup-velocity: 1.2
+  forest_thorn:
+    selection-duration-seconds: 10
+    true-damage: 1.0
+    slowness-duration-ticks: 40
+    slowness-amplifier: 2
+  stunning_thorn:
+    selection-duration-seconds: 3
+    blindness-duration-ticks: 100
+    nausea-duration-ticks: 180
+  plagueshot:
+    selection-duration-seconds: 6
+    wither-duration-ticks: 120
+    wither-amplifier: 1
+  natures_grasp:
+    selection-duration-seconds: 3
+
+
+
