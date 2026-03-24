@@ -37,6 +37,7 @@ import me.luisgamedev.elytriaEssentials.commands.PartyCommand;
 import me.luisgamedev.elytriaEssentials.commands.HologramCommand;
 import me.luisgamedev.elytriaEssentials.Soulbinding.SoulbindingManager;
 import me.luisgamedev.elytriaEssentials.MMOCore.PartyIntegrationManager;
+import me.luisgamedev.elytriaEssentials.Regeneration.CustomRegenerationManager;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
@@ -88,6 +89,7 @@ public final class ElytriaEssentials extends JavaPlugin {
     private PartyIntegrationManager partyIntegrationManager;
     private FirstJoinItemManager firstJoinItemManager;
     private NextJoinItemManager nextJoinItemManager;
+    private CustomRegenerationManager customRegenerationManager;
 
     @Override
     public void onEnable() {
@@ -275,6 +277,10 @@ public final class ElytriaEssentials extends JavaPlugin {
         }
 
         LogRecoveryRecipes.register(this);
+
+        customRegenerationManager = new CustomRegenerationManager(this);
+        pm.registerEvents(customRegenerationManager, this);
+        customRegenerationManager.start();
     }
 
     private CommandMap getCommandMap() {
@@ -341,6 +347,10 @@ public final class ElytriaEssentials extends JavaPlugin {
         if (partyIntegrationManager != null) {
             partyIntegrationManager.shutdown();
             partyIntegrationManager = null;
+        }
+        if (customRegenerationManager != null) {
+            customRegenerationManager.stop();
+            customRegenerationManager = null;
         }
     }
 
