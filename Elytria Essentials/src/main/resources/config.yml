@@ -180,3 +180,22 @@ arrow-skills:
 
 
 
+
+# Custom natural regeneration replacement
+# This only runs in worlds where gamerule naturalRegeneration is false.
+custom-regeneration:
+  enabled: true
+  # 1.0 HP = half a heart in Minecraft.
+  heal-amount-hp: 1.0
+  intervals:
+    # food level 20
+    full-hunger-seconds: 3
+    # food level 15-19
+    high-hunger-seconds: 5
+    # food level 10-14
+    medium-hunger-seconds: 15
+  # Optional per-world overrides (true = allow custom regen in that world when gamerule is false).
+  world-overrides:
+    world: true
+    world_nether: true
+    world_the_end: true
