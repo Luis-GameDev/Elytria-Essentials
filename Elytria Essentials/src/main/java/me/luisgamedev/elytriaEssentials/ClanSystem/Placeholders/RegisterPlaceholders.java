@@ -116,7 +116,7 @@ public class RegisterPlaceholders extends PlaceholderExpansion {
             return String.valueOf(hasUsableClassWeapon(player));
         }
         if (params.equalsIgnoreCase("weapon_level")) {
-            return getHighestUsableClassWeaponLevel(player).orElse("0");
+            return getHighestUsableClassWeaponLevel(player).orElse("0.3");
         }
         return null;
     }
