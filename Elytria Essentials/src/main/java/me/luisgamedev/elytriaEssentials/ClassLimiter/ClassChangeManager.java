@@ -62,6 +62,12 @@ public class ClassChangeManager implements Listener {
             return;
         }
 
+        try {
+            Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "tw facts set althred_speak 3 " + player.getName());
+        } catch (RuntimeException e) {
+            plugin.getLogger().log(Level.SEVERE, "Failed to dispatch TW class selection approval command: ", e);
+        }
+
         PlayerData playerData = event.getData();
         if (playerData == null) {
             return;
