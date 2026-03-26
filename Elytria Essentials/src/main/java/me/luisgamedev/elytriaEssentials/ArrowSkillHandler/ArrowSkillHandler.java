@@ -1,5 +1,8 @@
 package me.luisgamedev.elytriaEssentials.ArrowSkillHandler;
 
+import net.Indyuce.mmocore.api.player.PlayerData;
+import net.Indyuce.mmocore.api.player.profess.PlayerClass;
+import net.Indyuce.mmoitems.MMOItems;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -25,6 +28,8 @@ import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityShootBowEvent;
 import org.bukkit.event.entity.ProjectileHitEvent;
+import org.bukkit.event.player.PlayerMoveEvent;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -43,6 +48,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
@@ -52,6 +58,39 @@ public class ArrowSkillHandler implements Listener, CommandExecutor, TabComplete
     private static final long WEB_DURATION_TICKS = 100L;
 
     private static final String DOOMSHOT_GHOST_METADATA = "elytria-essentials-doomshot-ghost";
+    private static final double BASE_WEAPON_MODIFIER = 0.3D;
+
+    private static final Map<String, Integer> LEVEL_SYNONYMS = Map.of(
+            "WORN", 1,
+            "FORGED", 10,
+            "HARDENED", 20,
+            "REFINED", 40,
+            "MASTERWORK", 60,
+            "RUNED", 80,
+            "GEMSTONE", 100
+    );
+
+    private static final Map<String, Double> LEVEL_MODIFIER_VALUES = Map.of(
+            "WORN", 0.4D,
+            "FORGED", 0.5D,
+            "HARDENED", 0.6D,
+            "REFINED", 0.7D,
+            "MASTERWORK", 0.8D,
+            "RUNED", 0.9D,
+            "GEMSTONE", 1.0D
+    );
+
+    private static final Map<String, String> CLASS_TO_WEAPON = Map.of(
+            "SCOUT", "LONGBOW",
+            "RANGER", "WARBOW",
+            "GUARDIAN", "GREATSWORD",
+            "PRIEST", "SCEPTER",
+            "ARCHMAGE", "STAFF",
+            "MYSTIC", "FOCUS",
+            "BERSERK", "GREATAXE",
+            "LYKANTHROP", "CLAW",
+            "SHADOWWALKER", "DAGGER"
+    );
 
     private final JavaPlugin plugin;
     private final Map<UUID, ActiveAbility> activeAbilities = new HashMap<>();
@@ -60,6 +99,7 @@ public class ArrowSkillHandler implements Listener, CommandExecutor, TabComplete
     private final Map<Location, Long> protectedWebBlocks = new HashMap<>();
     private final Map<Ability, AbilitySettings> abilitySettings = new HashMap<>();
     private final Map<UUID, Vector> arrowLastVelocities = new HashMap<>();
+    private final Map<UUID, Long> stunnedPlayers = new HashMap<>();
 
     public ArrowSkillHandler(JavaPlugin plugin) {
         this.plugin = plugin;
@@ -168,7 +208,7 @@ public class ArrowSkillHandler implements Listener, CommandExecutor, TabComplete
         assignAbilityToArrow(arrow, ability);
 
         if (ability == Ability.FLAMETHORN) {
-            arrow.setFireTicks(100);
+            arrow.setFireTicks(scaleDuration(100, getShooterWeaponModifier(arrow)));
         }
 
         if (!ability.appliesToAllArrows) {
@@ -228,7 +268,7 @@ public class ArrowSkillHandler implements Listener, CommandExecutor, TabComplete
             case FLAMETHORN -> {
                 if (hitEntity instanceof LivingEntity living) {
                     if (shouldApplyAbilityTo(living, arrow, Ability.FLAMETHORN)) {
-                        living.setFireTicks(100);
+                        living.setFireTicks(scaleDuration(100, getShooterWeaponModifier(arrow)));
                     }
                 }
             }
@@ -236,7 +276,7 @@ public class ArrowSkillHandler implements Listener, CommandExecutor, TabComplete
             case TOXIC_ARROWS -> {
                 if (hitEntity instanceof LivingEntity living) {
                     if (shouldApplyAbilityTo(living, arrow, Ability.TOXIC_ARROWS)) {
-                        living.addPotionEffect(new PotionEffect(PotionEffectType.POISON, 100, 0));
+                        living.addPotionEffect(new PotionEffect(PotionEffectType.POISON, scaleDuration(100, getShooterWeaponModifier(arrow)), 0));
                     }
                 }
             }
@@ -256,19 +296,19 @@ public class ArrowSkillHandler implements Listener, CommandExecutor, TabComplete
             }
             case FOREST_THORN -> {
                 if (hitEntity instanceof LivingEntity living && shouldApplyAbilityTo(living, arrow, Ability.FOREST_THORN)) {
-                    applyForestThornHitEffects(living);
+                    applyForestThornHitEffects(living, arrow);
                     applyForestThornTrueDamageLater(living);
                 }
             }
             case STUNNING_THORN -> {
                 if (hitEntity instanceof LivingEntity living && shouldApplyAbilityTo(living, arrow, Ability.STUNNING_THORN)) {
-                    applyStunningThornEffects(living);
+                    applyStunningThornEffects(living, arrow);
                 }
             }
             case PLAGUESHOT -> applyPlagueShotEffects(arrow, hitEntity != null ? hitEntity.getLocation() : arrow.getLocation());
             case NATURES_GRASP -> {
                 if (hitEntity instanceof LivingEntity living && shouldApplyAbilityTo(living, arrow, Ability.NATURES_GRASP)) {
-                    applyNaturesGraspEffect(hitEntity);
+                    applyNaturesGraspEffect(living, arrow);
                 }
             }
         }
@@ -340,6 +380,31 @@ public class ArrowSkillHandler implements Listener, CommandExecutor, TabComplete
                     block.setType(Material.AIR, false);
                 }
             });
+        }
+    }
+
+    @EventHandler
+    public void onStunnedPlayerMove(PlayerMoveEvent event) {
+        Player player = event.getPlayer();
+        Long stunnedUntil = stunnedPlayers.get(player.getUniqueId());
+        if (stunnedUntil == null) {
+            return;
+        }
+
+        if (System.currentTimeMillis() > stunnedUntil) {
+            stunnedPlayers.remove(player.getUniqueId());
+            return;
+        }
+
+        Location from = event.getFrom();
+        Location to = event.getTo();
+        if (to == null) {
+            return;
+        }
+
+        boolean movedHorizontally = from.getX() != to.getX() || from.getZ() != to.getZ();
+        if (movedHorizontally) {
+            event.setTo(from);
         }
     }
 
@@ -527,10 +592,11 @@ public class ArrowSkillHandler implements Listener, CommandExecutor, TabComplete
 
         if (hitEntity instanceof LivingEntity living) {
             Entity shooter = arrow.getShooter() instanceof Entity entity ? entity : null;
+            double damage = 6.0D * getShooterWeaponModifier(arrow);
             if (shooter instanceof Player player) {
-                living.damage(6.0, player);
+                living.damage(damage, player);
             } else {
-                living.damage(6.0);
+                living.damage(damage);
             }
         }
     }
@@ -567,9 +633,10 @@ public class ArrowSkillHandler implements Listener, CommandExecutor, TabComplete
 
     private void triggerDoomshotImpact(Arrow arrow, Vector impactDirection, boolean knockEntitiesAway) {
         AbilitySettings settings = abilitySettings.get(Ability.DOOMSHOT);
-        double radius = settings != null ? settings.doomshotRadius() : 3.0D;
-        double blockVelocity = settings != null ? settings.doomshotBlockVelocity() : 0.8D;
-        double playerVelocity = settings != null ? settings.doomshotPlayerVelocity() : 1.2D;
+        double modifier = getShooterWeaponModifier(arrow);
+        double radius = settings != null ? settings.doomshotRadius() * modifier : 3.0D * modifier;
+        double blockVelocity = settings != null ? settings.doomshotBlockVelocity() * modifier : 0.8D * modifier;
+        double playerVelocity = settings != null ? settings.doomshotPlayerVelocity() * modifier : 1.2D * modifier;
 
         Vector direction = impactDirection != null ? impactDirection.clone() : new Vector(0, 1, 0);
         if (direction.lengthSquared() < 1.0E-4) {
@@ -652,13 +719,13 @@ public class ArrowSkillHandler implements Listener, CommandExecutor, TabComplete
         }
     }
 
-    private void applyForestThornHitEffects(LivingEntity living) {
+    private void applyForestThornHitEffects(LivingEntity living, Arrow arrow) {
         AbilitySettings settings = abilitySettings.get(Ability.FOREST_THORN);
         if (settings == null) {
             return;
         }
 
-        int duration = Math.max(0, settings.forestSlownessDurationTicks());
+        int duration = scaleDuration(settings.forestSlownessDurationTicks(), getShooterWeaponModifier(arrow));
         if (duration > 0) {
             living.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, duration, Math.max(0, settings.forestSlownessAmplifier())));
         }
@@ -691,18 +758,19 @@ public class ArrowSkillHandler implements Listener, CommandExecutor, TabComplete
         living.setHealth(clamped);
     }
 
-    private void applyStunningThornEffects(LivingEntity living) {
+    private void applyStunningThornEffects(LivingEntity living, Arrow arrow) {
         AbilitySettings settings = abilitySettings.get(Ability.STUNNING_THORN);
         if (settings == null) {
             return;
         }
 
+        double modifier = getShooterWeaponModifier(arrow);
         if (settings.stunningBlindnessDurationTicks() > 0) {
-            living.addPotionEffect(new PotionEffect(PotionEffectType.BLINDNESS, settings.stunningBlindnessDurationTicks(), 0));
+            living.addPotionEffect(new PotionEffect(PotionEffectType.BLINDNESS, scaleDuration(settings.stunningBlindnessDurationTicks(), modifier), 0));
         }
 
         if (settings.stunningNauseaDurationTicks() > 0) {
-            living.addPotionEffect(new PotionEffect(PotionEffectType.NAUSEA, settings.stunningNauseaDurationTicks(), 0));
+            living.addPotionEffect(new PotionEffect(PotionEffectType.NAUSEA, scaleDuration(settings.stunningNauseaDurationTicks(), modifier), 0));
         }
 
         spawnStunningThornParticles(living);
@@ -725,10 +793,23 @@ public class ArrowSkillHandler implements Listener, CommandExecutor, TabComplete
 
         spawnPlagueImpactEffects(impactLocation, world);
 
+        double modifier = getShooterWeaponModifier(arrow);
         double radius = 3.0D;
         world.getNearbyLivingEntities(impactLocation, radius).forEach(living -> {
-            if (settings.plagueWitherDurationTicks() > 0 && shouldApplyAbilityTo(living, arrow, Ability.PLAGUESHOT)) {
-                living.addPotionEffect(new PotionEffect(PotionEffectType.WITHER, settings.plagueWitherDurationTicks(), Math.max(0, settings.plagueWitherAmplifier())));
+            if (!shouldApplyAbilityTo(living, arrow, Ability.PLAGUESHOT)) {
+                return;
+            }
+            double damage = settings.plagueBonusDamage() * modifier;
+            if (damage > 0) {
+                Entity shooter = arrow.getShooter() instanceof Entity entity ? entity : null;
+                if (shooter instanceof Player player) {
+                    living.damage(damage, player);
+                } else {
+                    living.damage(damage);
+                }
+            }
+            if (settings.plagueWitherDurationTicks() > 0) {
+                living.addPotionEffect(new PotionEffect(PotionEffectType.WITHER, scaleDuration(settings.plagueWitherDurationTicks(), modifier), Math.max(0, settings.plagueWitherAmplifier())));
             }
         });
     }
@@ -747,7 +828,7 @@ public class ArrowSkillHandler implements Listener, CommandExecutor, TabComplete
             return;
         }
 
-        double bonusDamage = settings.bonusArrowDamage();
+        double bonusDamage = settings.bonusArrowDamage() * getShooterWeaponModifier(event.getDamager());
         if (bonusDamage <= 0) {
             return;
         }
@@ -755,27 +836,56 @@ public class ArrowSkillHandler implements Listener, CommandExecutor, TabComplete
         event.setDamage(event.getDamage() + bonusDamage);
     }
 
-    private void applyNaturesGraspEffect(Entity hitEntity) {
-        if (!(hitEntity instanceof Player player)) {
+    private void applyNaturesGraspEffect(LivingEntity living, Arrow arrow) {
+        AbilitySettings settings = abilitySettings.get(Ability.NATURES_GRASP);
+        if (settings == null) {
             return;
         }
 
-        boolean wasOp = player.isOp();
-        if (!wasOp) {
-            player.setOp(true);
+        int stunDurationTicks = scaleDuration(settings.naturesGraspStunDurationTicks(), getShooterWeaponModifier(arrow));
+        if (stunDurationTicks <= 0) {
+            return;
         }
 
-        try {
-            player.performCommand("mm test cast -s Natures_Grasp_Stun");
-        } finally {
-            if (!wasOp) {
-                Bukkit.getScheduler().runTask(plugin, () -> player.setOp(false));
-            }
+        if (living instanceof Player player) {
+            long expiresAt = System.currentTimeMillis() + (stunDurationTicks * 50L);
+            stunnedPlayers.put(player.getUniqueId(), expiresAt);
+        } else {
+            living.setAI(false);
         }
+
+        living.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, stunDurationTicks, 10));
+        living.addPotionEffect(new PotionEffect(PotionEffectType.MINING_FATIGUE, stunDurationTicks, 10));
+        spawnNaturesGraspParticles(living, stunDurationTicks);
+
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            if (!(living instanceof Player) && living.isValid() && !living.isDead()) {
+                living.setAI(true);
+            }
+        }, stunDurationTicks);
     }
 
     private void spawnStunningThornParticles(LivingEntity living) {
         living.getWorld().spawnParticle(Particle.WITCH, living.getLocation().add(0, 1, 0), 30, 0.4, 0.6, 0.4, 0.2);
+    }
+
+    private void spawnNaturesGraspParticles(LivingEntity living, int durationTicks) {
+        new BukkitRunnable() {
+            int elapsedTicks = 0;
+
+            @Override
+            public void run() {
+                if (!living.isValid() || living.isDead() || elapsedTicks >= durationTicks) {
+                    cancel();
+                    return;
+                }
+
+                Location particleOrigin = living.getLocation().add(0, 1, 0);
+                living.getWorld().spawnParticle(Particle.HAPPY_VILLAGER, particleOrigin, 10, 0.4, 0.8, 0.4, 0.03);
+                living.getWorld().spawnParticle(Particle.CRIT, particleOrigin, 6, 0.25, 0.5, 0.25, 0.02);
+                elapsedTicks += 5;
+            }
+        }.runTaskTimer(plugin, 0L, 5L);
     }
 
     private void spawnWebTrap(ProjectileHitEvent event, Arrow arrow) {
@@ -821,6 +931,126 @@ public class ArrowSkillHandler implements Listener, CommandExecutor, TabComplete
                 }
             }
         }.runTaskLater(plugin, WEB_DURATION_TICKS);
+    }
+
+    private int scaleDuration(int baseDurationTicks, double modifier) {
+        return Math.max(0, (int) Math.round(baseDurationTicks * Math.max(0, modifier)));
+    }
+
+    private double getShooterWeaponModifier(Entity source) {
+        if (source instanceof Arrow arrow) {
+            return getShooterWeaponModifier(arrow);
+        }
+        if (source instanceof Player player) {
+            return getWeaponModifier(player);
+        }
+        return BASE_WEAPON_MODIFIER;
+    }
+
+    private double getShooterWeaponModifier(Arrow arrow) {
+        if (arrow.getShooter() instanceof Player player) {
+            return getWeaponModifier(player);
+        }
+        return BASE_WEAPON_MODIFIER;
+    }
+
+    private double getWeaponModifier(Player player) {
+        return getHighestUsableClassWeaponLevel(player).orElse(BASE_WEAPON_MODIFIER);
+    }
+
+    private Optional<Double> getHighestUsableClassWeaponLevel(Player player) {
+        if (!Bukkit.getPluginManager().isPluginEnabled("MMOItems")
+                || !Bukkit.getPluginManager().isPluginEnabled("MMOCore")) {
+            return Optional.empty();
+        }
+        if (!PlayerData.has(player)) {
+            return Optional.empty();
+        }
+
+        PlayerData playerData = PlayerData.get(player);
+        if (playerData == null) {
+            return Optional.empty();
+        }
+
+        String classKey = resolveClassKey(playerData.getProfess());
+        if (classKey == null) {
+            return Optional.empty();
+        }
+
+        String requiredWeapon = CLASS_TO_WEAPON.get(classKey);
+        if (requiredWeapon == null) {
+            return Optional.empty();
+        }
+
+        int playerLevel = playerData.getLevel();
+        int highestRequiredLevel = -1;
+        String highestLevelKey = null;
+
+        for (ItemStack itemStack : player.getInventory().getContents()) {
+            String levelKey = getUsableWeaponLevelKey(itemStack, requiredWeapon, playerLevel);
+            if (levelKey == null) {
+                continue;
+            }
+
+            int requiredLevel = LEVEL_SYNONYMS.get(levelKey);
+            if (requiredLevel > highestRequiredLevel) {
+                highestRequiredLevel = requiredLevel;
+                highestLevelKey = levelKey;
+            }
+        }
+
+        if (highestLevelKey == null) {
+            return Optional.empty();
+        }
+        return Optional.ofNullable(LEVEL_MODIFIER_VALUES.get(highestLevelKey));
+    }
+
+    private String getUsableWeaponLevelKey(ItemStack itemStack, String requiredWeapon, int playerLevel) {
+        if (itemStack == null || itemStack.getType() == Material.AIR) {
+            return null;
+        }
+
+        String itemId = MMOItems.getID(itemStack);
+        if (itemId == null || itemId.isBlank()) {
+            return null;
+        }
+
+        String normalizedId = itemId.toUpperCase(Locale.ROOT);
+        int separatorIndex = normalizedId.indexOf('_');
+        if (separatorIndex <= 0 || separatorIndex >= normalizedId.length() - 1) {
+            return null;
+        }
+
+        String levelKey = normalizedId.substring(0, separatorIndex);
+        Integer requiredLevel = LEVEL_SYNONYMS.get(levelKey);
+        if (requiredLevel == null || playerLevel < requiredLevel) {
+            return null;
+        }
+
+        String weaponName = normalizedId.substring(separatorIndex + 1);
+        if (!weaponName.equals(requiredWeapon)) {
+            return null;
+        }
+
+        return levelKey;
+    }
+
+    private String resolveClassKey(PlayerClass playerClass) {
+        if (playerClass == null) {
+            return null;
+        }
+
+        String classId = playerClass.getId();
+        if (classId != null && !classId.isBlank()) {
+            return classId.toUpperCase(Locale.ROOT);
+        }
+
+        String className = playerClass.getName();
+        if (className != null && !className.isBlank()) {
+            return className.toUpperCase(Locale.ROOT);
+        }
+
+        return null;
     }
 
     private record ActiveAbility(Ability ability, long expiresAt) {
@@ -901,7 +1131,9 @@ public class ArrowSkillHandler implements Listener, CommandExecutor, TabComplete
             int stunningBlindnessDurationTicks,
             int stunningNauseaDurationTicks,
             int plagueWitherDurationTicks,
-            int plagueWitherAmplifier) {
+            int plagueWitherAmplifier,
+            double plagueBonusDamage,
+            int naturesGraspStunDurationTicks) {
 
         private static AbilitySettings fromConfig(Ability ability, JavaPlugin plugin) {
             ConfigurationSection section = plugin.getConfig().getConfigurationSection("arrow-skills." + ability.key);
@@ -924,6 +1156,8 @@ public class ArrowSkillHandler implements Listener, CommandExecutor, TabComplete
             int stunningNauseaDurationTicks = ability == Ability.STUNNING_THORN ? 180 : 0;
             int plagueWitherDurationTicks = ability == Ability.PLAGUESHOT ? 120 : 0;
             int plagueWitherAmplifier = ability == Ability.PLAGUESHOT ? 1 : 0;
+            double plagueBonusDamage = ability == Ability.PLAGUESHOT ? 2.0D : 0.0D;
+            int naturesGraspStunDurationTicks = ability == Ability.NATURES_GRASP ? 40 : 0;
 
             if (section != null) {
                 switch (ability) {
@@ -946,6 +1180,10 @@ public class ArrowSkillHandler implements Listener, CommandExecutor, TabComplete
                     case PLAGUESHOT -> {
                         plagueWitherDurationTicks = section.getInt("wither-duration-ticks", 120);
                         plagueWitherAmplifier = section.getInt("wither-amplifier", 1);
+                        plagueBonusDamage = section.getDouble("bonus-damage", 2.0D);
+                    }
+                    case NATURES_GRASP -> {
+                        naturesGraspStunDurationTicks = section.getInt("stun-duration-ticks", 40);
                     }
                     default -> {
                         // no-op
@@ -966,7 +1204,9 @@ public class ArrowSkillHandler implements Listener, CommandExecutor, TabComplete
                     Math.max(0, stunningBlindnessDurationTicks),
                     Math.max(0, stunningNauseaDurationTicks),
                     Math.max(0, plagueWitherDurationTicks),
-                    Math.max(0, plagueWitherAmplifier)
+                    Math.max(0, plagueWitherAmplifier),
+                    Math.max(0, plagueBonusDamage),
+                    Math.max(0, naturesGraspStunDurationTicks)
             );
         }
     }
