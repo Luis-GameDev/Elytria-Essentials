@@ -4,7 +4,7 @@ plugins {
 }
 
 group = 'me.luisgamedev'
-version = '9.2'
+version = '9.3'
 
 repositories {
     mavenCentral()
@@ -46,6 +46,7 @@ dependencies {
     compileOnly files("libs/MythicLib-dist-1.7.1-20250911.223617-39.jar")
     compileOnly files("libs/MMOCore-1.13.1-20250912.211559-24.jar")
     compileOnly files("libs/MMOItems-6.10.1-20250906.130656-32.jar")
+    compileOnly files("libs/VentureChat-3.7.2.jar")
 }
 
 tasks {

@@ -32,6 +32,7 @@ import me.luisgamedev.elytriaEssentials.ShopSystem.ShopListener;
 import me.luisgamedev.elytriaEssentials.ShopSystem.ShopManager;
 import me.luisgamedev.elytriaEssentials.Money.CoinPickupListener;
 import me.luisgamedev.elytriaEssentials.MMOCore.LevelMilestoneBroadcastListener;
+import me.luisgamedev.elytriaEssentials.SkillChatAdapter.CustomSkillCommand;
 import me.luisgamedev.elytriaEssentials.commands.ReloadCommand;
 import me.luisgamedev.elytriaEssentials.commands.PartyCommand;
 import me.luisgamedev.elytriaEssentials.commands.HologramCommand;
@@ -146,6 +147,9 @@ public final class ElytriaEssentials extends JavaPlugin {
         } else {
             getLogger().warning("nextjoinitems command is not defined in plugin.yml");
         }
+        CustomSkillCommand customSkillCommand = new CustomSkillCommand(this);
+        getCommand("vcadap").setExecutor(customSkillCommand);
+
         clanManager = new ClanManager(this);
         pm.registerEvents(new ClanListener(this, clanManager), this);
         ClanCommand clanCommand = new ClanCommand(this, clanManager);

@@ -1,9 +1,9 @@
 name: ElytriaEssentials
-version: '9.2'
+version: '9.3'
 main: me.luisgamedev.elytriaEssentials.ElytriaEssentials
 api-version: '1.21'
 depend: [Vault, Citizens, WorldGuard, MMOCore, MythicHUD]
-softdepend: [WGRegionEvents, MMOItems, MythicLib]
+softdepend: [WGRegionEvents, MMOItems, MythicLib, VentureChat]
 commands:
   clan:
     description: Clan management command
@@ -11,6 +11,11 @@ commands:
   party:
     description: Open the MMOCore party menu
     usage: /party
+  vcadap:
+    description: Chat adapter
+    usage: /vcadap
+    default: op
+    permission: elytria.vcadap
   npcshop:
     description: Manage NPC buy shops
     usage: /npcshop additem <shopId> <price>
@@ -83,4 +88,7 @@ permissions:
     default: op
   elytria.nextjoinitems.manage:
     description: Allows managing items given to players on their next join.
+    default: op
+  elytria.vcadap:
+    description: Allows using the chat adapter
     default: op
