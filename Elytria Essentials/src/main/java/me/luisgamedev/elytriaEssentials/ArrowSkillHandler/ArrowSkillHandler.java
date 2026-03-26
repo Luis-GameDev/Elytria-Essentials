@@ -1,5 +1,6 @@
 package me.luisgamedev.elytriaEssentials.ArrowSkillHandler;
 
+import io.lumine.mythic.api.skills.SkillTrigger;
 import io.lumine.mythic.bukkit.MythicBukkit;
 import io.lumine.mythic.lib.comp.mythicmobs.MythicMobsHook;
 import net.Indyuce.mmocore.api.player.PlayerData;
@@ -45,13 +46,7 @@ import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.Vector;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
@@ -848,22 +843,21 @@ public class ArrowSkillHandler implements Listener, CommandExecutor, TabComplete
             return;
         }
 
-        if (living instanceof Player player) {
-            long expiresAt = System.currentTimeMillis() + (stunDurationTicks * 50L);
-            MythicBukkit.inst().getAPIHelper().castSkill(player, "Arrowstun");
-        } else {
-            living.setAI(false);
+        if (!(arrow.getShooter() instanceof Entity shooter)) {
+            return;
         }
 
-        living.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, stunDurationTicks, 10));
-        living.addPotionEffect(new PotionEffect(PotionEffectType.MINING_FATIGUE, stunDurationTicks, 10));
-        spawnNaturesGraspParticles(living, stunDurationTicks);
+        MythicBukkit.inst().getAPIHelper().castSkill(
+                shooter,
+                "Arrowstun",
+                arrow,
+                arrow.getLocation(),
+                java.util.List.of(living),
+                java.util.Collections.emptyList(),
+                1.0f
+        );
 
-        Bukkit.getScheduler().runTaskLater(plugin, () -> {
-            if (!(living instanceof Player) && living.isValid() && !living.isDead()) {
-                living.setAI(true);
-            }
-        }, stunDurationTicks);
+        spawnNaturesGraspParticles(living, stunDurationTicks);
     }
 
     private void spawnStunningThornParticles(LivingEntity living) {
@@ -882,8 +876,8 @@ public class ArrowSkillHandler implements Listener, CommandExecutor, TabComplete
                 }
 
                 Location particleOrigin = living.getLocation().add(0, 1, 0);
-                living.getWorld().spawnParticle(Particle.HAPPY_VILLAGER, particleOrigin, 10, 0.4, 0.8, 0.4, 0.03);
-                living.getWorld().spawnParticle(Particle.CRIT, particleOrigin, 6, 0.25, 0.5, 0.25, 0.02);
+                living.getWorld().spawnParticle(Particle.HAPPY_VILLAGER, particleOrigin, 3, 0.4, 0.8, 0.4, 0.03);
+                living.getWorld().spawnParticle(Particle.CRIT, particleOrigin, 2, 0.25, 0.5, 0.25, 0.02);
                 elapsedTicks += 5;
             }
         }.runTaskTimer(plugin, 0L, 5L);
