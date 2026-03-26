@@ -173,10 +173,12 @@ arrow-skills:
     nausea-duration-ticks: 180
   plagueshot:
     selection-duration-seconds: 6
+    bonus-damage: 2.0
     wither-duration-ticks: 120
     wither-amplifier: 1
   natures_grasp:
     selection-duration-seconds: 3
+    stun-duration-ticks: 40
 
 
 
