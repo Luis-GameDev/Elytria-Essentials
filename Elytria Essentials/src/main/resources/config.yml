@@ -152,13 +152,13 @@ boss:
 # Arrow Skill Settings
 arrow-skills:
   arcaneshot:
-    selection-duration-seconds: 3
+    selection-duration-seconds: 5
     teleport-distance: 1.5
   bloodarrow:
-    selection-duration-seconds: 3
+    selection-duration-seconds: 5
     bonus-damage: 8.0
   doomshot:
-    selection-duration-seconds: 3
+    selection-duration-seconds: 5
     impact-radius: 4.0
     player-knockup-velocity: 1.5
     block-knockup-velocity: 1.2
@@ -168,16 +168,16 @@ arrow-skills:
     slowness-duration-ticks: 40
     slowness-amplifier: 2
   stunning_thorn:
-    selection-duration-seconds: 3
+    selection-duration-seconds: 5
     blindness-duration-ticks: 100
     nausea-duration-ticks: 180
   plagueshot:
-    selection-duration-seconds: 6
+    selection-duration-seconds: 5
     bonus-damage: 2.0
     wither-duration-ticks: 120
     wither-amplifier: 1
   natures_grasp:
-    selection-duration-seconds: 3
+    selection-duration-seconds: 5
     stun-duration-ticks: 40
 
 

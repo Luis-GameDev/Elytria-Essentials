@@ -1,5 +1,7 @@
 package me.luisgamedev.elytriaEssentials.ArrowSkillHandler;
 
+import io.lumine.mythic.bukkit.MythicBukkit;
+import io.lumine.mythic.lib.comp.mythicmobs.MythicMobsHook;
 import net.Indyuce.mmocore.api.player.PlayerData;
 import net.Indyuce.mmocore.api.player.profess.PlayerClass;
 import net.Indyuce.mmoitems.MMOItems;
@@ -99,7 +101,6 @@ public class ArrowSkillHandler implements Listener, CommandExecutor, TabComplete
     private final Map<Location, Long> protectedWebBlocks = new HashMap<>();
     private final Map<Ability, AbilitySettings> abilitySettings = new HashMap<>();
     private final Map<UUID, Vector> arrowLastVelocities = new HashMap<>();
-    private final Map<UUID, Long> stunnedPlayers = new HashMap<>();
 
     public ArrowSkillHandler(JavaPlugin plugin) {
         this.plugin = plugin;
@@ -383,7 +384,7 @@ public class ArrowSkillHandler implements Listener, CommandExecutor, TabComplete
         }
     }
 
-    @EventHandler
+    /*@EventHandler
     public void onStunnedPlayerMove(PlayerMoveEvent event) {
         Player player = event.getPlayer();
         Long stunnedUntil = stunnedPlayers.get(player.getUniqueId());
@@ -406,7 +407,7 @@ public class ArrowSkillHandler implements Listener, CommandExecutor, TabComplete
         if (movedHorizontally) {
             event.setTo(from);
         }
-    }
+    }*/
 
     private void assignAbilityToArrow(Arrow arrow, Ability ability) {
         arrowAbilities.put(arrow.getUniqueId(), ability);
@@ -849,7 +850,7 @@ public class ArrowSkillHandler implements Listener, CommandExecutor, TabComplete
 
         if (living instanceof Player player) {
             long expiresAt = System.currentTimeMillis() + (stunDurationTicks * 50L);
-            stunnedPlayers.put(player.getUniqueId(), expiresAt);
+            MythicBukkit.inst().getAPIHelper().castSkill(player, "Arrowstun");
         } else {
             living.setAI(false);
         }
