@@ -35,6 +35,8 @@ import me.luisgamedev.elytriaEssentials.ShopSystem.ShopManager;
 import me.luisgamedev.elytriaEssentials.Money.CoinPickupListener;
 import me.luisgamedev.elytriaEssentials.MMOCore.LevelMilestoneBroadcastListener;
 import me.luisgamedev.elytriaEssentials.SkillChatAdapter.CustomSkillCommand;
+import me.luisgamedev.elytriaEssentials.Coalmine.CoalmineCommand;
+import me.luisgamedev.elytriaEssentials.Coalmine.CoalmineManager;
 import me.luisgamedev.elytriaEssentials.commands.ReloadCommand;
 import me.luisgamedev.elytriaEssentials.commands.PartyCommand;
 import me.luisgamedev.elytriaEssentials.commands.HologramCommand;
@@ -93,6 +95,7 @@ public final class ElytriaEssentials extends JavaPlugin {
     private FirstJoinItemManager firstJoinItemManager;
     private NextJoinItemManager nextJoinItemManager;
     private CustomRegenerationManager customRegenerationManager;
+    private CoalmineManager coalmineManager;
 
     @Override
     public void onEnable() {
@@ -295,6 +298,17 @@ public final class ElytriaEssentials extends JavaPlugin {
         customRegenerationManager = new CustomRegenerationManager(this);
         pm.registerEvents(customRegenerationManager, this);
         customRegenerationManager.start();
+
+        coalmineManager = new CoalmineManager(this);
+        pm.registerEvents(coalmineManager, this);
+        PluginCommand coalmineCommand = getCommand("coalmine");
+        if (coalmineCommand != null) {
+            CoalmineCommand coalmineExecutor = new CoalmineCommand(coalmineManager);
+            coalmineCommand.setExecutor(coalmineExecutor);
+            coalmineCommand.setTabCompleter(coalmineExecutor);
+        } else {
+            getLogger().warning("coalmine command is not defined in plugin.yml");
+        }
     }
 
     private void registerSpawnCommand(String commandName, SpawnCommandHandler handler) {
@@ -375,6 +389,10 @@ public final class ElytriaEssentials extends JavaPlugin {
         if (customRegenerationManager != null) {
             customRegenerationManager.stop();
             customRegenerationManager = null;
+        }
+        if (coalmineManager != null) {
+            coalmineManager.shutdown();
+            coalmineManager = null;
         }
     }
 

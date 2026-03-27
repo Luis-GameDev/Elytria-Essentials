@@ -92,6 +92,13 @@ commands:
   discordlink:
     description: Show the Elytria Discord link.
     usage: /discordlink
+  coalmine:
+    description: Manage coalmine punishments.
+    usage: |-
+      /coalmine <player> <amount>
+      /coalmine lift <player>
+    permission: elytria.coalmine.admin
+    default: op
 permissions:
   elytria.classchange.bypass:
     description: Allows the player to bypass the class change cooldown.
@@ -116,4 +123,7 @@ permissions:
     default: op
   elytria.spawn.force:
     description: Allows forcing players to spawn.
+    default: op
+  elytria.coalmine.admin:
+    description: Allows assigning and lifting coalmine punishments.
     default: op
