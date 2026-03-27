@@ -170,7 +170,7 @@ public class SpawnCommandHandler implements CommandExecutor, TabCompleter, Liste
             sender.sendMessage(color("&cOnly players can use this command."));
             return true;
         }
-        Component message = Component.text("[Elytria] ", NamedTextColor.DARK_GRAY)
+        Component message = Component.text("[Elytria] ", NamedTextColor.AQUA)
                 .append(Component.text("Open the ", NamedTextColor.GRAY))
                 .append(Component.text("Live Map ", NamedTextColor.GREEN))
                 .append(Component.text("here.", NamedTextColor.YELLOW)
@@ -186,7 +186,7 @@ public class SpawnCommandHandler implements CommandExecutor, TabCompleter, Liste
             sender.sendMessage(color("&cOnly players can use this command."));
             return true;
         }
-        player.sendMessage(color("&8[&dElytria&8] &9https://discord.gg/xppzjkRwZ9"));
+        player.sendMessage(color("&8[&bElytria&8] &9https://discord.gg/xppzjkRwZ9"));
         player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1f, 2f);
         return true;
     }

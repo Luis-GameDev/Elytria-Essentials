@@ -1,5 +1,5 @@
 name: ElytriaEssentials
-version: '9.3'
+version: '9.4'
 main: me.luisgamedev.elytriaEssentials.ElytriaEssentials
 api-version: '1.21'
 depend: [Vault, Citizens, WorldGuard, MMOCore, MythicHUD]
@@ -70,6 +70,28 @@ commands:
   nextjoinitems:
     description: Manage items granted to a player on their next join.
     usage: /nextjoinitems <add|gui|claim> [player]
+  spawn:
+    description: Teleport to spawn after a short countdown.
+    usage: /spawn
+  forcespawn:
+    description: Force teleport a player to spawn.
+    usage: /forcespawn <player>
+    aliases: [fs]
+    permission: elytria.spawn.force
+    default: op
+  spawnall:
+    description: Force teleport all online players to spawn.
+    usage: /spawnall
+    aliases: [sa, forcespawnall, fsa]
+    permission: elytria.spawn.force
+    default: op
+  map:
+    description: Show the Elytria live map link.
+    usage: /map
+    aliases: [livemap, dynmap]
+  discordlink:
+    description: Show the Elytria Discord link.
+    usage: /discordlink
 permissions:
   elytria.classchange.bypass:
     description: Allows the player to bypass the class change cooldown.
@@ -91,4 +113,7 @@ permissions:
     default: op
   elytria.vcadap:
     description: Allows using the chat adapter
+    default: op
+  elytria.spawn.force:
+    description: Allows forcing players to spawn.
     default: op
