@@ -77,6 +77,9 @@ public class CoalmineManager implements Listener {
             giveUnbreakablePickaxe(player);
         }
         player.sendMessage(color("&7You have been sent to the coalmine. Remaining coal blocks: &f" + amount));
+        player.sendMessage(color("&7Due to your misbehaviour, you have been sent to the Coalmine of Elytria."));
+        player.sendMessage(color("&7Mine &f" + amount + " &7coal blocks to earn your freedom."));
+        player.sendMessage(color("&7Turn them in to &fFrank&7, and he will let you leave once you have delivered them all."));
     }
 
     public boolean releasePlayer(Player player, boolean clearInventory) {
