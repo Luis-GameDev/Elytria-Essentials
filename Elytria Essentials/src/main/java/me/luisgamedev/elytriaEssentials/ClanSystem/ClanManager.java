@@ -534,6 +534,11 @@ public class ClanManager {
     }
 
     public void teleportHome(Player player) {
+        if (isInCoalmineWorld(player)) {
+            player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&cYou cannot use /clan home while in the coalmine."));
+            return;
+        }
+
         Clan clan = getClan(player.getUniqueId());
         if (clan == null) {
             player.sendMessage(plugin.getMessage("clan.no-clan"));
@@ -740,6 +745,10 @@ public class ClanManager {
                 || start.getBlockZ() != current.getBlockZ();
     }
 
+    private boolean isInCoalmineWorld(Player player) {
+        return player.getWorld() != null && "elytria_prison".equalsIgnoreCase(player.getWorld().getName());
+    }
+
     private String getRawMessage(String path) {
         String message = plugin.getLanguageConfig().getString(path, "");
         return ChatColor.translateAlternateColorCodes('&', message);
@@ -763,4 +772,3 @@ public class ClanManager {
         }
     }
 }
-

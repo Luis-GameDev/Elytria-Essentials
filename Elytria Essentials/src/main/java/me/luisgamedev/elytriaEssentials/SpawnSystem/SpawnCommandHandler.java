@@ -62,6 +62,11 @@ public class SpawnCommandHandler implements CommandExecutor, TabCompleter, Liste
             return true;
         }
 
+        if (isInCoalmineWorld(player)) {
+            player.sendMessage(color(prefix() + "&cYou cannot use /spawn while in the coalmine."));
+            return true;
+        }
+
         if (activeSpawnStates.containsKey(player.getUniqueId())) {
             player.sendMessage(color(prefix() + "&cPLEASE WAIT."));
             return true;
@@ -246,6 +251,11 @@ public class SpawnCommandHandler implements CommandExecutor, TabCompleter, Liste
         long lastUsed = cooldownRepository.getLastUsed(uuid);
         long elapsed = System.currentTimeMillis() - lastUsed;
         return Math.max(0L, cooldownMillis - elapsed);
+    }
+
+    private boolean isInCoalmineWorld(Player player) {
+        World world = player.getWorld();
+        return world != null && "elytria_prison".equalsIgnoreCase(world.getName());
     }
 
     private String prefix() {

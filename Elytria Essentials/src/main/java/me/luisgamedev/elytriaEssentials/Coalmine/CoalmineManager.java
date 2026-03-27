@@ -76,7 +76,7 @@ public class CoalmineManager implements Listener {
         if (grantPickaxe) {
             giveUnbreakablePickaxe(player);
         }
-        player.sendMessage(color("&7You have been sent to the coalmine. Remaining coal blocks: &f" + amount));
+        sendSentenceExplanation(player, amount);
     }
 
     public boolean releasePlayer(Player player, boolean clearInventory) {
@@ -102,6 +102,8 @@ public class CoalmineManager implements Listener {
             teleportToCoalmine(player);
             ensurePickaxe(player);
             applyMiningFatigueIfInCoalmine(player);
+            repository.getRemainingBlocks(player.getUniqueId())
+                    .ifPresent(remaining -> sendSentenceExplanation(player, remaining));
         });
     }
 
@@ -174,7 +176,7 @@ public class CoalmineManager implements Listener {
         UUID uuid = player.getUniqueId();
         OptionalInt optionalRemaining = repository.getRemainingBlocks(uuid);
         if (optionalRemaining.isEmpty()) {
-            player.sendMessage(color("&7You are not currently punished in the coalmine."));
+            teleportToMainWorld(player);
             return;
         }
 
@@ -230,6 +232,14 @@ public class CoalmineManager implements Listener {
                 false,
                 false
         ));
+    }
+
+
+    private void sendSentenceExplanation(Player player, int remainingBlocks) {
+        player.sendMessage(color("&7You have been sent to the coalmine. Remaining coal blocks: &f" + remainingBlocks));
+        player.sendMessage(color("&7Due to your misbehaviour, you have been sent to the Coalmine of Elytria."));
+        player.sendMessage(color("&7Mine &f" + remainingBlocks + " &7coal blocks to earn your freedom."));
+        player.sendMessage(color("&7Turn them in to &fFrank&7, and he will let you leave once you have delivered them all."));
     }
 
     private int removeCoalBlocks(PlayerInventory inventory) {
