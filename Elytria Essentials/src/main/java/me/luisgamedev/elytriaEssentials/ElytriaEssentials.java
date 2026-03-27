@@ -26,6 +26,8 @@ import me.luisgamedev.elytriaEssentials.ClanSystem.Placeholders.RegisterPlacehol
 import me.luisgamedev.elytriaEssentials.ClassWeapons.ClassWeaponDurabilityListener;
 import me.luisgamedev.elytriaEssentials.Music.CustomMusicManager;
 import me.luisgamedev.elytriaEssentials.Protection.FallDamageProtectionManager;
+import me.luisgamedev.elytriaEssentials.SpawnSystem.SpawnCommandHandler;
+import me.luisgamedev.elytriaEssentials.SpawnSystem.SpawnJoinListener;
 import me.luisgamedev.elytriaEssentials.HUD.HudManager;
 import me.luisgamedev.elytriaEssentials.ShopSystem.ShopCommand;
 import me.luisgamedev.elytriaEssentials.ShopSystem.ShopListener;
@@ -102,6 +104,14 @@ public final class ElytriaEssentials extends JavaPlugin {
         }
         languageConfig = YamlConfiguration.loadConfiguration(langFile);
         PluginManager pm = Bukkit.getPluginManager();
+        SpawnCommandHandler spawnCommandHandler = new SpawnCommandHandler(this);
+        pm.registerEvents(spawnCommandHandler, this);
+        pm.registerEvents(new SpawnJoinListener(this, spawnCommandHandler), this);
+        registerSpawnCommand("spawn", spawnCommandHandler);
+        registerSpawnCommand("forcespawn", spawnCommandHandler);
+        registerSpawnCommand("spawnall", spawnCommandHandler);
+        registerSpawnCommand("map", spawnCommandHandler);
+        registerSpawnCommand("discordlink", spawnCommandHandler);
         if (!new File(getDataFolder(), "exp-rewards.yml").exists()) {
             saveResource("exp-rewards.yml", false);
         }
@@ -285,6 +295,16 @@ public final class ElytriaEssentials extends JavaPlugin {
         customRegenerationManager = new CustomRegenerationManager(this);
         pm.registerEvents(customRegenerationManager, this);
         customRegenerationManager.start();
+    }
+
+    private void registerSpawnCommand(String commandName, SpawnCommandHandler handler) {
+        PluginCommand command = getCommand(commandName);
+        if (command == null) {
+            getLogger().warning(commandName + " command is not defined in plugin.yml");
+            return;
+        }
+        command.setExecutor(handler);
+        command.setTabCompleter(handler);
     }
 
     private CommandMap getCommandMap() {

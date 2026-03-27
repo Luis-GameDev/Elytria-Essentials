@@ -209,3 +209,22 @@ custom-regeneration:
     world: true
     world_nether: true
     world_the_end: true
+
+# Spawn / Utility Commands System
+spawn-system:
+  starter-kit-enabled: true
+  cooldown-seconds: 1200 # 20 minutes
+  spawn:
+    world: world
+    x: -216.5
+    y: 73.9375
+    z: -453.5
+    yaw: 0
+    pitch: 0
+  messages:
+    prefix: "&c⭐ &f"
+    cancel-prefix: "&c⭐ &c"
+    cancel-color: "&c"
+    join: "&a● %player%&7 Has Joined"
+    quit: "&c● %player%&7 Has Left"
+    first-join: "&7[&a+&7] &fWelcome %player% to &b&lElytria!"
