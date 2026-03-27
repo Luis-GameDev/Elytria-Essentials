@@ -174,7 +174,7 @@ public class CoalmineManager implements Listener {
         UUID uuid = player.getUniqueId();
         OptionalInt optionalRemaining = repository.getRemainingBlocks(uuid);
         if (optionalRemaining.isEmpty()) {
-            player.sendMessage(color("&7You are not currently punished in the coalmine."));
+            teleportToMainWorld(player);
             return;
         }
 
