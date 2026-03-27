@@ -228,3 +228,7 @@ spawn-system:
     join: "&a● %player%&7 Has Joined"
     quit: "&c● %player%&7 Has Left"
     first-join: "&7[&a+&7] &fWelcome %player% to &b&lElytria!"
+
+# Coalmine punishment system
+coalmine:
+  npc-id: 41

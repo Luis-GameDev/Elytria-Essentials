@@ -231,4 +231,4 @@ spawn-system:
 
 # Coalmine punishment system
 coalmine:
-  npc-id: 12
+  npc-id: 41
