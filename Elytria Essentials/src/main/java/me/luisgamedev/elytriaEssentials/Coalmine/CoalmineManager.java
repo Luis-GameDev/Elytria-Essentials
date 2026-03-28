@@ -10,6 +10,7 @@ import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.inventory.CraftItemEvent;
 import org.bukkit.event.player.PlayerChangedWorldEvent;
@@ -209,6 +210,22 @@ public class CoalmineManager implements Listener {
         if (isInCoalmineWorld(event.getEntity())) {
             event.getDrops().clear();
         }
+    }
+
+    @EventHandler
+    public void onBlockBreak(BlockBreakEvent event) {
+        Player player = event.getPlayer();
+        if (!isInCoalmineWorld(player)) {
+            return;
+        }
+
+        if (event.getBlock().getType() != Material.COAL_BLOCK) {
+            event.setCancelled(true);
+            return;
+        }
+
+        event.setDropItems(false);
+        player.getInventory().addItem(new ItemStack(Material.COAL_BLOCK));
     }
 
     private void startFatigueTask() {
