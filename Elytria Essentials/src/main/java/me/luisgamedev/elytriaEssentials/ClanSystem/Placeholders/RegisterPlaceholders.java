@@ -6,6 +6,8 @@ import me.luisgamedev.elytriaEssentials.ClanSystem.ClanManager;
 import me.luisgamedev.elytriaEssentials.ElytriaEssentials;
 import net.Indyuce.mmocore.MMOCore;
 import net.Indyuce.mmocore.api.player.PlayerData;
+import net.Indyuce.mmocore.party.AbstractParty;
+import net.Indyuce.mmocore.party.provided.Party;
 import net.Indyuce.mmocore.api.player.profess.PlayerClass;
 import net.Indyuce.mmocore.api.player.profess.SavedClassInformation;
 import net.Indyuce.mmoitems.MMOItems;
@@ -118,7 +120,36 @@ public class RegisterPlaceholders extends PlaceholderExpansion {
         if (params.equalsIgnoreCase("weapon_level")) {
             return getHighestUsableClassWeaponLevel(player).orElse("0.3");
         }
+        if (params.equalsIgnoreCase("partyname")) {
+            return resolveBuiltInPartyOwner(player);
+        }
         return null;
+    }
+
+    private String resolveBuiltInPartyOwner(Player player) {
+        String playerUuid = player.getUniqueId().toString();
+        String missingPartyValue = playerUuid.substring(0, Math.min(8, playerUuid.length())) + "-null";
+
+        if (!Bukkit.getPluginManager().isPluginEnabled("MMOCore") || !PlayerData.has(player)) {
+            return missingPartyValue;
+        }
+
+        PlayerData playerData = PlayerData.get(player);
+        if (playerData == null) {
+            return missingPartyValue;
+        }
+
+        AbstractParty party = playerData.getParty();
+        if (!(party instanceof Party builtInParty)) {
+            return missingPartyValue;
+        }
+
+        PlayerData owner = builtInParty.getOwner();
+        if (owner == null) {
+            return missingPartyValue;
+        }
+
+        return owner.getUniqueId().toString();
     }
 
     private boolean isLookingAtLivingEntity(Player player) {
