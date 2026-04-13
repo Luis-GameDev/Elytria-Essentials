@@ -41,7 +41,6 @@ import me.luisgamedev.elytriaEssentials.commands.ReloadCommand;
 import me.luisgamedev.elytriaEssentials.commands.PartyCommand;
 import me.luisgamedev.elytriaEssentials.commands.HologramCommand;
 import me.luisgamedev.elytriaEssentials.Soulbinding.SoulbindingManager;
-import me.luisgamedev.elytriaEssentials.MMOCore.PartyIntegrationManager;
 import me.luisgamedev.elytriaEssentials.Regeneration.CustomRegenerationManager;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -91,7 +90,6 @@ public final class ElytriaEssentials extends JavaPlugin {
     private ProfessionMilestonePermissionListener professionMilestonePermissionListener;
     private BossScheduler bs;
     private SoulbindingManager soulbindingManager;
-    private PartyIntegrationManager partyIntegrationManager;
     private FirstJoinItemManager firstJoinItemManager;
     private NextJoinItemManager nextJoinItemManager;
     private CustomRegenerationManager customRegenerationManager;
@@ -261,8 +259,6 @@ public final class ElytriaEssentials extends JavaPlugin {
             professionMilestonePermissionListener = new ProfessionMilestonePermissionListener(this);
             pm.registerEvents(professionMilestonePermissionListener, this);
             pm.registerEvents(new LevelMilestoneBroadcastListener(this), this);
-            partyIntegrationManager = new PartyIntegrationManager(this);
-            partyIntegrationManager.initialize();
             if (mmoItemsEnabled) {
                 pm.registerEvents(new CraftingProfessionExpListener(this), this);
             }
@@ -381,10 +377,6 @@ public final class ElytriaEssentials extends JavaPlugin {
         if (professionMilestonePermissionListener != null) {
             professionMilestonePermissionListener.cleanup();
             professionMilestonePermissionListener = null;
-        }
-        if (partyIntegrationManager != null) {
-            partyIntegrationManager.shutdown();
-            partyIntegrationManager = null;
         }
         if (customRegenerationManager != null) {
             customRegenerationManager.stop();

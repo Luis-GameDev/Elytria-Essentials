@@ -70,14 +70,6 @@ public class RegisterPlaceholders extends PlaceholderExpansion {
         this.manager = manager;
     }
 
-    public void setEntityLookupRange(double entityLookupRange) {
-        this.entityLookupRange = Math.max(0, entityLookupRange);
-    }
-
-    public void setEntityLookAngleToleranceDegrees(double entityLookAngleToleranceDegrees) {
-        this.entityLookAngleToleranceDegrees = Math.max(0, Math.min(180, entityLookAngleToleranceDegrees));
-    }
-
     @Override
     public String getIdentifier() {
         return "elytria";
