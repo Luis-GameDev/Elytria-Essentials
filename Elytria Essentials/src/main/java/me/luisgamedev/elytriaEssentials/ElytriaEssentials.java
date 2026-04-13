@@ -42,6 +42,7 @@ import me.luisgamedev.elytriaEssentials.commands.PartyCommand;
 import me.luisgamedev.elytriaEssentials.commands.HologramCommand;
 import me.luisgamedev.elytriaEssentials.Soulbinding.SoulbindingManager;
 import me.luisgamedev.elytriaEssentials.MMOCore.PartyIntegrationManager;
+import me.luisgamedev.elytriaEssentials.Placeholders.TextPlaceholderExpansion;
 import me.luisgamedev.elytriaEssentials.Regeneration.CustomRegenerationManager;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -96,6 +97,7 @@ public final class ElytriaEssentials extends JavaPlugin {
     private NextJoinItemManager nextJoinItemManager;
     private CustomRegenerationManager customRegenerationManager;
     private CoalmineManager coalmineManager;
+    private TextPlaceholderExpansion textPlaceholderExpansion;
 
     @Override
     public void onEnable() {
@@ -117,6 +119,9 @@ public final class ElytriaEssentials extends JavaPlugin {
         registerSpawnCommand("discordlink", spawnCommandHandler);
         if (!new File(getDataFolder(), "exp-rewards.yml").exists()) {
             saveResource("exp-rewards.yml", false);
+        }
+        if (!new File(getDataFolder(), "texts.yml").exists()) {
+            saveResource("texts.yml", false);
         }
         ArrowSkillHandler arrowSkillHandler = new ArrowSkillHandler(this);
         pm.registerEvents(arrowSkillHandler, this);
@@ -224,6 +229,8 @@ public final class ElytriaEssentials extends JavaPlugin {
 
         if (Bukkit.getPluginManager().isPluginEnabled("PlaceholderAPI")) {
             new RegisterPlaceholders(this, clanManager).register();
+            textPlaceholderExpansion = new TextPlaceholderExpansion(this);
+            textPlaceholderExpansion.register();
             if (Bukkit.getPluginManager().isPluginEnabled("MMOCore")) {
                 new RegisterPlaceholders.MMOClassPlaceholders(this).register();
             } else {
