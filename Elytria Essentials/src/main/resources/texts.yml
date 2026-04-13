@@ -1,0 +1,18 @@
+# Placeholder format:
+# %text_<text_identifier>_<font>%
+#
+# Examples:
+# %text_rulebooktext_oldgerman%
+# %text_quest_npc_alfred_story_3_newenglish%
+#
+# The first part is always the PlaceholderAPI identifier: text
+# The last part is always the font, applied as <font:elytria:<font>>...</font>
+texts:
+  rulebooktext:
+    - "&7[ "
+    - "&fThe old laws remain in effect."
+    - "&7 ]"
+
+  quest_npc_alfred_story_3:
+    - "&eAlfred: "
+    - "&fThe mist grew thicker as we crossed the valley."
