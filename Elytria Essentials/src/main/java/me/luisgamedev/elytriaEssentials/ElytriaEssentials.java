@@ -41,7 +41,6 @@ import me.luisgamedev.elytriaEssentials.commands.ReloadCommand;
 import me.luisgamedev.elytriaEssentials.commands.PartyCommand;
 import me.luisgamedev.elytriaEssentials.commands.HologramCommand;
 import me.luisgamedev.elytriaEssentials.Soulbinding.SoulbindingManager;
-import me.luisgamedev.elytriaEssentials.MMOCore.PartyIntegrationManager;
 import me.luisgamedev.elytriaEssentials.Placeholders.TextPlaceholderExpansion;
 import me.luisgamedev.elytriaEssentials.Regeneration.CustomRegenerationManager;
 import org.bukkit.Bukkit;
